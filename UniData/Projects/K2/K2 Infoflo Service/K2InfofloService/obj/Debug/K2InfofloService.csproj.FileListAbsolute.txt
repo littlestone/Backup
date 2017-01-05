@@ -1,0 +1,7 @@
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\K2 Infoflo Service\K2InfofloService\bin\K2InfofloService.dll
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\K2 Infoflo Service\K2InfofloService\bin\K2InfofloService.pdb
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\K2 Infoflo Service\K2InfofloService\bin\SourceCode.HostClientAPI.dll
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\K2 Infoflo Service\K2InfofloService\obj\Debug\K2InfofloService.dll
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\K2 Infoflo Service\K2InfofloService\obj\Debug\K2InfofloService.pdb
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\K2 Infoflo Service\K2InfofloService\bin\K2InfofloService.dll.config
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\K2 Infoflo Service\K2InfofloService\obj\Debug\K2InfofloService.csprojResolveAssemblyReference.cache

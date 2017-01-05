@@ -1,0 +1,5 @@
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\K2 Infoflo Service\UOTest\bin\Debug\UOTest.exe
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\K2 Infoflo Service\UOTest\bin\Debug\UOTest.pdb
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\K2 Infoflo Service\UOTest\obj\x86\Debug\UOTest.exe
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\K2 Infoflo Service\UOTest\obj\x86\Debug\UOTest.pdb
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\K2 Infoflo Service\UOTest\obj\x86\Debug\UOTest.csprojResolveAssemblyReference.cache

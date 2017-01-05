@@ -1,0 +1,482 @@
+     SUBROUTINE PURS8000.10(ARGS_IN,ARGS_OUT)
+* Generate PIC PO Approval Request/Response HTML Email
+* VERSION 8.2.3
+*
+* 04 MAR 13 8.2.3 juntan PRJ*PUR083D.2-(Sub #2) PO INTERNAL CONTROLS
+*
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+
+     PROGRAM='PURS8000.10'
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*              This program is used to generate html email for per PIC PO
+*              Approval Request based on a pre-defined html email template
+*              file located under DOM_HTML directory. The template is
+*              maintained under SYSCON table PIC.CONSTANT.
+*
+*              <<<NOTE>>>
+*              a) Input parameters (delimited by @FM):
+*                 ARGS_IN<1>  -> PO NBR
+*                 ARGS_IN<2>  -> PO TYPE
+*                 ARGS_IN<3>  -> PO TYPE DESC
+*                 ARGS_IN<4>  -> PO CLASS
+*                 ARGS_IN<5>  -> PO CLASS DESC
+*                 ARGS_IN<6>  -> USER ID
+*                 ARGS_IN<7>  -> USER NAME
+*                 ARGS_IN<8>  -> REQUESTOR ID
+*                 ARGS_IN<9>  -> REQUESTOR NAME
+*                 ARGS_IN<10> -> BUYER ID
+*                 ARGS_IN<11> -> BUYER NAME
+*                 ARGS_IN<12> -> APPROVER ID
+*                 ARGS_IN<13> -> APPROVER NAME
+*                 ARGS_IN<14> -> SUPPLIER ID
+*                 ARGS_IN<15> -> SUPPLIER NAME
+*                 ARGS_IN<16> -> PIC LEVEL
+*                 ARGS_IN<17> -> COMPANY CODE
+*                 ARGS_IN<18> -> COMPANY DESC
+*                 ARGS_IN<19> -> CURRENCY CODE
+*                 ARGS_IN<20> -> PO TOTAL AMOUNT
+*                 ARGS_IN<21> -> PIC Email Request/Response/SLA Error Flag (REQUEST/RESPONSE/SLAERROR)
+*                 ARGS_IN<22> -> PIC Response Email Headder Message
+*                 ARGS_IN<23> -> PIC Level Approver Message
+*                 ARGS_IN<24> -> PIC Security Flag (0 = N or 1 = Y)
+*                 ARGS_IN<25> -> PIC Infolfo Account Flag (D = DEV, P = PREP or A = ACCT)
+*           
+*
+*              b) Output parameters (delimited by @FM):
+*                 ARGS_OUT<1> -> PIC html email
+*                 ARGS_OUT<2> -> PIC email timestamp
+*                 ARGS_OUT<3> -> Error message if there is any
+*
+* MODIFICATIONS:
+* ==============
+*              2013/02/26 juntan PUR083D.2 - Initial creation.
+*
+**************************************************************************
+
+
+A100_MAIN:
+
+   GOSUB A200_INITIALIZATION
+   IF L_RTN_FLAG # '' THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF L_RTN_FLAG '' THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF L_RTN_FLAG #  '' THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+   GO A500_CONCLUSION
+
+
+****************************************
+* Definition of local variables & initialization of other variables.
+****************************************
+A200_INITIALIZATION:
+
+   ARGS_OUT = ""
+
+   RTN.FLAG = 0
+   L_RTN_FLAG = "" 
+   L_FILE_NAME = "" 
+   L_DIR_TEMPLATE = "" 
+   L_DIR_EMAIL = "" 
+   L_WS_URI = ""
+   L_HTML_EMAIL_TEMPLATE = ""
+   L_LINE = ""
+   L_EOF = 0
+   L_SYSCON_KEY = ""
+   L_SYSCON_REC = ""
+   L_INC = 0
+   L_CNT = 0
+
+   L_RAW_PARMS = ""
+   L_ENCRYPTED_PARMS = ""
+   L_URL_ENCODED = ""
+   L_URL_APPROVE = ""
+   L_URL_REJECT = ""
+   L_URL_RETURN = ""
+   L_FILE_NAME_OUT = ""
+   L_PIC_HTML_EMAIL = ""
+   L_LINE_OUT = ""
+   L_PURGE_MSG = ""
+
+   L_DATE = DATE()
+   L_TIME = TIME()
+   L_DATE_OCONV = OCONV(L_DATE,"D2/")
+   L_TIME_OCONV = OCONV(L_TIME, "MTS")
+   L_TIMESTAMP = ""
+
+   L_ERROR_MSG = ""
+
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open the files needed in this subroutine.
+****************************************
+A300_OPEN_FILES:
+
+   OPEN "SYSCON" TO SYSCON ELSE
+      L_RTN_FLAG = "A300-ERROR-1"
+      L_ERROR_MSG = L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> Cannot open file SYSCON."
+      GO A300_EXIT
+   END
+
+A300_EXIT:
+   RETURN
+
+
+****************************************
+* Main process logic structure.
+****************************************
+A400_MAIN_PROCESS:
+
+   GOSUB B100_READ_SYSCON_TABLE_SETUP
+   IF L_RTN_FLAG # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B200_READ_HTML_TEMPLATE_FILE
+   IF L_RTN_FLAG # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B300_UPDATE_HTML_TEMPLATE_VARIABLES
+   IF L_RTN_FLAG # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B400_GENERATE_PIC_HTML_EMAIL
+   IF L_RTN_FLAG # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B500_PURGE_PIC_HTML_EMAIL_FILES
+   IF L_RTN_FLAG # "" THEN
+      GO A400_EXIT
+   END
+
+A400_EXIT:
+   RETURN
+
+
+****************************************
+* Read PIC html email template based on setup on SYSCON table PIC.CONSTANT
+****************************************
+B100_READ_SYSCON_TABLE_SETUP:
+
+   L_SYSCON_KEY = "PIC.CONSTANT"
+   READ L_SYSCON_REC FROM SYSCON,L_SYSCON_KEY ELSE L_SYSCON_REC = ""
+   IF L_SYSCON_REC # "" THEN
+      BEGIN CASE
+         CASE ARGS_IN<21> = "REQUEST"
+            L_WS_URI = TRIM(FIELD(L_SYSCON_REC<6>,';',1))
+            L_DIR_TEMPLATE = TRIM(FIELD(L_SYSCON_REC<7>,';',1))<1,1>
+            L_DIR_EMAIL = TRIM(FIELD(L_SYSCON_REC<7>,';',1))<1,2>
+            L_FILE_NAME = TRIM(FIELD(L_SYSCON_REC<8>,';',1))
+         CASE ARGS_IN<21> = "RESPONSE"
+            L_DIR_TEMPLATE = TRIM(FIELD(L_SYSCON_REC<7>,';',1))<1,1>
+            L_DIR_EMAIL = TRIM(FIELD(L_SYSCON_REC<7>,';',1))<1,2>
+            L_FILE_NAME = TRIM(FIELD(L_SYSCON_REC<9>,';',1))
+         CASE ARGS_IN<21> = "SLAERROR"
+            L_DIR_TEMPLATE = TRIM(FIELD(L_SYSCON_REC<7>,';',1))<1,1>
+            L_DIR_EMAIL = TRIM(FIELD(L_SYSCON_REC<7>,';',1))<1,2>
+            L_FILE_NAME = TRIM(FIELD(L_SYSCON_REC<10>,';',1))
+         CASE 1
+            L_RTN_FLAG = "B100-ERROR-0"
+            L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> Wrong request/response email flag ":ARGS_IN<21>:" found."
+      END CASE
+   END ELSE
+      L_RTN_FLAG = "B100-ERROR-1"
+      L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> SYSCON record ":L_SYSCON_KEY:" does not exist."
+   END
+    
+B100_EXIT:
+   RETURN
+
+
+****************************************
+* Read SYSCON table setup for PIC html email template setup
+****************************************
+B200_READ_HTML_TEMPLATE_FILE:
+
+   OPENSEQ L_DIR_TEMPLATE, L_FILE_NAME TO L_HTML_EMAIL_TEMPLATE
+   ON ERROR
+      L_RTN_FLAG = "B200-ERROR-FATAL"
+      L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> Cannot open file ":L_FILE_NAME:"."
+      GO B200_EXIT
+   END LOCKED
+      L_RTN_FLAG = "B200-ERROR-LOCK"
+      L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> The html email template file ":L_FILE_NAME:" is currently locked by ":GETUSERNAME(STATUS()):"."
+      GO B200_EXIT
+   END THEN
+      LOOP
+         READSEQ L_LINE FROM L_HTML_EMAIL_TEMPLATE ELSE L_EOF = 1
+      UNTIL L_EOF
+         L_LINE_OUT := L_LINE:CHAR(10)
+      REPEAT
+      CLOSESEQ L_HTML_EMAIL_TEMPLATE
+   END ELSE
+      BEGIN CASE
+         CASE STATUS() = 0
+            L_RTN_FLAG = "B200-ERROR-0"
+            L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> The html email template file ":L_FILE_NAME:" does not exist."
+         CASE STATUS() = 1
+            L_RTN_FLAG = "B200-ERROR-1"
+            L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> The html email template file ":L_FILE_NAME:" is not a sequential-access file."
+         CASE STATUS() = 2
+            L_RTN_FLAG = "B200-ERROR-2"
+            L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> The file directory ":L_DIR_TEMPLATE:" does not exist."
+         CASE STATUS() = 3
+            L_RTN_FLAG = "B200-ERROR-3"
+            L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> The READONLY clause was included in the command statement and the html email template file ":L_FILE_NAME:" does not exist."
+         CASE STATUS() = 4
+            L_RTN_FLAG = "B200-ERROR-4"
+            L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> An unknown error occurred (such as having too many files open or permission problems) while opening sequential html email template file ":L_FILE_NAME:"."
+      END CASE
+      GO B200_EXIT
+   END
+
+B200_EXIT:
+   RETURN
+
+
+****************************************
+* Update html email template variables as per request
+****************************************
+B300_UPDATE_HTML_TEMPLATE_VARIABLES:
+
+   IF ARGS_IN<1> = "" THEN   ;* PO # is missing
+      L_RTN_FLAG = "B300-ERROR-1"
+      L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> No PIC input parameters found."
+      GO B300_EXIT
+   END
+   L_TIMESTAMP = OCONV(L_DATE,"D2/"):"-":OCONV(L_TIME,"MTS")
+
+   *** Mapping html email variabes with input parameters ***
+   SWAP "L_TIME_STAMP" WITH L_TIMESTAMP IN L_LINE_OUT
+   SWAP "L_PO_NBR" WITH ARGS_IN<1> IN L_LINE_OUT
+   SWAP "L_PO_TYPE" WITH ARGS_IN<2> IN L_LINE_OUT
+   SWAP "PO_TYPE_DESC" WITH ARGS_IN<3> IN L_LINE_OUT
+   SWAP "L_PO_CLASS" WITH ARGS_IN<4> IN L_LINE_OUT
+   SWAP "PO_CLASS_DESC" WITH ARGS_IN<5> IN L_LINE_OUT
+   SWAP "L_CREATOR" WITH ARGS_IN<6> IN L_LINE_OUT
+   SWAP "CREATOR_NAME" WITH ARGS_IN<7> IN L_LINE_OUT
+   SWAP "L_REQUESTER" WITH ARGS_IN<8> IN L_LINE_OUT
+   SWAP "REQUESTER_NAME" WITH ARGS_IN<9> IN L_LINE_OUT
+   SWAP "L_BUYER" WITH ARGS_IN<10>  IN L_LINE_OUT
+   SWAP "BUYER_NAME" WITH ARGS_IN<11> IN L_LINE_OUT
+   SWAP "L_APPROVER" WITH ARGS_IN<12> IN L_LINE_OUT
+   SWAP "APPROVER_NAME" WITH ARGS_IN<13> IN L_LINE_OUT
+   SWAP "L_SUPPLIER" WITH ARGS_IN<14> IN L_LINE_OUT
+   SWAP "SUPPLIER_NAME" WITH ARGS_IN<15> IN L_LINE_OUT
+   SWAP "L_PIC_LEVEL" WITH ARGS_IN<16> IN L_LINE_OUT
+   SWAP "L_COMPANY" WITH ARGS_IN<17> IN L_LINE_OUT
+   SWAP "COMPANY_NAME" WITH ARGS_IN<18> IN L_LINE_OUT
+   SWAP "L_CURRENCY_CODE" WITH ARGS_IN<19> IN L_LINE_OUT
+   SWAP "L_TOTAL_AMT" WITH ARGS_IN<20> IN L_LINE_OUT
+   SWAP "L_HEADER_MSG" WITH ARGS_IN<22> IN L_LINE_OUT
+   SWAP "LEVEL_MSG" WITH ARGS_IN<23> IN L_LINE_OUT
+
+   *** Build PIC html request email URL links ***
+   IF ARGS_IN<21> = "REQUEST" THEN
+      *** Encrypt PO Approve parameters for passing to PIC Web Service ***
+      L_RAW_PARMS = ""
+      L_RAW_PARMS<1> = ARGS_IN<25>:"|":ARGS_IN<24>:"|":ARGS_IN<1>:"|":ARGS_IN<12>:"|A|":ARGS_IN<16>:"|":L_DATE:"-":L_TIME
+      L_RAW_PARMS<2> = "E"
+      CALL SYSS9220.1(L_RAW_PARMS,L_ENCRYPTED_PARMS) ;* Parameters encryption
+      IF L_ENCRYPTED_PARMS<1> = "" THEN
+         L_RTN_FLAG = "B300-ERROR-2"
+         L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> ":L_ENCRYPTED_PARMS<2>
+         GO B300_EXIT
+      END
+
+      *** Encode encrypted PO Approve parameters for URL on browser ***
+      L_RAW_PARMS = ""
+      L_RAW_PARMS<1> = L_ENCRYPTED_PARMS
+      L_RAW_PARMS<2> = "N"
+      CALL SYSS9220.2(L_RAW_PARMS,L_URL_ENCODED)  ;* URL encoding
+      IF L_URL_ENCODED<1> = "" THEN
+         L_RTN_FLAG = "B300-ERROR-3"
+         L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> ":L_URL_ENCODED<2>
+         GO B300_EXIT
+      END
+      L_URL_APPROVE = L_WS_URI:L_URL_ENCODED
+
+      *** Encrypt PO Reject parameters for passing to PIC Web Service ***
+      L_RAW_PARMS = ""
+      L_RAW_PARMS<1> = ARGS_IN<25>:"|":ARGS_IN<24>:"|":ARGS_IN<1>:"|":ARGS_IN<12>:"|X|":ARGS_IN<16>:"|":L_DATE:"-":L_TIME
+      L_RAW_PARMS<2> = "E"
+      CALL SYSS9220.1(L_RAW_PARMS,L_ENCRYPTED_PARMS) ;* Parameters encryption
+      IF L_ENCRYPTED_PARMS = "" THEN
+         L_RTN_FLAG = "B300-ERROR-2"
+         L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> ":L_ENCRYPTED_PARMS<2>
+         GO B300_EXIT
+      END
+
+      *** Encode encrypted PO Reject parameters for URL on browser ***
+      L_RAW_PARMS = ""
+      L_RAW_PARMS<1> = L_ENCRYPTED_PARMS
+      L_RAW_PARMS<2> = "N"
+      CALL SYSS9220.2(L_RAW_PARMS,L_URL_ENCODED)  ;* URL encoding
+      IF L_URL_ENCODED = "" THEN
+         L_RTN_FLAG = "B300-ERROR-3"
+         L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> ":L_URL_ENCODED<2>
+         GO B300_EXIT
+      END
+      L_URL_REJECT = L_WS_URI:L_URL_ENCODED
+
+      *** Encrypt PO Return parameters for passing to PIC Web Service ***
+      L_RAW_PARMS = ""
+      L_RAW_PARMS<1> = ARGS_IN<25>:"|":ARGS_IN<24>:"|":ARGS_IN<1>:"|":ARGS_IN<12>:"|B|":ARGS_IN<16>:"|":L_DATE:"-":L_TIME
+      L_RAW_PARMS<2> = "E"
+      CALL SYSS9220.1(L_RAW_PARMS,L_ENCRYPTED_PARMS)   ;* Encryption
+      IF L_ENCRYPTED_PARMS = "" THEN
+         L_RTN_FLAG = "B300-ERROR-2"
+         L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> ":L_ENCRYPTED_PARMS<2>
+         GO B300_EXIT
+      END
+     
+      *** Encode encrypted PO Return parameters for URL on browser ***
+      L_RAW_PARMS = ""
+      L_RAW_PARMS<1> = L_ENCRYPTED_PARMS
+      L_RAW_PARMS<2> = "N"
+      CALL SYSS9220.2(L_RAW_PARMS,L_URL_ENCODED)  ;* URL encoding
+      IF L_URL_ENCODED = "" THEN
+         L_RTN_FLAG = "B300-ERROR-3"
+         L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> ":L_URL_ENCODED<2>
+         GO B300_EXIT
+      END
+      L_URL_RETURN = L_WS_URI:L_URL_ENCODED
+
+      *** Mapping html email variabes with encrypted and encoded URL address ***
+      SWAP "L_URL_APPROVE" WITH L_URL_APPROVE IN L_LINE_OUT
+      SWAP "L_URL_REJECT" WITH L_URL_REJECT IN L_LINE_OUT
+      SWAP "L_URL_RETURN" WITH L_URL_RETURN IN L_LINE_OUT
+   END
+
+B300_EXIT:
+   RETURN
+
+
+****************************************
+* Generate PIC html email as per request
+****************************************
+B400_GENERATE_PIC_HTML_EMAIL:
+
+   SWAP "/" WITH "" IN L_DATE_OCONV
+   SWAP ":" WITH "" IN L_TIME_OCONV
+
+   BEGIN CASE
+      CASE ARGS_IN<21> = "REQUEST"
+         L_FILE_NAME_OUT = "PIC_REQUEST_":ARGS_IN<1>:"_":L_DATE_OCONV:"_":L_TIME_OCONV:".html"
+      CASE ARGS_IN<21> = "RESPONSE"
+         L_FILE_NAME_OUT = "PIC_RESPONSE_":ARGS_IN<1>:"_":L_DATE_OCONV:"_":L_TIME_OCONV:".html"
+      CASE ARGS_IN<21> = "SLAERROR"
+         L_FILE_NAME_OUT = "PIC_SLAERROR_":ARGS_IN<1>:"_":L_DATE_OCONV:"_":L_TIME_OCONV:".html"
+   END CASE
+
+   OPENSEQ L_DIR_EMAIL, L_FILE_NAME_OUT TO L_PIC_HTML_EMAIL
+   ON ERROR
+      L_RTN_FLAG = "B400-ERROR-FATAL"
+      L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> Cannot open file ":L_FILE_NAME:"."
+      GO B400_EXIT
+   END LOCKED
+      L_RTN_FLAG = "B400-ERROR-LOCK"
+      L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> The html email template file ":L_FILE_NAME:" is currently locked by ":GETUSERNAME(STATUS()):"."
+      GO B400_EXIT
+   END THEN
+      ;* the PIC html email file as per request should not exist before the call
+   END ELSE
+      BEGIN CASE
+         CASE STATUS() = 0
+            WEOFSEQ L_PIC_HTML_EMAIL  ;* create the empty PIC html email file
+         CASE STATUS() = 1
+            L_RTN_FLAG = "B400-ERROR-1"
+            L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> The html email template file ":L_FILE_NAME:" is not a sequential-access file."
+         CASE STATUS() = 2
+            L_RTN_FLAG = "B400-ERROR-2"
+            L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> The file directory ":L_DIR_EMAIL:" does not exist."
+            GO B400_EXIT
+         CASE STATUS() = 3
+            L_RTN_FLAG = "B400-ERROR-3"
+            L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> The READONLY clause was included in the command statement and the html email template file ":L_FILE_NAME:" does not exist."
+            GO B400_EXIT
+         CASE STATUS() = 4
+            L_RTN_FLAG = "B400-ERROR-4"
+            L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> An unknown error occurred (such as having too many files open or permission problems) while opening sequential html email template file ":L_FILE_NAME:"."
+            GO B400_EXIT
+      END CASE
+   END
+
+   WRITESEQ L_LINE_OUT TO L_PIC_HTML_EMAIL ELSE L_RTN_FLAG = "B400-ERROR-2"
+   CLOSESEQ L_PIC_HTML_EMAIL
+
+   ARGS_OUT<1> = L_DIR_EMAIL:"/":L_FILE_NAME_OUT
+   ARGS_OUT<2> = L_TIMESTAMP
+
+B400_EXIT:
+   RETURN
+
+
+****************************************
+* Purge PIC HTML Email Files One Time a Day
+****************************************
+B500_PURGE_PIC_HTML_EMAIL_FILES:
+
+   CALL PURS8000.11(L_PURGE_MSG)
+   IF L_PURGE_MSG # "" THEN
+      L_RTN_FLAG = "B500-ERROR-1"
+      L_ERROR_MSG = L_PURGE_MSG
+   END
+
+B500_EXIT:
+   RETURN
+
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+   IF L_RTN_FLAG # '' THEN
+      ARGS_OUT = ""
+      ARGS_OUT<3> = L_ERROR_MSG
+   END ELSE
+      RTN.FLAG = 0
+   END
+
+A500_EXIT:
+   REFRESH = -2
+
+
+****************************************
+* Exit  
+****************************************
+
+END

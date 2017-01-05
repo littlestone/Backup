@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: for block
+# key: for
+# --
+FOR $1 = $2 TO $3
+   
+NEXT $0

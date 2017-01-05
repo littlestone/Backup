@@ -1,0 +1,10 @@
+<?xml version = "1.0"?>
+<U2xml_extraction xmlns:U2xml="http://www.ibm.com/U2-xml">
+<U2xml:file_extraction start="/index_file/trailer" dictionary = "" null = "EMPTY" />
+<U2xml:field_extraction field="item_count" path="item_count/text()" />
+<U2xml:field_extraction field="checksum_field_name" path="checksum,checksum_field_name/text()" />
+<U2xml:field_extraction field="checksum_field_value" path="checksum,checksum_field_value/text()" />
+</U2xml_extraction>
+<!--position index 1 = item_count-->
+<!--position index 2 = checksum_field_name-->
+<!--position index 3 = checksum_field_value-->

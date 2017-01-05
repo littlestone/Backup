@@ -1,0 +1,378 @@
+   SUBROUTINE MESS9000.1(PLANT,DATA_BEFORE,DATA_AFTER,STATUS)
+* Infoflo Web API Programmatic Interface for MES Application
+* VERSION 8.2.3
+*
+* 09 SEP 16 8.2.3 juntan PRJ*MRP137D.6-Integration chg for multiple instances
+* 27 FEB 15 8.2.3 juntan PRJ*JUNTAN.77-Ability to decode URI data string contains special char
+* 16 DEC 13 8.2.3 juntan PRJ*MRP126D.13-MES project -Call MES web server routine for Routing up
+*
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+
+   PROGRAM = 'MESS9000.1'
+
+   $INCLUDE IIPLUS.TOP
+   $INCLUDE IIPLUS.TEXTLOAD
+   $INCLUDE IIPLUS.DEBUG
+
+   $INCLUDE TUBP TU.API.H
+   $INCLUDE TUBP ROC.H
+*  $INCLUDE /usr/igi/ud/sys/INCLUDE UDO.H   ;* JSON parser available in UniData v7.3
+*  $INCLUDE /usr/igi/ud/sys/INCLUDE XML.H   ;* XML parser
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*              This program is used to send HTTP post request to InfofloWebAPI Web Service
+*              hosted in IIS on Hydra windows server (mes0) to post data to MES system.
+*
+*              <<<NOTE>>>
+*
+*              Input arguments:
+*                 1. PLANT - single plant code
+*                 2. Vector DATA_BEFORE & DATA_AFTER
+*                   a) Multi-record should be delimited by @FM or @AM.
+*                   b) Property field should be delimited by @VM.
+*
+*              Return status (null or 0 if no error occurred):
+*                 STATUS<1> -> Error code (possible codes listed below)
+*                   a) Error code 1 -> JSON Data De-serialisation -> this is the step where the source JSON data file is received and validated (Mandatory step).
+*                   b) Error code 2 -> Hydra Request Process -> this is where the source JSON data is transformed to MES BAPI command based on rules setup in the SQL configuration table, it is also the step to generate the BAPI DAT file and the detail log file (Mandatory step).
+*                   c) Error code 3 -> MLE Windows Service Process for MOC -> this is where the BAPI DAT file get fetched by the MLE windows service and pushed to MES inbound transaction workbench (Mandatory step).
+*                   d) Error code 4 -> Request Log Process for SQL Server -> final step to save log in SQL table and create cross reference link by the transaction ID generated in MES (Optional step).
+*                 STATUS<2> -> Error message
+*
+* MODIFICATIONS:
+* ==============
+*              2015/02/17 juntan JUNTAN.77  - Add URL percent-encoding to allow special characters 
+*              2013/09/24 juntan MRP126D.13 - Initial creation.
+*
+**************************************************************************
+
+
+A100_MAIN:
+
+   GOSUB A200_INITIALIZATION
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+   GO A500_CONCLUSION
+
+
+****************************************
+* Define & initialize variables.
+****************************************
+A200_INITIALIZATION:
+
+   RTN.FLAG = 0
+   STATUS = ""
+
+   MATRIX = ""
+   VECTOR_DATA_BEFORE = ""
+   VECTOR_DATA_AFTER = ""
+   URL = ""
+   HTTP.HEADER = "" ;* Content-Types that are acceptable for the response -> application/xml | application/json | text/plain (default encoding for JSON is UTF-8)
+   OPTION = ""      ;* PROXY_NAME, PROXY_PORT, VERSION, BUFSIZE, AUTHENTICATE, HEADERS
+   HTTP.METHOD = "" ;* GET, POST
+   X.HANDLE = ""
+   X.TIMEOUT = ""
+   X.POST.DATA = ""
+   X.RESPONSE.HEADERS = ""
+   X.RESPONSE.DATA = ""
+   X.HTTP.STATUS = ""
+   X.RTN.CODE = ""
+
+   L_ERR_CODE = ""
+   L_ERR_MSG = ""
+   L_SYSCON_KEY = ""
+   L_SYSCON_REC = ""
+   L_PLANT_CODES = ""
+   L_INSTANCE_NBR = ""
+
+   L_INC = 0
+   L_TTL = 0
+
+   *** juntan \/ JUNTAN.77 - 2015/02/27
+   InData = ""
+   OutData = ""
+   *** juntan /\ JUNTAN.77 - 2015/02/27
+
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open any data files requried.
+****************************************
+A300_OPEN_FILES:
+
+   FILE.ERR = 0
+
+   CALL SB.OPEN.FILE("SYSCON",SYSCON,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-1"
+      L_ERR_MSG = "Open SYSCON file error."
+      GO A300_EXIT
+   END
+
+A300_EXIT:
+   RETURN
+
+
+****************************************
+* Main process logic structure.
+****************************************
+A400_MAIN_PROCESS:
+
+   IF DATA_BEFORE = "" AND DATA_AFTER = "" THEN
+      L_ERR_CODE = "A400-ERROR-1"
+      L_ERR_MSG = "No data found."
+      GO A400_EXIT
+   END
+
+   GOSUB B100_READ_FILE
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B200_JSON_SERIALIZER
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B300_MES_WEB_API_CALL
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+A400_EXIT:
+   RETURN
+
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+   IF L_ERR_CODE # "" THEN
+      STATUS<1> = L_ERR_CODE
+      STATUS<2> = L_ERR_MSG
+   END
+
+   RTN.FLAG = 0
+   REFRESH = -2
+
+A500_EXIT:
+   GO 9999
+
+
+****************************************
+* Internal subroutine section.
+****************************************
+B100_READ_FILE:
+
+   ;* determine MES HydraWebService instance sequence number based on the given plant
+   L_SYSCON_KEY = "MES.WEBAPI.INSTANCE"
+   READ L_SYSCON_REC FROM SYSCON, L_SYSCON_KEY
+   ON ERROR
+      L_ERR_CODE = "B100-ERROR-1-1"
+      L_ERR_MSG = "Read SYSCON file error for record ":L_SYSCON_KEY:"."
+   END THEN
+      L_TTL = DCOUNT(L_SYSCON_REC, @AM)
+      FOR L_INC = 1 TO L_TTL
+         L_PLANT_CODES = TRIM(FIELD(L_SYSCON_REC<L_INC>,';',1))
+         IF INDEX(L_PLANT_CODES, PLANT, 1) THEN
+            L_INSTANCE_NBR = L_INC
+            EXIT
+         END
+      NEXT L_INC
+      IF L_INSTANCE_NBR = "" THEN
+         ERR_CODE = "B100-ERROR-1-2"
+         ERR_MSG  = "Unable to determine the HydraWebSerive instance sequence number based on the given plant number {":PLANT:"} in SYSCON table ":L_SYSCON_KEY:"."
+         GO B100_EXIT
+      END
+   END ELSE
+      L_ERR_CODE = "B100-ERROR-1-3"
+      L_ERR_MSG = "Record ":L_SYSCON_KEY:" does not exist in SYSCON file."
+   END
+
+   ;* retrieve the MES HydraWebService instance SYSCON configuration
+   L_SYSCON_KEY := ".":L_INSTANCE_NBR
+   READ L_SYSCON_REC FROM SYSCON, L_SYSCON_KEY
+   ON ERROR
+      ERR_CODE = "B100-ERROR-2-1"
+      ERR_MSG  = "Unable to read record ":L_SYSCON_KEY:" in file SYSCON {":STATUS():"}."
+      GO B100_EXIT
+   END THEN
+      URL       = TRIM(FIELD(L_SYSCON_REC<1>,';',1))
+      X.TIMEOUT = TRIM(FIELD(L_SYSCON_REC<2>,';',1))
+      MATRIX    = TRIM(FIELD(L_SYSCON_REC<3>,';',1))
+   END ELSE
+      ERR_CODE = "B100-ERROR-2-2"
+      ERR_MSG  = "Record ":L_SYSCON_KEY:" does not exist in file SYSCON."
+      GO B100_EXIT
+   END
+
+B100_EXIT:
+   RETURN
+
+
+B200_JSON_SERIALIZER:
+
+   IF DATA_BEFORE = "" THEN
+      L_TTL = DCOUNT(DATA_AFTER,@FM)
+      FOR L_INC = 1 TO L_TTL
+         VECTOR_DATA_BEFORE<L_INC> = "[]"
+      NEXT L_INC
+   END ELSE
+      L_TTL = DCOUNT(DATA_BEFORE,@FM)
+      FOR L_INC = 1 TO L_TTL
+         VECTOR_DATA_BEFORE<L_INC> = "[":DATA_BEFORE<L_INC>:"]"
+      NEXT L_INC
+   END
+   SWAP @VM WITH "," IN VECTOR_DATA_BEFORE
+   SWAP @FM WITH "," IN VECTOR_DATA_BEFORE
+   SWAP "VECTOR-1" WITH "[":VECTOR_DATA_BEFORE:"]" IN MATRIX
+
+   IF DATA_AFTER = "" THEN
+      L_TTL = DCOUNT(DATA_BEFORE,@FM)
+      FOR L_INC = 1 TO L_TTL
+         VECTOR_DATA_AFTER<L_INC> = "[]"
+      NEXT L_INC
+   END ELSE
+      L_TTL = DCOUNT(DATA_AFTER,@FM)
+      FOR L_INC = 1 TO L_TTL
+         VECTOR_DATA_AFTER<L_INC> = "[":DATA_AFTER<L_INC>:"]"
+      NEXT L_INC
+   END
+   SWAP @VM WITH "," IN VECTOR_DATA_AFTER
+   SWAP @FM WITH "," IN VECTOR_DATA_AFTER
+   SWAP "VECTOR-2" WITH "[":VECTOR_DATA_AFTER:"]" IN MATRIX
+
+B200_EXIT:
+   RETURN
+
+
+B300_MES_WEB_API_CALL:
+
+   *** juntan \/ JUNTAN.77 - 2015/02/27
+   *** Apply URL Percent-encoding ***
+   InData = "{":MATRIX:"}" ;* JSON Data String
+   CALL SYSS9220.2(InData,OutData)
+   IF OutData<2> # "" THEN
+      L_ERR_CODE = "B300-ERROR-0"
+      L_ERR_MSG = OutData<2>
+      GO B300_EXIT
+   END
+   *** juntan /\ JUNTAN.77 - 2015/02/27
+
+   *** Configuring Default HTTP Request Settings ***
+   HTTP.HEADER = "Content-Type":@VM:"application/json":@FM
+   OPTION = "HEADERS"
+   X.RTN.CODE = setHTTPDefault(OPTION,HTTP.HEADER)
+   IF X.RTN.CODE # 0 THEN
+      L_ERR_CODE = "B300-ERROR-1"
+      L_ERR_MSG = "HTTP request API setHTTPDefault call error -> "
+      BEGIN CASE
+         CASE X.RTN.CODE = 1
+            L_ERR_MSG := "Invalid option."
+         CASE X.RTN.CODE = 2
+            L_ERR_MSG := "Invalid value."
+      END CASE
+      GO B300_EXIT
+   END
+
+   *** Setup HTTP Request Parameters ***
+   HTTP.METHOD = "POST"
+
+   *** Creating an HTTP Request ***
+   X.RTN.CODE = createRequest(URL, HTTP.METHOD, X.HANDLE)
+   IF X.RTN.CODE # 0 THEN
+      L_ERR_CODE = "B300-ERROR-2"
+      L_ERR_MSG = "HTTP request API createRequest call error -> "
+      BEGIN CASE
+         CASE X.RTN.CODE = 1
+            L_ERR_MSG := "Invalid URL (Syntactically)."
+         CASE X.RTN.CODE = 2
+            L_ERR_MSG := "Invalid method (For HTTP 1.0, only GET/POST/HEAD)."
+      END CASE
+      GO B300_EXIT
+   END
+
+   *** Pass Parameters through HTTP Post Request ***
+   * Instead of the fairly standard key=value encoding that most *
+   * client-and-server-side frameworks expect, Web API model     *
+   * binder expects to find the [FromBody] values in the POST    *
+   * body without a key name at all. In other words, instead of  *
+   * key=value, it's looking for =value.                         *
+   *** juntan \/ JUNTAN.77 - 2015/02/27
+   X.POST.DATA = "=":OutData  ;* applicable for POST method only as the input parms
+   *** juntan /\ JUNTAN.77 - 2015/02/27
+
+   *** Submitting a Request ***
+   X.RTN.CODE = submitRequest(X.HANDLE, X.TIMEOUT, X.POST.DATA, X.RESPONSE.HEADERS, X.RESPONSE.DATA, X.HTTP.STATUS)
+   IF X.RTN.CODE # 0 THEN
+      L_ERR_CODE = "B300-ERROR-3"
+      L_ERR_MSG = "HTTP request API submitRequest call error -> "
+      BEGIN CASE
+         CASE X.RTN.CODE = 1
+            L_ERR_MSG := "Invalid request handle."
+         CASE X.RTN.CODE = 2
+            L_ERR_MSG := "Timed out."
+         CASE X.RTN.CODE = 3
+            L_ERR_MSG := "Network Error."
+         CASE X.RTN.CODE = 4
+            L_ERR_MSG := "Other Errors."
+      END CASE
+      GO B300_EXIT
+   END
+
+   *** Check MES Web API call status ***
+   IF X.HTTP.STATUS<1,1> # "200" THEN
+      L_ERR_CODE = X.HTTP.STATUS<1,1>
+      L_ERR_MSG = "HTTP request call error -> ":X.HTTP.STATUS<1,2>
+      GO B300_EXIT
+   END ELSE
+      IF X.RESPONSE.DATA # 0 THEN
+         L_ERR_CODE = X.RESPONSE.DATA
+         L_ERR_MSG = "MES integration process had failed with error code ":X.RESPONSE.DATA:"."
+         GO B300_EXIT
+      END
+   END
+
+B300_EXIT:
+   RETURN
+
+****************************************
+* Exit
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END
+*

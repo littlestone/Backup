@@ -1,0 +1,210 @@
+<?xml version="1.0"?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:refId="Package"
+  DTS:CreationDate="4/6/2016 3:16:48 PM"
+  DTS:CreationName="SSIS.Package.3"
+  DTS:CreatorComputerName="63RJGV1"
+  DTS:CreatorName="CORP\juntan"
+  DTS:DTSID="{5F1A9B3B-33FF-4F84-9519-92083FFA62F0}"
+  DTS:ExecutableType="SSIS.Package.3"
+  DTS:LastModifiedProductVersion="11.0.5583.0"
+  DTS:LocaleID="4105"
+  DTS:ObjectName="PIM_UploadTradeServiceReportPackageByFTP"
+  DTS:PackageType="5"
+  DTS:ProtectionLevel="0"
+  DTS:VersionBuild="3"
+  DTS:VersionGUID="{BABD3955-A2E0-4F3A-A3B9-5A22BFE43A5E}">
+  <DTS:Property
+    DTS:Name="PackageFormatVersion">6</DTS:Property>
+  <DTS:ConnectionManagers>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[FTP Connection Manager]"
+      DTS:CreationName="FTP"
+      DTS:DTSID="{744F73C4-DE11-4DB9-8A99-32A8F2187C3B}"
+      DTS:ObjectName="FTP Connection Manager">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:ConnectionString="168.144.253.11:21">
+          <DTS:FtpConnection
+            DTS:ServerName="168.144.253.11"
+            DTS:ServerUserName="tradeservices">
+            <DTS:Property
+              DTS:Name="ServerPassword"
+              Sensitive="1"></DTS:Property>
+          </DTS:FtpConnection>
+        </DTS:ConnectionManager>
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+  </DTS:ConnectionManagers>
+  <DTS:Variables />
+  <DTS:Executables>
+    <DTS:Executable
+      DTS:refId="Package\Upload Trade Services Report Package (FTP)"
+      DTS:CreationName="STOCK:SEQUENCE"
+      DTS:Description="Sequence Container"
+      DTS:DTSID="{4BE97194-6FE5-4F3D-8FF7-62AB63FC7AC1}"
+      DTS:ExecutableType="STOCK:SEQUENCE"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Upload Trade Services Report Package (FTP)">
+      <DTS:Variables />
+      <DTS:Executables>
+        <DTS:Executable
+          DTS:refId="Package\Upload Trade Services Report Package (FTP)\Delete Local Report Package"
+          DTS:CreationName="Microsoft.SqlServer.Dts.Tasks.FileSystemTask.FileSystemTask, Microsoft.SqlServer.FileSystemTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+          DTS:DelayValidation="True"
+          DTS:Description="File System Task"
+          DTS:DTSID="{A7BC4651-3519-450E-AEC4-0FD73D156A67}"
+          DTS:ExecutableType="Microsoft.SqlServer.Dts.Tasks.FileSystemTask.FileSystemTask, Microsoft.SqlServer.FileSystemTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+          DTS:LocaleID="-1"
+          DTS:ObjectName="Delete Local Report Package"
+          DTS:TaskContact="File System Task;Microsoft Corporation; SQL Server 2012; © 2007 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+          DTS:ThreadHint="0">
+          <DTS:Variables />
+          <DTS:ObjectData>
+            <FileSystemData
+              TaskOperationType="DeleteFile"
+              TaskSourcePath="User::ReportPackageFilePath"
+              TaskIsSourceVariable="True" />
+          </DTS:ObjectData>
+        </DTS:Executable>
+        <DTS:Executable
+          DTS:refId="Package\Upload Trade Services Report Package (FTP)\FTP Delete Old Package"
+          DTS:CreationName="Microsoft.SqlServer.Dts.Tasks.FtpTask.FtpTask, Microsoft.SqlServer.FtpTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+          DTS:Description="FTP Task"
+          DTS:DTSID="{9AE954F4-D232-487B-B606-FB7A036A6A33}"
+          DTS:ExecutableType="Microsoft.SqlServer.Dts.Tasks.FtpTask.FtpTask, Microsoft.SqlServer.FtpTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+          DTS:LocaleID="-1"
+          DTS:ObjectName="FTP Delete Old Package"
+          DTS:TaskContact="FTP Task; Microsoft Corporation; SQL Server 2012; (c) Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+          DTS:ThreadHint="0">
+          <DTS:Variables />
+          <DTS:ObjectData>
+            <FtpData
+              ConnectionName="{744F73C4-DE11-4DB9-8A99-32A8F2187C3B}"
+              TaskOperationType="DeleteRemote"
+              TaskRemotePath="/*.zip" />
+          </DTS:ObjectData>
+        </DTS:Executable>
+        <DTS:Executable
+          DTS:refId="Package\Upload Trade Services Report Package (FTP)\FTP Send New Package"
+          DTS:CreationName="Microsoft.SqlServer.Dts.Tasks.FtpTask.FtpTask, Microsoft.SqlServer.FtpTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+          DTS:DelayValidation="True"
+          DTS:Description="FTP Task"
+          DTS:DTSID="{A7CCDF3B-F6B7-4588-B1E9-ED5608FB0566}"
+          DTS:ExecutableType="Microsoft.SqlServer.Dts.Tasks.FtpTask.FtpTask, Microsoft.SqlServer.FtpTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+          DTS:LocaleID="-1"
+          DTS:ObjectName="FTP Send New Package"
+          DTS:TaskContact="FTP Task; Microsoft Corporation; SQL Server 2012; (c) Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+          DTS:ThreadHint="0">
+          <DTS:Variables />
+          <DTS:PropertyExpression
+            DTS:Name="LocalPath">@[$Package::ReportRootPath] + "\\" + @[User::ReportPackageName]</DTS:PropertyExpression>
+          <DTS:ObjectData>
+            <FtpData
+              ConnectionName="{744F73C4-DE11-4DB9-8A99-32A8F2187C3B}"
+              TaskLocalPath="\\stepapp01\AssetLibrary\Reports\Trade Services\\Package_TradeServices_ 20160406.zip"
+              TaskRemotePath="/"
+              TaskOverwriteDest="True" />
+          </DTS:ObjectData>
+        </DTS:Executable>
+      </DTS:Executables>
+      <DTS:PrecedenceConstraints>
+        <DTS:PrecedenceConstraint
+          DTS:refId="Package\Upload Trade Services Report Package (FTP).PrecedenceConstraints[Constraint]"
+          DTS:CreationName=""
+          DTS:DTSID="{919C7CF2-748E-4D73-A023-DEBF03FDC688}"
+          DTS:From="Package\Upload Trade Services Report Package (FTP)\FTP Delete Old Package"
+          DTS:LogicalAnd="True"
+          DTS:ObjectName="Constraint"
+          DTS:To="Package\Upload Trade Services Report Package (FTP)\FTP Send New Package" />
+        <DTS:PrecedenceConstraint
+          DTS:refId="Package\Upload Trade Services Report Package (FTP).PrecedenceConstraints[Constraint 1]"
+          DTS:CreationName=""
+          DTS:DTSID="{DBD689D8-09E8-464D-9158-F10142ABEF3F}"
+          DTS:From="Package\Upload Trade Services Report Package (FTP)\FTP Send New Package"
+          DTS:LogicalAnd="True"
+          DTS:ObjectName="Constraint 1"
+          DTS:To="Package\Upload Trade Services Report Package (FTP)\Delete Local Report Package" />
+      </DTS:PrecedenceConstraints>
+    </DTS:Executable>
+  </DTS:Executables>
+  <DTS:DesignTimeProperties><![CDATA[<?xml version="1.0"?>
+<!--This CDATA section contains the layout information of the package. The section includes information such as (x,y) coordinates, width, and height.-->
+<!--If you manually edit this section and make a mistake, you can delete it. -->
+<!--The package will still be able to load normally but the previous layout information will be lost and the designer will automatically re-arrange the elements on the design surface.-->
+<Objects
+  Version="sql11">
+  <!--Each node below will contain properties that do not affect runtime behavior.-->
+  <Package
+    design-time-name="Package">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="8" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
+        <NodeLayout
+          Size="214.4,41.6"
+          Id="Package\Upload Trade Services Report Package (FTP)\Delete Local Report Package"
+          TopLeft="41.0571483383373,215.929414411565" />
+        <NodeLayout
+          Size="193.6,41.6"
+          Id="Package\Upload Trade Services Report Package (FTP)\FTP Delete Old Package"
+          TopLeft="44.485719825297,28.8823544233315" />
+        <NodeLayout
+          Size="190.4,41.6"
+          Id="Package\Upload Trade Services Report Package (FTP)\FTP Send New Package"
+          TopLeft="47.3809602041638,115.552943840489" />
+        <EdgeLayout
+          Id="Package\Upload Trade Services Report Package (FTP).PrecedenceConstraints[Constraint]"
+          TopLeft="141.93334001473,70.4823544233315">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,45.0705894171573"
+              Start="0,0"
+              End="0,37.5705894171573">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,37.5705894171573" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+        <EdgeLayout
+          Id="Package\Upload Trade Services Report Package (FTP).PrecedenceConstraints[Constraint 1]"
+          TopLeft="145.419054271251,157.152943840489">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,58.7764705710758"
+              Start="0,0"
+              End="0,51.2764705710758">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,51.2764705710758" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+        <ContainerLayout
+          HeaderHeight="43"
+          IsExpanded="True"
+          PanelSize="276.8,313.6"
+          Size="276.8,356.8"
+          Id="Package\Upload Trade Services Report Package (FTP)"
+          TopLeft="49.1428569579611,23.9058818467348" />
+      </GraphLayout>
+    </LayoutInfo>
+  </Package>
+</Objects>]]></DTS:DesignTimeProperties>
+</DTS:Executable>

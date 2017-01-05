@@ -1,0 +1,220 @@
+  SUBROUTINE SYSS9060.5(ARGS_IN,ARGS_OUT)
+* E-Mail HTML notification to Outlook utility
+*
+*
+* 01 MAY 14 8.2.3 juntan PRJ*SOP381D.11-(Sub #11) SHIP AND DEBIT - PHASE 2
+* 
+* VERSION 8.2.3
+*
+*
+*
+*
+****************************************
+*
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+
+   PROGRAM='SYSS9060.5'
+
+   $INCLUDE IIPLUS.TOP
+   $INCLUDE IIPLUS.TEXTLOAD
+   $INCLUDE IIPLUS.DEBUG
+
+   $INCLUDE AWFORMS.EQUATE
+
+****************************************
+*
+* DESCRIPTION:
+*
+*                 Input Parameter:
+*                    ARGS_IN<1> e-mail message.
+*                    ARGS_IN<2> subject of e-mail.
+*                    ARGS_IN<3> Recipient's email address
+*                    ARGS_IN<4> From email address
+*                    ARGS_IN<5> 1 = HTML format
+*                    ARGS_IN<6> 1 = ATTACH FILE
+*                    ARGS_IN<7.M> ATTCHED FILE(s)
+*                    ARGS_IN<8> CC
+*
+*                 Output Parameter:
+*                    ARGS_OUT<1.M> -> Program Name / Error Code / Error Message if applicable
+*              
+* MODIFICATIONS:
+*
+*              2014/05/01 juntan SOP381D.11 - Initial Creation.
+*
+****************************************
+
+A100_MAIN:
+
+   GOSUB A200_INITIALIZATION
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+   GO A500_CONCLUSION
+
+*
+****************************************
+* VARIABLES INITIALIZATION
+****************************************
+*
+A200_INITIALIZATION:
+
+   MAT AW.ARGS          = ""
+
+   RTN.FLAG             = 0
+   ARGS_OUT             = ""
+   L_ERR_CODE           = ""
+   L_ERR_MSG            = ""
+
+   L_MESSAGE            = ARGS_IN<1>
+   L_SUBJECT            = ARGS_IN<2>
+   L_EMAIL_ADDRESS      = ARGS_IN<3>
+   L_FROM_EMAIL_ADDRESS = ARGS_IN<4>
+   L_HTML_FORMAT        = ARGS_IN<5> 
+   L_ATTACH             = ARGS_IN<6>
+   L_ATTACHMENT         = ARGS_IN<7>
+   L_CC                 = ARGS_IN<8>
+   L_UNIX_PATH          = ""
+   L_ACCOUNT            = ""
+   L_REC                = ""
+   L_JUNK               = ""
+   L_POS                = 0
+   L_CNT                = 0
+   L_TTL                = 0
+
+   IF L_EMAIL_ADDRESS = "" THEN
+      RTN.FLAG = 1
+   END
+
+A200_EXIT:
+   RETURN
+
+*******************************************
+* Open the files needed in this subroutine.
+*******************************************
+A300_OPEN_FILES:
+
+   FILE.ERR = 0
+   OPEN "VOC" TO VOC ELSE FILE.ERR = 1
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-OPEN-FILES-1"
+      L_ERR_MSG = "Open file VOC failed."
+   END
+
+   OPEN "AWFORMSTEMPLATES" TO AWFORMSTEMPLATES ELSE FILE.ERR = 1
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-OPEN-FILES-2"
+      L_ERR_MSG = "Open file AWFORMSTEMPLATES failed."
+   END
+
+A300_EXIT:
+   RETURN     
+
+****************************************
+* 
+****************************************
+A400_MAIN_PROCESS:
+
+   *** Build AWMail Email Command ***
+   EMAIL.COMMAND = "AWMAIL"
+   EMAIL.COMMAND := " -FROM ": L_FROM_EMAIL_ADDRESS
+   SWAP @VM WITH "," IN L_EMAIL_ADDRESS
+   EMAIL.COMMAND := " -TO ":L_EMAIL_ADDRESS
+   IF L_CC # "" THEN
+      SWAP @VM WITH "," IN L_CC 
+      EMAIL.COMMAND := " -CC ":L_CC
+   END
+   EMAIL.COMMAND := " -SUBJECT ":L_SUBJECT
+   EMAIL.COMMAND := " -MESSAGE ":L_MESSAGE
+
+   IF L_HTML_FORMAT THEN
+      EMAIL.COMMAND := " -HTML "
+   END
+
+   IF L_ATTACH = 1 THEN
+      READ L_REC FROM AWFORMSTEMPLATES,"AWFORMS.TABLE" THEN
+         CONVERT CHAR(13) TO "" IN L_REC
+         IF AW.FORMSFILE.NTPATH = '' THEN
+            FINDSTR 'AW.FORMSFILE.NTPATH=' IN L_REC SETTING L_POS THEN
+               AW.FORMSFILE.NTPATH = FIELD(L_REC<L_POS>,'=',2)
+            END
+         END
+
+         READV L_UNIX_PATH FROM VOC, "AWFORMSFILES", 2 THEN
+            L_ACCOUNT = FIELD(L_UNIX_PATH,'/',5)
+            L_UNIX_PATH = AW.FORMSFILE.NTPATH
+            SWAP ":" WITH ":\":L_ACCOUNT IN L_UNIX_PATH
+            EMAIL.COMMAND := "-ATTACH "
+            L_TTL = DCOUNT(L_ATTACHMENT,@VM)
+            FOR L_CNT = 1 TO L_TTL
+               EMAIL.COMMAND := L_UNIX_PATH:L_ATTACHMENT<1,L_CNT>
+               IF L_CNT < L_TTL THEN
+                  EMAIL.COMMAND := ";"
+               END
+            NEXT L_CNT
+         END ELSE
+            L_ERR_CODE = "A400-MAIN-PROCESS-1"
+            L_ERR_MSG = "Unable to read AWFORMSFILES unix path in VOC."
+            GO A400_EXIT
+         END
+      END
+   END
+
+   *** Execute AWMail Email Command *
+   PERFORM EMAIL.COMMAND CAPTURING L_JUNK
+   L_TTL = DCOUNT(L_JUNK, @AM)
+   FOR L_CNT = 1 TO L_TTL
+      IF L_JUNK<L_CNT> = "chmod: 777: No such file or directory" THEN
+         DEL L_JUNK<L_CNT>
+      END
+   NEXT L_CNT
+
+   IF @SYSTEM.RETURN.CODE < 0 OR L_JUNK # "" THEN
+      L_ERR_CODE = "A400-MAIN-PROCESS-1"
+      L_ERR_MSG = L_JUNK
+   END
+
+A400_EXIT:
+   RETURN
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+   IF L_ERR_CODE # "" THEN
+      ARGS_OUT<1> = PROGRAM:@VM:L_ERR_CODE:@VM:L_ERR_MSG
+   END
+
+   RTN.FLAG = 0
+   REFRESH = -2
+
+A500_EXIT:
+   GO 9999
+
+****************************************
+* Exit  
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+  
+END

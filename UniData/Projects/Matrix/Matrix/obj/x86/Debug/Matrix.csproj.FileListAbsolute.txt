@@ -1,0 +1,10 @@
+C:\Users\juntan\Documents\Visual Studio 2010\Projects\Matrix\Matrix\bin\Debug\Matrix.exe
+C:\Users\juntan\Documents\Visual Studio 2010\Projects\Matrix\Matrix\bin\Debug\Matrix.pdb
+C:\Users\juntan\Documents\Visual Studio 2010\Projects\Matrix\Matrix\obj\x86\Debug\ResolveAssemblyReference.cache
+C:\Users\juntan\Documents\Visual Studio 2010\Projects\Matrix\Matrix\obj\x86\Debug\Matrix.exe
+C:\Users\juntan\Documents\Visual Studio 2010\Projects\Matrix\Matrix\obj\x86\Debug\Matrix.pdb
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\Matrix\Matrix\obj\x86\Debug\Matrix.exe
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\Matrix\Matrix\obj\x86\Debug\Matrix.pdb
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\Matrix\Matrix\bin\Debug\Matrix.exe
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\Matrix\Matrix\bin\Debug\Matrix.pdb
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\Matrix\Matrix\obj\x86\Debug\Matrix.csprojResolveAssemblyReference.cache

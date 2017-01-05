@@ -1,0 +1,1 @@
+﻿<%@ ServiceHost Language="C#" Debug="true" Service="K2InfofloService.ShipAndDebit" CodeBehind="ShipAndDebit.svc.cs" %>

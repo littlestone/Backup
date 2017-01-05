@@ -1,0 +1,12 @@
+# -*- mode: snippet -*-
+# name: case block
+# key: bc
+# --
+BEGIN CASE
+   CASE $1
+      $2
+   CASE $3
+      $4
+   CASE $5
+      $0
+END CASE

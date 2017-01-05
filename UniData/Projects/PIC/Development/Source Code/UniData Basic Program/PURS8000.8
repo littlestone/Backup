@@ -1,0 +1,334 @@
+ SUBROUTINE PURS8000.8
+* Determine the SLA and Call the Approval Subroutine.
+* VERSION 8.1.0
+*
+* 22 JUL 13 8.2.3 alital PRJ*ALITAL.416-Fix the Bug with different SLA Approvers.
+* 22 JUL 13 8.2.3 alital PRJ*PUR084D.6-(Sub #6) PURCHASING INTERNAL CONTROL - PHASE 2
+* 27 MAY 13 8.2.3 alital PRJ*PUR083D.12-(Sub #12) PO INTERNAL CONTROLS
+* 22 APR 13 8.2.3 alital PRJ*PUR083D-PO INTERNAL CONTROLS
+* 18 APR 13 8.2.3 alital PRJ*PUR083D.1-(Sub #1) PO INTERNAL CONTROLS
+* 02 APR 13 8.2.3 alital PRJ*PUR083D-PO INTERNAL CONTROLS
+*
+****************************************
+*
+*         INFOFLO Release 8.1
+*
+* Copyright (c) 1996, Interactive Group, Inc.
+*
+*         All Rights Reserved
+*
+*************************************************************************
+* Modifications:
+* =============
+* alital on 07/22/2013 - ALITAL.416
+*        - Fix the Bug where different SLA with Different Levels.
+*          Cumulate Amounts by SLA Key Instead of cumulating by Approver Name.
+* alital on 05/27/2013 - PUR083D.12
+*        - Add the Auto-Approved Flag in PARAM<6>.
+* alital on 04/02/2013 - PUR083D
+*        - Generic Soubroutine to Determine the SLA for each PO Detail Line, then:
+*        - Call the SLA Subroutine to determine the Approver for the Line.
+*
+*        - Once all the Approver's are done for the PO.
+*        - Extract the Approver with the Highest Amount, then
+*        - Call the PO Approval Subroutine by passing the Level and the Approver.
+*
+*************************************************************************
+$INCLUDE IIPLUS.TOP
+PROGRAM='PURS8000.8'
+$INCLUDE IIPLUS.TEXTLOAD
+$INCLUDE IIPLUS.DEBUG
+********
+
+***************************************************************************
+A000_MAIN: 
+     GOSUB A100_OPEN_FILES
+     IF RTN.FLAG THEN
+        GO A100_MAIN_EXIT
+     END
+
+     GOSUB A200_INITIALIZATION
+     IF RTN.FLAG THEN
+        GO A100_MAIN_EXIT
+     END
+
+     GOSUB A300_MAIN_PROCESS
+     IF RTN.FLAG THEN
+        GO A100_MAIN_EXIT
+     END
+
+A100_MAIN_EXIT:
+     GO 9999
+
+*******************************************
+* Open the files needed in this subroutine
+*******************************************
+A100_OPEN_FILES: 
+
+
+     FILE.ERR = 0 ; CALL SB.OPEN.FILE("SYSTBL", SYSTBL,FILE.ERR)
+     IF FILE.ERR THEN RTN.FLAG = 'X' ; GO 9999
+
+     FILE.ERR = 0 ; CALL SB.OPEN.FILE("PODET", PODET,FILE.ERR)
+     IF FILE.ERR THEN RTN.FLAG = 'X' ; GO 9999
+
+     FILE.ERR = 0 ; CALL SB.OPEN.FILE("DEPTMST", DEPTMST,FILE.ERR)
+     IF FILE.ERR THEN RTN.FLAG = 'X' ; GO 9999
+
+     FILE.ERR = 0 ; CALL SB.OPEN.FILE("GLBASE", GLBASE,FILE.ERR)
+     IF FILE.ERR THEN RTN.FLAG = 'X' ; GO 9999
+
+A100_OPEN_FILES_EXIT: 
+
+     RETURN
+
+****************************************
+* Initialization of other variables
+****************************************
+A200_INITIALIZATION:
+
+     RTN.FLAG = 0
+
+     PO_NBR          = PARAM<1>              
+     PO_CLASS        = PARAM<2>              
+     BUYING_GROUP    = PARAM<3>         ;* User Buying Group
+     PO_WHSE         = PARAM<4>         ;* PO Whse
+     PO_LEVEL        = PARAM<5>                  
+     PO_LINES        = PARAM<6>         ;* List of PO Detail Lines.    
+     APPROVER_MATRIX = ""               ;* Level, Approver Name, From and To Amounts, Bypass Flag
+     PO_TOT_AMOUNT   = 0                ;* PO Total Balance Amount  
+     BALANCE_AMTS    = ""               ;* Lines Balance Amounts Array
+
+A200_INITIALIZATION_EXIT: 
+     RETURN
+
+
+*************************************************************************
+* - Determine the SLA for Each PO Detail Line and Call SLA Subroutine.  *
+*************************************************************************
+A300_MAIN_PROCESS: 
+
+     APPROVER_MATRIX<1> = ""            ;* Approver Name
+     APPROVER_MATRIX<2> = ""            ;* Approver Amount
+     APPROVER_MATRIX<3> = ""            ;* Approver From-Amount
+     APPROVER_MATRIX<4> = ""            ;* Approver To-Amount
+     APPROVER_MATRIX<5> = ""            ;* Complete Flag
+     APPROVER_MATRIX<6> = ""            ;* SLA Key
+*
+*** Determine the Approver for each PO Detail line.
+*
+     CPT          = 0
+     MAX_PO_LINES = 0
+     MAX_PO_LINES = DCOUNT(PO_LINES,VM)     ;* Max number of PO Lines.
+     BALANCE_AMTS = 0                       ;* Lines Balance Amounts
+     LINE_BAL_AMT = 0
+*
+*** Cumulate the PO Total Balance Amount before calling the SLA Subroutine for each line
+*
+     FOR CPT = 1 TO MAX_PO_LINES
+         LINE_BAL_AMT = 0                   ;* Line Balance Amount
+         PODET_KEY    = PO_LINES<1,CPT>     ;* PODET Line.
+         PODET_REC    = ""
+         READ PODET_REC FROM PODET,PODET_KEY ELSE PODET_REC = ""
+         IF PODET_REC # "" THEN
+            MAX_DEL  = 0
+            CNTR     = 0
+            MAX_DEL  = DCOUNT(PODET_REC<12>,VM)       ;* Maximum Deliveries for the line
+            FOR CNTR = 1 TO MAX_DEL
+                IF PODET_REC<12,CNTR> # 0 THEN
+                   LINE_BAL_AMT = LINE_BAL_AMT + (PODET_REC<12,CNTR>*OCONV(PODET_REC<13,CNTR>,'MD5'))
+                END
+            NEXT CNTR
+            LINE_BAL_AMT = ICONV(LINE_BAL_AMT,"MD2")
+         END
+         BALANCE_AMTS<1,CPT> = LINE_BAL_AMT                    ;* Add Line Balance Amount to the Array
+         PO_TOT_AMOUNT = PO_TOT_AMOUNT + LINE_BAL_AMT          ;* Cumulate the PO Total Balance Amount
+     NEXT CPT
+
+*
+*** Call the SLA Subroutine for each PO Lines
+*
+     RTN.FLAG = 0
+     FOR CPT = 1 TO MAX_PO_LINES
+         GOSUB A310_CALL_SLA_SUBROUTINE
+         IF RTN.FLAG THEN
+            CPT = MAX_PO_LINES +1
+         END
+     NEXT CPT
+*
+*** Determine the Final Approver Name 
+*
+
+     CPT                 = 0
+     MAX_APPROVERS       = 0
+     FINAL_APPROVER      = ""
+     FINAL_AMOUNT        = 0
+     FINAL_FROM_AMT      = 0          ;* Approver From-Amount
+     FINAL_TO_AMT        = 0          ;* Approver To-Amount
+     FINAL_COMPLETE_FLAG = 0          ;* Approver Complete Flag
+     FINAL_AUTO_APPROVED = 0          ;* Auto-Approved Flag
+     FINAL_SLA_KEY       = ""         ;* Approver SLA Key
+
+     MAX_APPROVERS  = DCOUNT(APPROVER_MATRIX<1>,VM)     ;* Max number of PO Lines.
+     FOR CPT = 1 TO MAX_APPROVERS
+         IF APPROVER_MATRIX<2,CPT> = 0  THEN   ;* Line Amount
+            APPROVER_MATRIX<2,CPT> = 001       ;* When the Line Amount is zero, put it to $0.01
+         END
+         IF APPROVER_MATRIX<2,CPT> > FINAL_AMOUNT  THEN     ;* Take the Approver with the Biggest Cumulated Amount
+            FINAL_APPROVER      = APPROVER_MATRIX<1,CPT>        ;* Approver Name
+            FINAL_AMOUNT        = APPROVER_MATRIX<2,CPT>        ;* Line Amount
+            FINAL_FROM_AMT      = APPROVER_MATRIX<3,CPT>        ;* Approver From-Amt
+            FINAL_TO_AMT        = APPROVER_MATRIX<4,CPT>        ;* Approver To-Amt
+            FINAL_COMPLETE_FLAG = APPROVER_MATRIX<5,CPT>        ;* Approver Complete Flag
+            FINAL_SLA_KEY       = APPROVER_MATRIX<6,CPT>        ;* Approver SLA Matrix
+            FINAL_AUTO_APPROVED = APPROVER_MATRIX<7,CPT>        ;* Auto-Approved Flag
+         END
+     NEXT CPT
+*
+***  Send the PO for Approval
+*
+     PARAM       = ""
+     PARAM<1>    = FINAL_APPROVER        ;* Approver Name to wich the PO will be sent
+     PARAM<2>    = FINAL_FROM_AMT        
+     PARAM<3>    = FINAL_TO_AMT
+     IF MAX_APPROVERS > 0 THEN
+        PARAM<4> = FINAL_COMPLETE_FLAG   ;* Approver Complete Flag
+        PARAM<6> = AUTO_APPROVED         ;* Auto-Approved Flag
+     END ELSE
+        PARAM<4> = COMPLETE_FLAG         ;* Complete Flag returned by PURS8000.6
+        PARAM<6> = FINAL_AUTO_APPROVED   ;* Auto-Approved Flag
+     END
+     PARAM<5>    = FINAL_SLA_KEY         ;* Approver SLA Key
+
+A300_MAIN_PROCESS_EXIT: 
+     RETURN
+
+******************************************************************************
+* - For Each PO Line, Call the SLA Subroutine wich will return the Approver, *
+*   the Fom Amount, the To-Amount and the SLA Bypass Flag.                   *
+******************************************************************************
+A310_CALL_SLA_SUBROUTINE:
+
+     PARAM           = ""         ;* Prameters to Send to determine the SLA
+     APPROVER        = ""         ;* Returned Approver for the line
+     CHARGE_CODE     = ""         ;* Line Item Charge Code
+     GL_ACCT         = ""         ;* Line G/L Account
+     LINE_WHSE       = ""
+     LINE_BASE       = ""
+     LINE_DEPT       = ""
+     LINE_DEPT_GROUP = ""
+     LINE_DGT        = ""
+     COMPLETE_FLAG   = ""          ;* Complete_Flag  
+     AUTO_APPROVED   = ""          ;* Auto_Approved Flag  
+     SLA_KEY         = ""          ;* SLA Key
+
+     LINE_BAL_AMT  = 0                      ;* Line Balance Amount
+     LINE_BAL_AMT  = BALANCE_AMTS<1,CPT>    ;* Line Balance Amount
+     PODET_KEY     = PO_LINES<1,CPT>     ;* PODET Line.
+     PODET_REC     = ""
+     READ PODET_REC FROM PODET,PODET_KEY ELSE PODET_REC = ""
+     IF PODET_REC # "" THEN
+        CHARGE_CODE = PODET_REC<52>
+        GL_ACCT     = PODET_REC<44>
+        BEGIN CASE
+          CASE CHARGE_CODE = "P"                    ;* Product PO Line
+             PARAM<1>  = PO_CLASS
+             PARAM<2>  = BUYING_GROUP
+             PARAM<3>  = PO_WHSE
+             PARAM<8>  = PO_TOT_AMOUNT
+             PARAM<9>  = PO_LEVEL
+             PARAM<20> = PO_NBR
+             LINE_WHSE = PO_WHSE         ;* By default Line Whse = PO Whse
+          CASE  CHARGE_CODE = "G"                      ;* G/L account
+             LINE_WHSE    = FIELD(GL_ACCT,".",3)
+             LINE_BASE    = FIELD(GL_ACCT,".",4)
+             LINE_DEPT    = FIELD(GL_ACCT,".",5)
+             DEPTMST_REC  = ""
+             READ DEPTMST_REC FROM DEPTMST,LINE_DEPT ELSE DEPTMST_REC = ""
+             LINE_DEPT_GROUP = DEPTMST_REC<5>
+             GLBASE_REC   = ""
+             READ GLBASE_REC FROM GLBASE,LINE_BASE ELSE GLBASE_REC = ""
+             LINE_DGT     = GLBASE_REC<13>
+
+             PARAM<1>  = PO_CLASS
+             PARAM<2>  = BUYING_GROUP
+             PARAM<3>  = LINE_WHSE
+             PARAM<4>  = LINE_DEPT_GROUP
+             PARAM<5>  = LINE_DEPT
+             PARAM<6>  = LINE_DGT
+             PARAM<7>  = LINE_BASE
+             PARAM<8>  = PO_TOT_AMOUNT
+             PARAM<9>  = PO_LEVEL
+             PARAM<20> = PO_NBR
+          CASE 1
+             PARAM<1>  = PO_CLASS
+             PARAM<2>  = BUYING_GROUP
+             PARAM<3>  = PO_WHSE
+             PARAM<8>  = PO_TOT_AMOUNT
+             PARAM<9>  = PO_LEVEL
+             PARAM<20> = PO_NBR
+        END CASE
+        CALL PURS8000.6    ;* Call the SLA Subroutine
+        APPROVER      = PARAM<10>          ;* Returned Approver
+        FROM_AMOUNT   = PARAM<11>            
+        TO_AMOUNT     = PARAM<12>            
+        BYPASS_FLAG   = PARAM<13>          ;* SLA Bypass Flag
+        COMPLETE_FLAG = PARAM<15>          ;* Complete_Flag  
+        SLA_KEY       = PARAM<16>          ;* SLA Key
+        AUTO_APPROVED = PARAM<21>          ;* Auto-Approved Flag  
+     END
+
+     IF BYPASS_FLAG = "1" THEN            ;* the SLA Bypass Flag is On, Bypass this line
+        GO A310_CALL_SLA_SUBROUTINE_EXIT
+     END
+     IF APPROVER = "" THEN                   ;* No Approver Found, Donot continue
+        IF COMPLETE_FLAG # 1 THEN                  ;* Not Completed
+           IF @LOGNAME # "webusr" THEN                  ;* Not Completed
+              CALL SB.PROCESS('SYS0061,IP2744\':PO_LEVEL)         ;* No Level \ Approver found for the SLA, PO cannot be sent for Approval.
+           END
+           RTN.FLAG      = "1"
+        END
+*** alital on 07/22/2013 - ALITAL.416\/Cumulate Amounts even if the Approver is Null
+*        GO A310_CALL_SLA_SUBROUTINE_EXIT
+*** alital on 07/22/2013 - ALITAL.416/\
+     END
+
+*** alital on 07/22/2013 - ALITAL.416\/Cumulate Amounts by SLA even if the Approver is Null
+*     IF APPROVER # ""  THEN         ;* if the Approver exist and the SLA Bypass Flag is Off
+*        FOUND          = 0
+*        WHERE          = 0
+*        CALL IILOC(APPROVER,APPROVER_MATRIX<1>,1,0,FOUND,WHERE,",")          ;* Locate the Position of the Approver in the Matrix
+        FOUND          = 0
+        WHERE          = 0
+        CALL IILOC(SLA_KEY,APPROVER_MATRIX<6>,1,0,FOUND,WHERE,",")          ;* Locate the Position of the Approver in the Matrix
+*** alital on 07/22/2013 - ALITAL.416/\
+*
+        IF FOUND THEN
+           APPROVER_MATRIX<2,WHERE> = APPROVER_MATRIX<2,WHERE> + LINE_BAL_AMT   ;* Cumulate the Line Amounts
+        END ELSE
+           APPROVER_MATRIX<1,WHERE> = APPROVER
+           APPROVER_MATRIX<2,WHERE> = LINE_BAL_AMT     ;* Line Balance Amount
+           APPROVER_MATRIX<3,WHERE> = FROM_AMOUNT      ;* SLA From Amount
+           APPROVER_MATRIX<4,WHERE> = TO_AMOUNT        ;* SLA To-Amount
+           APPROVER_MATRIX<5,WHERE> = COMPLETE_FLAG    ;* SLA Complete Flag
+           APPROVER_MATRIX<6,WHERE> = SLA_KEY          ;* SLA Key
+           APPROVER_MATRIX<7,WHERE> = AUTO_APPROVED    ;* Auto-Approved Flag
+        END
+*** alital on 07/22/2013 - ALITAL.416\/Cumulate Amounts even if the Approver is Null
+*     END
+*** alital on 07/22/2013 - ALITAL.416/\
+
+A310_CALL_SLA_SUBROUTINE_EXIT:
+     RETURN
+
+
+****************************************
+* Exit Routine
+****************************************
+     $INCLUDE IIPLUS.BOTTOM
+     END
+
+
+*
+*
+*

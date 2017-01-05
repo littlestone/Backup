@@ -1,0 +1,885 @@
+SUBROUTINE ARMS4002.36
+* Upload AR Check Batch from Excel File through DDE
+* VERSION 8.2.3
+*
+* 11 SEP 14 8.2.3 juntan PRJ*JUNTAN.70-AR cash auto upload business rule adjustment.
+* 20 AUG 14 8.2.3 juntan PRJ*JUNTAN.68-Adjust logic for short payment rule# 4 in the program A
+* 10 SEP 13 8.2.3 juntan PRJ*ARM157D.1-(Sub #1) AUTO CASH APPLICATION OF EMCO PAYMENT
+* 19 NOV 12 8.2.3 juntan PRJ*ARM157D-AUTO CASH APPLICATION OF EMCO PAYMENT
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+     $INCLUDE IIPLUS.TOP
+     PROGRAM='ARMS4002.36'
+     $INCLUDE IIPLUS.TEXTLOAD
+     $INCLUDE IIPLUS.DEBUG
+
+     $INCLUDE TUBP TU.API.H
+     $INCLUDE TUBP ROC.H
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ===========
+*              This program is used to auto load A/R check batch from
+*              source excel file (By Reference Worksheet).
+*
+* MODIFICATIONS:
+* =============
+*              2014/09/11 juttan JUNTAN.70 - Combine discount amount for duplicate
+*                                            invoice for rule #8 instead of
+*                                            populate each one separately.
+*              2014/08/20 juntan JUNTAN.68 - Adjust logic for Rule# 4 to
+*                                            handle the scenario when discount
+*                                            amount equals to 0.
+*              2013/09/03 juntan ARM157D.1 - Enhancement for project ARM157D.
+*              2011/02/10 juntan ARM157D - Initial Creation.
+*
+**************************************************************************
+
+A100_MAIN: 
+
+   GOSUB A200_INITIALIZATION
+   IF L_RTN_FLAG # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF L_RTN_FLAG # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF L_RTN_FLAG # "" THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT: 
+   GO A500_CONCLUSION
+
+
+****************************************
+* Definition of local variables & initialization of other variables.
+****************************************
+A200_INITIALIZATION: 
+
+   WORK<76>                 = "Y"  ;* set upload flag to disable the screen process ARMP4002.PS3 to genrate Disc Amt
+   RTN.FLAG                 = 0
+   STATUS                   = 0
+   HEXCEL                   = ''
+   APPLICATION              = ''
+   TOPIC                    = ''
+   L_SYSTEM_TOPICS          = ''
+   L_QUERY                  = ''
+   L_JUNK                   = ''
+   L_DONE                   = 0
+   L_OPEN_EXCEL_FLAG        = 0
+   L_RF                     = ''    ;* excel row reference
+   L_TOT                    = 3
+   L_WS_NAME                = 'By Reference'  ;* excel worksheet name
+   L_CELL_RANGE             = ''
+   L_MAX_ROWS               = 50   ;* due to unidata U_MAXDATA limit (500)
+
+   L_DATA_BLOCK             = ''
+   L_SAVE_DATA_BLOCK        = ''
+   L_TOTAL_LINES            = 0
+   L_NUM_OF_LINES_LOADED    = 0
+   L_REF_NUM                = ''
+   L_ACCT_NUM               = ''
+   L_GROSS_AMT              = ''
+   L_STATUS_MSG_LIST        = ''
+   L_REF_NUM_LIST           = ''  ;* reference number list retrieved from By Reference worksheet
+   L_GROSS_AMT_LIST         = ''  ;* gross amount list retrieved from By Reference worksheet
+   L_ACCT_NUM_LIST          = ''  ;* account number list retrieved from By Reference worksheet
+   L_GOOD_REF_NUM_LIST      = ''
+   L_GOOD_GROSS_AMT_LIST    = ''
+   L_GOOD_USR_DISC_AMT_LIST = ''
+   L_REP_REF_NUM_LIST       = ''
+   L_REP_GROSS_AMT_LIST     = ''
+   L_REP_USR_DISC_AMT_LIST  = ''
+   L_RTN_FLAG               = ''
+   L_ARIV_KEY               = ''
+   L_ARIV_REC               = ''
+   L_CUSTMST_KEY            = '' 
+   L_CUSTMST_REC            = ''
+   L_CUSTACT_KEY            = ''
+   L_CUSTACT_REC            = ''
+   L_CUST_GRP               = '' 
+   L_CUST_GRP_CODE          = ''
+   L_CUST_GRP_NAME          = ''
+   L_AR_AMT                 = ''
+   L_USR_DISC_AMT           = ''
+   L_INFOFLO_DISC_AMT       = ''
+   L_DED_AMT                = ''
+   L_AR_AMT_LIST            = ''
+   L_DISC_AMT_LIST          = ''
+   L_USR_DISC_AMT_LIST      = ''
+   L_DED_AMT_LIST           = ''
+   L_R2348_AMT              = ''
+   L_R56_AMT                = ''
+   L_R2348_AMT_LIST         = ''
+   L_R56_AMT_LIST           = ''
+   L_RULE_CODE_LIST         = ''
+   L_RULE_MSG_LIST          = ''
+   L_MATCHED_RULE           = ''
+   L_BOL_NBR                = ''
+   L_ORD_NBR                = ''
+   L_CSH_DISC_DT            = ''
+   L_ARIV_TYPE              = ''
+   L_KEY                    = ''
+   L_REC                    = ''
+   L_SAVE_PARAM             = ''
+   L_VALIDATION_FAILED      = 0
+   L_INC                    = 0
+   L_CNT                    = 0
+   L_CNT2                   = 0
+   L_POS                    = 0
+
+A200_EXIT: 
+   RETURN
+
+
+****************************************
+* Open the files needed in this subroutine.
+****************************************
+A300_OPEN_FILES:
+
+   CALL SB.OPEN.FILE("ARIV",ARIV,FILE.ERR)
+   IF FILE.ERR THEN
+      CALL SB.PROCESS("SYS0061,IP2564\":"ARIV")
+      L_RTN_FLAG = "Q"
+      GO A300_EXIT
+   END
+
+
+   CALL SB.OPEN.FILE("ARIVXRF",ARIVXRF,FILE.ERR)
+   IF FILE.ERR THEN
+      CALL SB.PROCESS("SYS0061,IP2564\":"ARIVXRF")
+      L_RTN_FLAG = "Q"
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("CUSTMST",CUSTMST,FILE.ERR)
+   IF FILE.ERR THEN
+      CALL SB.PROCESS("SYS0061,IP2564\":"CUSTMST")
+      L_RTN_FLAG = "Q"
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("CUSTACT",CUSTACT,FILE.ERR)
+   IF FILE.ERR THEN
+      CALL SB.PROCESS("SYS0061,IP2564\":"CUSTACT")
+      L_RTN_FLAG = "Q"
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("ICEHDRHST",ICEHDRHST,FILE.ERR)
+   IF FILE.ERR THEN
+      CALL SB.PROCESS("SYS0061,IP2564\":"ICEHDRHST")
+      L_RTN_FLAG = "Q"
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("SHIPLADING",SHIPLADING,FILE.ERR)
+   IF FILE.ERR THEN
+      CALL SB.PROCESS("SYS0061,IP2564\":"SHIPLADING")
+      L_RTN_FLAG = "Q"
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("SYSTBL",SYSTBL,FILE.ERR)
+   IF FILE.ERR THEN
+      CALL SB.PROCESS("SYS0061,IP2564\":"SYSTBL")
+      L_RTN_FLAG = "Q"
+      GO A300_EXIT
+   END
+
+A300_EXIT: 
+   RETURN
+
+
+****************************************
+* Main process structural logic 
+****************************************
+A400_MAIN_PROCESS:
+
+   GOSUB B100_DDE_CONNECTION_BY_REF_WS
+   IF L_RTN_FLAG # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B200_READ_BY_REF_WS
+   IF L_RTN_FLAG # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B300_DATA_VALIDATION_BY_REF_WS
+   IF L_RTN_FLAG # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B400_LOAD_DATA_BY_REF_WS
+   IF L_RTN_FLAG # "" THEN
+      GO A400_EXIT
+   END
+
+A400_EXIT: 
+   RETURN
+
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION: 
+
+   IF L_RTN_FLAG # "" THEN
+      BEGIN CASE
+         CASE L_RTN_FLAG = "Q"
+            CALL SB.DISP(9, "Error occurred, program aborted.")
+         CASE L_RTN_FLAG = "A"
+            CALL SB.DISP(3, "Please open your Excel document first before starting the upload process.")
+            CALL SB.DISP(9, "Please open your Excel document first before starting the upload process.")
+         CASE L_RTN_FLAG = "C"
+            CALL SB.DISP(9, "Upload process is cancelled by the user.")
+         CASE L_RTN_FLAG = "E"
+            CALL SB.DISP(3, "No check record found on the By Reference worksheet.")
+            CALL SB.DISP(9, "No check record found on the By Reference worksheet.")
+         CASE L_RTN_FLAG = "AA"
+            CALL SB.DISP(3, "Reference # ":L_REF_NUM:" already entered on screen line ":L_POS:", program aborted.")
+            CALL SB.DISP(9, "Reference # ":L_REF_NUM:" already entered on screen line ":L_POS:", program aborted.")
+         CASE L_RTN_FLAG = "LE"
+            CALL SB.DISP(3, "Plase make sure the mouse cursor is on the last empty line, program aborted.")
+            CALL SB.DISP(9, "Plase make sure the mouse cursor is on the last empty line, program aborted.")
+         CASE L_RTN_FLAG = "F"
+            CALL SB.DISP(3, "Error found on your excel file, please verify it.")
+            CALL SB.DISP(9, "Error found on your excel file, please verify it.")
+            RTN.FLAG = 0
+      END CASE
+      WORK<76> = ""  ;* re-set upload flag to allow the screen process ARMP4002.PS3 to genrate Disc Amt
+      RTN.FLAG = 0
+   END
+
+A500_EXIT: 
+   REFRESH = -2
+   GO 9999
+
+
+****************************************
+* Establish DDE connection to By Reference worksheet
+****************************************
+B100_DDE_CONNECTION_BY_REF_WS:
+
+   *** Check Opened Excel Document ***
+   CALL SB.DISP(9, "Verifying opened excel")
+   CALL TU.DDE.CONNECT('EXCEL', 'System', HEXCEL, RTN.FLAG)
+   IF RTN.FLAG THEN
+      *** Excel process do not exists ***
+      L_RTN_FLAG = "A"
+      GO B100_EXIT
+   END ELSE
+      CALL TU.DDE.READ(HEXCEL, 'Topics', 10, L_SYSTEM_TOPICS, RTN.FLAG)
+      IF RTN.FLAG THEN
+         CALL SB.PROCESS("SYS0061,IP2566\":"System Topics")
+         L_RTN_FLAG = "Q"
+         GO B100_EXIT
+      END
+      SWAP CHAR(9) WITH @VM IN L_SYSTEM_TOPICS
+      FOR L_INC = 1 TO DCOUNT(L_SYSTEM_TOPICS,@VM)
+         IF INDEX(FIELD(L_SYSTEM_TOPICS,@VM,L_INC,1),L_WS_NAME,1) THEN
+            TOPIC = FIELD(L_SYSTEM_TOPICS,@VM,L_INC,1)
+            EXIT
+         END ELSE
+            TOPIC = ''
+         END
+      NEXT L_INC
+   END
+
+   *** Excel Worksheet Name Could Not Be Found ***
+   IF TOPIC = '' THEN
+      CALL SB.PROCESS("SYS0061,IP2664\":L_WS_NAME)
+      L_RTN_FLAG = "Q"
+      GO B100_EXIT
+   END
+
+   *** Establish DDE Connection between Excel and SBClient ***
+   CALL SB.DISP(9, "Establishing DDE connection")
+   CALL TU.DDE.CONNECT('EXCEL', TOPIC, HEXCEL, RTN.FLAG)
+   IF RTN.FLAG THEN
+      CALL SB.PROCESS("SYS0061,IP2568")
+      L_RTN_FLAG = "Q"
+      GO B100_EXIT
+   END
+
+   *** Verify System Language ***
+   CALL SB.DISP(9, "Verifying System Language":@AM:0:@AM:L_TOT)
+   CALL TU.DDE.READ(HEXCEL, 'R1C1..R1C1', 10, L_HEADER, RTN.FLAG)
+   IF RTN.FLAG THEN
+      CALL TU.DDE.READ(HEXCEL, 'L1C1..L1C1', 10, L_HEADER, RTN.FLAG)
+      IF RTN.FLAG THEN
+         CALL SB.PROCESS("SYS0061,IP2566\":"System Language")
+         L_RTN_FLAG = "Q"
+         GO B100_EXIT
+      END
+      L_RF = 'L'    ;* French environment
+   END ELSE
+      L_RF = 'R'    ;* English environment
+   END
+
+B100_EXIT:
+   RETURN
+
+
+****************************************
+* Read data from By Reference worksheet.
+****************************************
+B200_READ_BY_REF_WS:
+
+   *** Read Reference Number ***
+   CALL SB.DISP(9, "By Reference -> Loading Reference Number":@AM:1:@AM:L_TOT)
+   CALL TU.DDE.READ(HEXCEL, L_RF:"2C1..":L_RF:L_MAX_ROWS+1:"C1", 10, L_REF_NUM_LIST, RTN.FLAG)
+   IF RTN.FLAG THEN
+      CALL SB.PROCESS("SYS0061,IP2566\":"Reference Number")
+      L_RTN_FLAG = "Q"
+      GO B200_EXIT
+   END
+   L_REF_NUM_LIST = TRIM(L_REF_NUM_LIST,CHAR(32),'A') ;* trim all spaces
+
+   *** Read Cash App Amount ***
+   CALL SB.DISP(9, "By Reference -> Loading Cash App Amount":@AM:2:@AM:L_TOT)
+   CALL TU.DDE.READ(HEXCEL, L_RF:"2C2..":L_RF:L_MAX_ROWS+1:"C2", 10, L_GROSS_AMT_LIST, RTN.FLAG)
+   IF RTN.FLAG THEN
+      CALL SB.PROCESS("SYS0061,IP2566\":"Cash App Amount")
+      L_RTN_FLAG = "Q"
+      GO B200_EXIT
+   END
+   L_GROSS_AMT_LIST = TRIM(L_GROSS_AMT_LIST,CHAR(32),'A') ;* trim all spaces
+   L_GROSS_AMT_LIST = TRIM(L_GROSS_AMT_LIST,CHAR(36),'A') ;* trim all $ signs
+   L_GROSS_AMT_LIST = TRIM(L_GROSS_AMT_LIST,CHAR(44),'A') ;* trim all commas
+
+   *** Read Discount Amount ***
+   CALL SB.DISP(9, "By Reference -> Loading Discount Amount":@AM:3:@AM:L_TOT)
+   CALL TU.DDE.READ(HEXCEL, L_RF:"2C3..":L_RF:L_MAX_ROWS+1:"C3", 10, L_USR_DISC_AMT_LIST, RTN.FLAG)
+   IF RTN.FLAG THEN
+      CALL SB.PROCESS("SYS0061,IP2566\":"Discount Amount")
+      L_RTN_FLAG = "Q"
+      GO B200_EXIT
+   END
+   L_USR_DISC_AMT_LIST = TRIM(L_USR_DISC_AMT_LIST,CHAR(32),'A') ;* trim all spaces
+   L_USR_DISC_AMT_LIST = TRIM(L_USR_DISC_AMT_LIST,CHAR(36),'A') ;* trim all $ signs
+   L_USR_DISC_AMT_LIST = TRIM(L_USR_DISC_AMT_LIST,CHAR(44),'A') ;* trim all commas
+
+B200_EXIT:
+   RETURN
+
+
+****************************************
+* By Reference worksheet data validation  
+****************************************
+B300_DATA_VALIDATION_BY_REF_WS:
+
+   *** First Pass for Verifing Check Data ***
+   L_TOTAL_LINES = DCOUNT(L_REF_NUM_LIST,@VM)
+   IF L_TOTAL_LINES > L_MAX_ROWS THEN
+      L_TOTAL_LINES = L_MAX_ROWS
+   END
+   FOR L_INC = 1 TO L_TOTAL_LINES
+      *** Display Progress Bar ***
+      IF L_TOTAL_LINES > 50 THEN
+         IF NOT(MOD(L_INC,50)) THEN
+            CALL SB.DISP(9, "By Reference -> validating check data, please wait":@AM:L_INC:@AM:L_TOTAL_LINES)
+         END
+      END ELSE
+         CALL SB.DISP(9, "By Reference -> validating check data, please wait":@AM:L_INC:@AM:L_TOTAL_LINES)
+      END
+
+      *** Quit if not on the last empty line ***
+      IF WORK<14,CNT> # "" THEN
+         L_RTN_FLAG = "LE"
+         GO B300_EXIT
+      END
+
+      *** Parse Check Data for per line record ***
+      L_REF_NUM = TRIM(L_REF_NUM_LIST<1,L_INC>)
+      L_GROSS_AMT = TRIM(L_GROSS_AMT_LIST<1,L_INC>)
+      L_USR_DISC_AMT = TRIM(L_USR_DISC_AMT_LIST<1,L_INC>)
+
+      *** Quit if either reference # or Cash App amount is empty ***
+      IF L_REF_NUM = "" AND L_GROSS_AMT = "" THEN
+         L_TOTAL_LINES = L_INC - 1
+         EXIT ;* EOF
+      END
+
+      *** Stop if Reference # already entered on screen ***
+      LOCATE L_REF_NUM IN WORK<14> SETTING L_POS THEN
+         L_RTN_FLAG = "AA"
+         GO B300_EXIT
+      END
+
+      *** Reference # must be valid ***
+      READ L_REC FROM ARIVXRF,L_REF_NUM ELSE L_REC = ""
+      L_ACCT_NUM = FIELD(L_REC<1>,'*',2,1)
+      L_ACCT_NUM_LIST<1,L_INC> = L_ACCT_NUM
+      IF L_REC = "" THEN
+         L_VALIDATION_FAILED = 1
+         L_STATUS_MSG_LIST<1,L_INC> = "Invalid reference #."
+         *** Build Data Block for Writing to Excel - Delimited by Comma ***
+         L_DATA_BLOCK<L_INC> = ',':',':',':',':',':',':',':',':L_STATUS_MSG_LIST<1,L_INC>
+         CONTINUE
+      END
+
+      *** Reference # must match the given customer account # ***
+      L_ARIV_KEY = WORK<1>:"*":L_ACCT_NUM:"*":L_REF_NUM
+      READ L_ARIV_REC FROM ARIV,L_ARIV_KEY ELSE L_ARIV_REC = ""
+      IF L_ARIV_REC = "" THEN
+         L_VALIDATION_FAILED = 1
+         L_STATUS_MSG_LIST<1,L_INC> = "Reference # does not match the given account."
+         *** Build Data Block for Writing to Excel - Delimited by Comma ***
+         L_DATA_BLOCK<L_INC> = ',':',':',':',':',':',':',':',':L_STATUS_MSG_LIST<1,L_INC>
+         CONTINUE
+      END
+
+      *** Reference # is not already paid on another batch ***
+      L_CUSTACT_KEY = WORK<1>:"*":L_ACCT_NUM
+      READ L_CUSTACT_REC FROM CUSTACT,L_CUSTACT_KEY ELSE L_REC = ""
+      IF L_REC = "" THEN
+         CALL SB.PROCESS("Error occurred while reading CUSTACT file.")
+         L_RTN_FLAG = "Q"
+         GO B300_EXIT
+      END ELSE
+         LOCATE L_REF_NUM IN L_CUSTACT_REC<2> SETTING L_POS THEN
+            IF L_CUSTACT_REC<31,L_POS> # "" AND L_CUSTACT_REC<31,L_POS> # WORK<2> THEN
+               L_VALIDATION_FAILED = 1
+               L_STATUS_MSG_LIST<1,L_INC> = "Reference # already paid on batch ":L_CUSTACT_REC<31,L_POS>:"."
+               *** Build Data Block for Writing to Excel - Delimited by Comma ***
+               L_DATA_BLOCK<L_INC> = ',':',':',':',':',':',':',':',':L_STATUS_MSG_LIST<1,L_INC>
+               CONTINUE
+            END
+         END
+      END
+
+      *** Check for duplicate reference number - first pass ***
+      LOCATE L_REF_NUM IN L_GOOD_REF_NUM_LIST<1> SETTING L_POS THEN
+         L_REP_REF_NUM_LIST<1,L_POS> = L_REF_NUM
+         L_RULE_CODE_LIST<1,L_INC> = "Ra"
+         L_RULE_MSG_LIST<1,L_INC> = "Rule (a)"
+         L_STATUS_MSG_LIST<1,L_INC> = "Duplicate reference # - cash/disc amount will be accumulated."
+      END ELSE
+         L_CNT2 += 1
+         L_GOOD_REF_NUM_LIST<1,L_CNT2> = L_REF_NUM
+      END
+
+      *** Passed validation and ok to upload ***
+      L_STATUS_MSG_LIST<1,L_INC> = "Ok to upload."
+
+      *** Build Data Block for Writing to Excel - Delimited by Comma ***
+      L_DATA_BLOCK<L_INC> = ',':',':',':',':',':',':',':L_RULE_MSG_LIST<1,L_INC>:',':L_STATUS_MSG_LIST<1,L_INC>
+   NEXT L_INC
+
+   *** Write First Pass Result to Excel ***
+   L_SAVE_DATA_BLOCK = L_DATA_BLOCK  ;* TU.DDE.WRITE will change data structure of the original data block
+   SWAP @FM WITH CHAR(10) IN L_DATA_BLOCK   ;* new line character for Excel
+   L_CELL_RANGE = L_RF:"2C4..":L_RF:L_TOTAL_LINES+1:"C12"
+   CALL TU.DDE.WRITE(HEXCEL, L_CELL_RANGE, 10, L_DATA_BLOCK, RTN.FLAG)
+   IF RTN.FLAG THEN
+      CALL SB.PROCESS("Error occurred while writing error message to Excel.")
+      L_RTN_FLAG = "Q"
+      GO B300_EXIT
+   END
+   L_DATA_BLOCK = L_SAVE_DATA_BLOCK         ;* restore original data block structure after the TU.DDE.WRITE call
+
+   IF L_VALIDATION_FAILED THEN
+      L_RTN_FLAG = "F"
+      GO B300_EXIT
+   END
+
+   *** Second Pass for Accumulating Cash Amount if Repeated Reference # found ***
+   FOR L_INC = 1 TO L_TOTAL_LINES
+      *** Display Progress Bar ***
+      IF L_TOTAL_LINES > 50 THEN
+         IF NOT(MOD(L_INC,50)) THEN
+            CALL SB.DISP(9, "By Reference -> validating check data, please wait":@AM:L_INC:@AM:L_TOTAL_LINES)
+         END
+      END ELSE
+         CALL SB.DISP(9, "By Reference -> validating check data, please wait":@AM:L_INC:@AM:L_TOTAL_LINES)
+      END
+
+      *** Parse Check Data for Per Line Record ***
+      L_REF_NUM = TRIM(L_REF_NUM_LIST<1,L_INC>)
+      L_ACCT_NUM = TRIM(L_ACCT_NUM_LIST<1,L_INC>)
+      L_GROSS_AMT = TRIM(L_GROSS_AMT_LIST<1,L_INC>)
+      L_USR_DISC_AMT = TRIM(L_USR_DISC_AMT_LIST<1,L_INC>)
+
+      *** Accumulate cash amount for duplicate reference number found ***
+      LOCATE L_REF_NUM IN L_REP_REF_NUM_LIST<1> SETTING L_POS THEN
+         L_REP_GROSS_AMT_LIST<1,L_POS> += L_GROSS_AMT
+         L_REP_USR_DISC_AMT_LIST<1,L_POS> += L_USR_DISC_AMT
+         CONTINUE
+      END
+
+      L_CNT += 1
+      L_GOOD_REF_NUM_LIST<1,L_CNT> = L_REF_NUM
+      L_GOOD_GROSS_AMT_LIST<1,L_CNT> = L_GROSS_AMT
+      L_GOOD_USR_DISC_AMT_LIST<1,L_CNT> = L_USR_DISC_AMT
+   NEXT L_INC
+
+   *** Write Second Pass Result to Excel ***
+   L_SAVE_DATA_BLOCK = L_DATA_BLOCK  ;* TU.DDE.WRITE will change data structure of the original data block
+   SWAP @FM WITH CHAR(10) IN L_DATA_BLOCK   ;* new line character for Excel
+   L_CELL_RANGE = L_RF:"2C4..":L_RF:L_TOTAL_LINES+1:"C12"
+   CALL TU.DDE.WRITE(HEXCEL, L_CELL_RANGE, 10, L_DATA_BLOCK, RTN.FLAG)
+   IF RTN.FLAG THEN
+      CALL SB.PROCESS("Error occurred while writing error message to Excel.")
+      L_RTN_FLAG = "Q"
+      GO B300_EXIT
+   END
+   L_DATA_BLOCK = L_SAVE_DATA_BLOCK         ;* restore original data block structure after the TU.DDE.WRITE call
+
+   *** Third Pass for Preparing Data to Load to Infoflo ***
+   FOR L_INC = 1 TO L_TOTAL_LINES
+      *** Display Progress Bar ***
+      IF L_TOTAL_LINES > 50 THEN
+         IF NOT(MOD(L_INC,50)) THEN
+            CALL SB.DISP(9, "By Reference -> validating check data, please wait":@AM:L_INC:@AM:L_TOTAL_LINES)
+         END
+      END ELSE
+         CALL SB.DISP(9, "By Reference -> validating check data, please wait":@AM:L_INC:@AM:L_TOTAL_LINES)
+      END
+
+      *** Parse Check Data for Per Line Record ***
+      L_REF_NUM = TRIM(L_REF_NUM_LIST<1,L_INC>)
+      LOCATE L_REF_NUM IN L_REP_REF_NUM_LIST<1> SETTING L_POS THEN
+         L_GROSS_AMT = TRIM(L_REP_GROSS_AMT_LIST<1,L_POS>)
+         L_USR_DISC_AMT = TRIM(L_REP_USR_DISC_AMT_LIST<1,L_POS>)
+      END ELSE
+         L_GROSS_AMT = TRIM(L_GROSS_AMT_LIST<1,L_INC>)
+         L_USR_DISC_AMT = TRIM(L_USR_DISC_AMT_LIST<1,L_INC>)
+      END
+      L_ACCT_NUM = TRIM(L_ACCT_NUM_LIST<1,L_INC>)
+
+      *** Get Customer Group Code & Name ***
+      L_CUSTMST_KEY = WORK<1>:"*":L_ACCT_NUM
+      READ L_CUSTMST_REC FROM CUSTMST,L_CUSTMST_KEY ELSE L_CUSTMST_REC = ""
+      L_CUST_GRP_CODE = L_CUSTMST_REC<18>
+      READV L_CUST_GRP_NAME FROM SYSTBL, "I132*":L_CUST_GRP_CODE, 4 ELSE L_CUST_GRP_NAME = ""
+      L_CUST_GRP = L_CUST_GRP_NAME:" (":L_CUST_GRP_CODE:")"
+
+      *** Calculate AR Amount and Infoflo Discount Amount ***
+      GOSUB B500_GET_AR_DISC_AMT
+      IF RTN.FLAG THEN
+         L_RTN_FLAG = "Q"
+         GO B300_EXIT
+      END
+      L_AR_AMT_LIST<1,L_INC> = L_AR_AMT
+
+      *** Calculate Ded Amt ***
+      L_DED_AMT = L_AR_AMT - L_GROSS_AMT
+      L_DED_AMT_LIST<1,L_INC> = L_DED_AMT
+
+      IF L_RULE_CODE_LIST<1,L_INC> # "Ra" THEN
+         *** Determine business rules, generate rule list and mark on excel ***
+         IF L_GROSS_AMT >= 0 THEN  ;* for regular payment (positive amount)
+            BEGIN CASE
+               CASE L_AR_AMT - L_GROSS_AMT = 0
+                  * Rule #1: payment matches AR *
+                  * Discount + Cash = AR -> Pass *
+                  L_RULE_CODE_LIST<1,L_INC> = "R1"
+                  L_RULE_MSG_LIST<1,L_INC> = "Rule #1"
+               CASE L_AR_AMT - L_GROSS_AMT = L_USR_DISC_AMT
+                  * Rule #2: payment with discount *
+                  * AR - Cash = Discount -> Go to Deduction Screen: Code the cash discount amount to 101 with system automatic *
+                  L_RULE_CODE_LIST<1,L_INC> = "R2"
+                  L_RULE_MSG_LIST<1,L_INC> = "Rule #2"
+               CASE (L_USR_DISC_AMT + L_GROSS_AMT >= L_AR_AMT) AND (L_USR_DISC_AMT + L_GROSS_AMT - L_AR_AMT <= 50)
+                  * Rule #3: over payment by less than or equal to $50 *
+                  * Discount + Cash >= AR, but <= $50 -> Go to Deduction Screen: if discount amount is not 0, go a then b, otherwise go b.
+                  * a. 101 -> discount amount -> enter *
+                  * b. 101 -> AR - Cash -> enter *
+                  L_RULE_CODE_LIST<1,L_INC> = "R3"
+                  L_RULE_MSG_LIST<1,L_INC> = "Rule #3"
+               CASE (L_USR_DISC_AMT + L_GROSS_AMT <= L_AR_AMT) AND (L_AR_AMT - L_USR_DISC_AMT - L_GROSS_AMT <= 50)
+                  * Rule #4: short payment by less than or equal to $50 *
+                  * Discount + Cash <= AR, but <= $50 -> Same as rule# 3
+                  L_RULE_CODE_LIST<1,L_INC> = "R4"
+                  L_RULE_MSG_LIST<1,L_INC> = "Rule #4"
+               CASE (L_USR_DISC_AMT + L_GROSS_AMT >= L_AR_AMT) AND (L_USR_DISC_AMT + L_GROSS_AMT - L_AR_AMT > 50)
+                  * Rule #5: over payment by more than $50 *
+                  * Discount + Cash >= AR, but more than $50 -> Go to Deduction Screen:
+                  * 101 -> discount amount from previous screen (debit) -> enter *
+                  * 104 -> Cash - AR + Discount -> "OP" followed by reference number (credit) *
+                  L_RULE_CODE_LIST<1,L_INC> = "R5"
+                  L_RULE_MSG_LIST<1,L_INC> = "Rule #5"
+               CASE (L_USR_DISC_AMT + L_GROSS_AMT <= L_AR_AMT) AND (L_AR_AMT - L_USR_DISC_AMT - L_GROSS_AMT > 50)
+                  * Rule #6: short payment by more than $50 *
+                  * Discount + Cash >= AR, but more than $50 -> Go to Deduction Screen:
+                  * 101 -> discount amount from previous screen (debit) -> enter *
+                  * 104 -> AR - Cash - Discount -> "SP" followed by reference number (debit) *
+                  L_RULE_CODE_LIST<1,L_INC> = "R6"
+                  L_RULE_MSG_LIST<1,L_INC> = "Rule #6"
+               CASE 1
+                  L_RULE_CODE_LIST<1,L_INC> = ""
+                  L_RULE_MSG_LIST<1,L_INC> = ""
+            END CASE
+         END ELSE   ;* for deduction payment (negative amount)
+            IF L_GROSS_AMT = L_AR_AMT THEN
+               * Rule #7: deduction payment matches AR *
+               * Cash = AR -> Pass *
+               L_RULE_CODE_LIST<1,L_INC> = "R7"
+               L_RULE_MSG_LIST<1,L_INC> = "Rule #7"
+            END ELSE
+               * Rule #8: deduction payment not matches AR *
+               * Cash # AR -> Go to Deduction Screen -> code the difference to 104 with system automatic reference *
+               L_RULE_CODE_LIST<1,L_INC> = "R8"
+               L_RULE_MSG_LIST<1,L_INC> = "Rule #8"
+            END
+         END
+      END
+
+      *** Calculate 101 Cash Discount Amount And/Or 104 Non Authorized Amount on excel ***
+      BEGIN CASE
+         CASE L_RULE_CODE_LIST<1,L_INC> = "R2" OR L_RULE_CODE_LIST<1,L_INC> = "R3" OR L_RULE_CODE_LIST<1,L_INC> = "R4"  OR L_RULE_CODE_LIST<1,L_INC> = "R8"
+            L_R2348_AMT = L_AR_AMT - L_GROSS_AMT
+         CASE L_RULE_CODE_LIST<1,L_INC> = "R5"
+            IF L_USR_DISC_AMT # 0 THEN
+               L_R2348_AMT = -L_USR_DISC_AMT
+            END
+            L_R56_AMT = L_AR_AMT - L_GROSS_AMT + L_USR_DISC_AMT
+         CASE L_RULE_CODE_LIST<1,L_INC> = "R6"
+            IF L_USR_DISC_AMT # 0 THEN
+               L_R2348_AMT = L_USR_DISC_AMT
+            END
+            L_R56_AMT = L_AR_AMT - L_GROSS_AMT - L_USR_DISC_AMT
+         CASE 1
+            L_R2348_AMT = ""
+            L_R56_AMT = ""
+      END CASE
+      L_R2348_AMT_LIST<1,L_INC> = L_R2348_AMT
+      L_R56_AMT_LIST<1,L_INC> = L_R56_AMT
+
+      IF L_AR_AMT < 0 AND ABS(L_DED_AMT) > ABS(L_AR_AMT) THEN
+         L_VALIDATION_FAILED = 1
+         L_STATUS_MSG_LIST<1,L_INC> = "Deduction amount cannot be greater than A/R amount."
+      END
+
+      *** Build Data Block for Writing to Excel - Delimited by Comma ***
+      L_DATA_BLOCK<L_INC> = L_ACCT_NUM:',':L_CUST_GRP:',':L_AR_AMT:',':L_USR_DISC_AMT:',':L_DED_AMT:',':L_R2348_AMT:',':L_R56_AMT:',':L_RULE_MSG_LIST<1,L_INC>:',':L_STATUS_MSG_LIST<1,L_INC>
+   NEXT L_INC
+
+   *** Write Third Pass Result to Excel ***
+   SWAP @FM WITH CHAR(10) IN L_DATA_BLOCK   ;* new line character for Excel
+   L_CELL_RANGE = L_RF:"2C4..":L_RF:L_TOTAL_LINES+1:"C12"
+   CALL TU.DDE.WRITE(HEXCEL, L_CELL_RANGE, 10, L_DATA_BLOCK, RTN.FLAG)
+   IF RTN.FLAG THEN
+      CALL SB.PROCESS("Error occurred while writing error message to Excel.")
+      L_RTN_FLAG = "Q"
+      GO B300_EXIT
+   END
+
+   IF L_VALIDATION_FAILED THEN
+      L_RTN_FLAG = "F"
+      GO B300_EXIT
+   END
+
+   CALL SB.DISP(9, "By Reference Check Data Validation Completed.":@AM:L_INC-1:@AM:L_TOTAL_LINES)
+   CALL SB.DISP(4,'ARMD4002.15')   ;* Dialog Box
+   IF RTN.FLAG THEN                ;* Start upload
+      RTN.FLAG = 0
+   END ELSE                        ;* User cancelled the upload
+      L_RTN_FLAG = "C"
+      RTN.FLAG = 1
+   END
+
+B300_EXIT:
+   RETURN
+
+
+****************************************
+* Load data from By Reference worksheet to entry screen
+****************************************
+B400_LOAD_DATA_BY_REF_WS:
+
+   CLEARDATA
+   L_CNT = 0
+   FOR L_INC = 1 TO L_TOTAL_LINES
+      *** Display progress bar ***
+      IF L_TOTAL_LINES > 50 THEN
+         IF NOT(MOD(L_INC,50)) THEN
+            CALL SB.DISP(9, "By Reference -> uploading check data, please wait":@AM:L_INC:@AM:L_TOTAL_LINES)
+         END
+      END ELSE
+         CALL SB.DISP(9, "By Reference -> uploading check data, please wait":@AM:L_INC:@AM:L_TOTAL_LINES)
+      END
+
+      *** Retrieve cash information & bypass repeated check reference ***
+      IF L_RULE_CODE_LIST<1,L_INC> = "Ra" THEN
+         CONTINUE
+      END
+      L_CNT += 1
+      L_REF_NUM = L_REF_NUM_LIST<1,L_INC>
+      *** juntan \/ JUNTAN.70 - 2014/09/11
+      LOCATE L_REF_NUM IN L_REP_REF_NUM_LIST<1> SETTING L_POS THEN
+         L_GROSS_AMT = TRIM(L_REP_GROSS_AMT_LIST<1,L_POS>)
+         L_USR_DISC_AMT = TRIM(L_REP_USR_DISC_AMT_LIST<1,L_POS>)
+      END ELSE
+         L_GROSS_AMT = TRIM(L_GROSS_AMT_LIST<1,L_INC>)
+         L_USR_DISC_AMT = TRIM(L_USR_DISC_AMT_LIST<1,L_INC>)
+      END
+      *** juntan /\ JUNTAN.70 - 2014/09/11
+      L_AR_AMT = L_AR_AMT_LIST<1,L_INC>
+      L_MATCHED_RULE = L_RULE_CODE_LIST<1,L_INC>
+
+      * Staff invoice discount amount on screen*
+      L_NUM_OF_LINES_LOADED = DCOUNT(WORK<14>,@VM)
+      WORK<75,L_CNT+L_NUM_OF_LINES_LOADED> = L_DISC_AMT_LIST<1,L_INC>
+
+      * Quit When an Empty Row is Reached *
+      IF L_REF_NUM = "" AND L_GROSS_AMT = "" THEN
+         EXIT    ;* EOF
+      END
+
+      *** Staff entry value on screen based on matched rules ***
+      BEGIN CASE
+         CASE L_MATCHED_RULE = "R1" OR L_MATCHED_RULE = "R7"
+            *1 stuff reference number
+            *2 stuff cash amount
+            *3 simulate tab key
+            DATA L_REF_NUM,L_GROSS_AMT,"@22"
+         CASE L_MATCHED_RULE = "R2"
+            *4 101 cash discount amount        
+            *5 deducted amount        
+            *6 system generated default CB Ref #
+            *7 simulate F2-Save
+            DATA L_REF_NUM,L_GROSS_AMT,"@22","101",L_AR_AMT-L_GROSS_AMT,"\","@32"
+         CASE L_MATCHED_RULE = "R3" OR L_MATCHED_RULE = "R4"
+            *4 101 cash discount amount        
+            *5 deducted amount        
+            *6 system generated default CB Ref #
+            *7 simulate F2-Save
+            DATA L_REF_NUM,L_GROSS_AMT,"@22"
+            IF L_USR_DISC_AMT # 0 THEN
+               DATA "101",L_USR_DISC_AMT,"\"
+            END
+            DATA "101",L_AR_AMT-L_GROSS_AMT-L_USR_DISC_AMT,"\","@32"
+         CASE L_MATCHED_RULE = "R5"
+            IF L_USR_DISC_AMT # 0 THEN
+               *4 101 cash discount amount        
+               *5 credit amount        
+               *6 system generated default CB Ref #
+               DATA L_REF_NUM,L_GROSS_AMT,"@22","101",L_USR_DISC_AMT,"\"
+               *4 104 non authorized amount        
+               *7 simulate F2-Save
+               DATA "104",L_AR_AMT-L_GROSS_AMT-L_USR_DISC_AMT,"OP":L_REF_NUM,"@32"
+            END ELSE
+               *4 104 non authorized amount        
+               *7 simulate F2-Save
+               DATA L_REF_NUM,L_GROSS_AMT,"@22","104",L_AR_AMT-L_GROSS_AMT-L_USR_DISC_AMT,"OP":L_REF_NUM,"@32"
+            END
+         CASE L_MATCHED_RULE = "R6"
+            IF L_USR_DISC_AMT # 0 THEN
+               *4 101 cash discount amount        
+               *5 debit amount
+               *6 system generated default CB Ref #
+               DATA L_REF_NUM,L_GROSS_AMT,"@22","101",L_USR_DISC_AMT,"\"
+               *4 104 non authorized amount        
+               *7 simulate F2-Save
+               DATA "104",L_AR_AMT-L_GROSS_AMT-L_USR_DISC_AMT,"SP":L_REF_NUM,"@32"
+            END ELSE
+               *4 104 non authorized amount        
+               *7 simulate F2-Save
+               DATA L_REF_NUM,L_GROSS_AMT,"@22","104",L_AR_AMT-L_GROSS_AMT-L_USR_DISC_AMT,"SP":L_REF_NUM,"@32"
+            END
+         CASE L_MATCHED_RULE = "R7"
+            * no operation
+         CASE L_MATCHED_RULE = "R8"
+            *4 104 non authorized amount        
+            *5 debit amount        
+            *6 system generated default CB Ref #
+            *7 simulate F2-Save
+            DATA L_REF_NUM,L_GROSS_AMT,"@22","104",L_AR_AMT-L_GROSS_AMT,"\","@32"
+      END CASE
+   NEXT L_INC
+   CALL SB.DISP(9, "By Reference Check Data Upload Completed.":@AM:L_INC-1:@AM:L_TOTAL_LINES)
+
+B400_EXIT:
+   RETURN
+
+
+****************************************
+* Get AR amount and Infoflo discount amount as per reference 
+****************************************
+B500_GET_AR_DISC_AMT:
+
+   L_ARIV_KEY = WORK<1>:"*":L_ACCT_NUM:"*":L_REF_NUM
+   READ L_ARIV_REC FROM ARIV,L_ARIV_KEY ELSE L_ARIV_REC = ""
+   IF L_ARIV_REC = "" THEN
+      RTN.FLAG = 1
+      CALL SB.DISP(3,"Error occurred while reading ARIV file, record key":L_ARIV_KEY:" does not exist.")
+      GO B500_EXIT
+   END
+   
+   L_AR_AMT = OCONV(L_ARIV_REC<50>,"MD2")
+   L_BOL_NBR = L_ARIV_REC<77>
+   L_ORD_NBR = L_ARIV_REC<24>
+   L_CSH_DISC_DT = L_ARIV_REC<37> + WORK<73>  ;* Due Date + Grace Period
+   L_ARIV_TYPE = L_ARIV_REC<70>
+
+   BEGIN CASE
+      CASE L_ARIV_TYPE = 5   ;* Credit Memo
+         CLEARSELECT
+         L_QUERY = 'SELECT ICEHDRHST WITH DF_INVOICE_NBR = "':L_REF_NUM:'" AND WITH INV_TYPE = "3':'"'
+         EXECUTE L_QUERY CAPTURING L_JUNK
+         IF @SYSTEM.RETURN.CODE > 0 THEN
+            LOOP 
+               READNEXT L_KEY ELSE L_DONE = 1
+            UNTIL L_DONE
+               READ L_REC FROM ICEHDRHST,L_KEY THEN
+                  L_INFOFLO_DISC_AMT = OCONV(-L_REC<101>,"MD2")
+                  EXIT
+               END ELSE
+                  L_INFOFLO_DISC_AMT = 0
+               END
+            REPEAT
+         END ELSE
+            L_INFOFLO_DISC_AMT = 0
+         END
+      CASE L_ARIV_TYPE = 1   ;* Customer Invoice
+         READ L_SHIPLADING_REC FROM SHIPLADING,L_BOL_NBR ELSE L_SHIPLADING_REC = ""
+         IF L_SHIPLADING_REC = "" THEN
+            RTN.FLAG = 1
+            CALL SB.DISP(3,"Error occurred while reading SHIPLADING file, record key":L_BOL_NBR:" does not exist.")
+            GO B500_EXIT
+         END
+         L_BOL_REL = L_SHIPLADING_REC<2>
+
+         L_KEY = L_REF_NUM:"*":L_ORD_NBR:"*":L_BOL_REL
+         READ L_ICEHDRHST_REC FROM ICEHDRHST,L_KEY ELSE L_ICEHDRHST_REC = ""
+         IF WORK<4> < L_CSH_DISC_DT THEN
+            L_INFOFLO_DISC_AMT = OCONV(L_ICEHDRHST_REC<101>,"MD2")
+         END ELSE
+            L_INFOFLO_DISC_AMT = 0
+         END
+      CASE 1
+         L_INFOFLO_DISC_AMT = 0
+   END CASE
+   L_DISC_AMT_LIST<1,L_INC> = ICONV(L_INFOFLO_DISC_AMT,"MD2")
+   WORK<74> += L_DISC_AMT_LIST<1,L_INC>  ;* total discount amount
+
+B500_EXIT:
+   RETURN
+
+
+****************************************
+* Exit  
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+   END

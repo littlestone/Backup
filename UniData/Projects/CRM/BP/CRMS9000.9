@@ -1,0 +1,212 @@
+   SUBROUTINE CRMS9000.9 
+* Clean-up CRM.LOG and IFFCRMHST
+* VERSION 8.2.3
+* 
+* 20 OCT 16 8.2.3 piedes PRJ*SLS086D.1-(Sub #1) ICONNECT - CRM PROJECT - One shot Customer Ini
+* 
+*
+* 
+*  
+* 
+*  
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+
+   PROGRAM = 'CRMS9000.9'
+
+   $INCLUDE IIPLUS.TOP
+   $INCLUDE IIPLUS.TEXTLOAD
+   $INCLUDE IIPLUS.DEBUG
+
+   $INCLUDE TUBP TU.API.H
+   $INCLUDE TUBP ROC.H
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*
+* MODIFICATIONS:
+* ==============
+*              2016/07/16 piedes - Initial creation.
+*
+**************************************************************************
+
+
+A100_MAIN:
+
+   GOSUB A200_INITIALIZATION
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+
+   GO A500_CONCLUSION
+
+
+****************************************
+* Define & initialize variables.
+****************************************
+A200_INITIALIZATION:
+
+   RTN.FLAG    = 0
+   L_ERR_CODE  = ""
+   L_ERR_MSG   = ""
+   L_TERMINATE = 0
+
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open any data files requried.
+****************************************
+A300_OPEN_FILES:
+
+   FILE.ERR = 0
+
+   CALL SB.OPEN.FILE("CRM.LOG",CRM.LOG,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-1"
+      L_ERR_MSG = "Unable to open file CRM.LOG"
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("IFFCRMHST",IFFCRMHST,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-1"
+      L_ERR_MSG = "Unable to open file CRM.LOG"
+      GO A300_EXIT
+   END
+
+
+A300_EXIT:
+   RETURN
+
+****************************************
+* Main process.
+****************************************
+A400_MAIN_PROCESS:
+   PRINT "***"
+   PRINT "***"
+   PRINT "-----------------------------------------------------------------"
+   PRINT "DELETE Old CRM.LOG and Old IFFCRMHST"
+   PRINT "-----------------------------------------------------------------"
+   GOSUB B100_GET_SYSCON
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B200_DELETE_CRM_LOG
+
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+A400_EXIT:
+   RETURN
+
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+   IF L_ERR_CODE # "" THEN
+      STATUS<1> = L_ERR_CODE
+      STATUS<2> = L_ERR_MSG
+   END
+
+   RTN.FLAG = 0
+   REFRESH = -2
+
+A500_EXIT:
+   GO 9999
+
+
+B100_GET_SYSCON:
+
+   READV L_NB_DAY_TO_KEEP FROM SYSCON, "CRM.HTTP.PARAMETERS", 5 ELSE L_NB_DAY_TO_KEEP = 0
+   L_NB_DAY_TO_KEEP = TRIM(FIELD(L_NB_DAY_TO_KEEP,";",1))
+
+   IF L_NB_DAY_TO_KEEP > 0 THEN
+      L_DATE = DATE() - L_NB_DAY_TO_KEEP
+      L_DATE = OCONV(L_DATE,"D4-")
+      L_DATE = FIELD(L_DATE,"-",3):FIELD(L_DATE,"-",1):FIELD(L_DATE,"-",2)
+
+   END ELSE
+      L_ERR_CODE = 1
+   END
+
+B100_GET_SYSCON_EXIT:
+  RETURN
+
+B200_DELETE_CRM_LOG:
+
+  L_TERMINATE = 0
+  PRINT "-----------------------------------------------------------------"
+  PRINT "Now deleting OLD CRM.LOG..."
+  PRINT "-----------------------------------------------------------------"
+  L_STMT = 'SELECT CRM.LOG WITH DF_DATE <= "':L_DATE:'"'
+
+  PRINT L_STMT
+
+  EXECUTE L_STMT
+
+  LOOP
+     READNEXT L_CRM_LOG_KEY ELSE L_TERMINATE = 1
+  UNTIL L_TERMINATE = 1
+     DELETE CRM.LOG, L_CRM_LOG_KEY
+  REPEAT
+
+  L_TERMINATE = 0
+
+  PRINT "-----------------------------------------------------------------"
+  PRINT "Now deleting OLD IFFCRMHST..."
+  PRINT "-----------------------------------------------------------------"
+
+  L_STMT = 'SELECT IFFCRMHST WITH DF_DATE <= "':L_DATE:'"'
+
+  PRINT L_STMT
+
+  EXECUTE L_STMT
+
+  LOOP
+     READNEXT L_CRM_LOG_KEY ELSE L_TERMINATE = 1
+  UNTIL L_TERMINATE = 1
+     DELETE IFFCRMHST, L_CRM_LOG_KEY
+  REPEAT
+
+
+B200_DELETE_CRM_LOG_EXIT:
+  RETURN
+
+****************************************
+* Exit
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END
+*
+*
+*
+*

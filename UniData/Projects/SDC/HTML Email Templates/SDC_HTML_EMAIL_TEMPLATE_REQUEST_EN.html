@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <style>
+      body {
+      font-size:75%;
+      font-family:verdana,arial,'sans serif';
+      background-repeat:repeat-x;
+      background-color:white;
+      color:black;
+      }
+    </style>
+    <title>Ship and Debit Claim No. VAR_CLAIM_NBR - Approval Request (VAR_TIMESTAMP)</title>
+  </head>
+  <body>
+    <table id="t0" align="center" width="900" border="0" bordercolor="black" bgcolor="white">
+      <tr>
+        <td>
+          <table id="t1" border="0" width="900" bordercolor="black" bgcolor="white">
+            <tbody>
+              <tr>
+                <td align="left">
+                  VAR_COMPANY_NAME<br>
+                  <font size="2" color="navy"><b>SHIP AND DEBIT CLAIM</b></font><br>
+                  <font size="2" color="navy"><b>APPROVAL REQUEST</b></font><br>
+                </td>
+                <td align="right">
+                  <b>SOLD TO:  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;VAR_SOLD_TO_LINE_1</b><br>
+                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ATTN: VAR_SOLD_TO_LINE_2<br>
+                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;VAR_SOLD_TO_LINE_3<br>
+                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;VAR_SOLD_TO_LINE_4
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <br><hr><br>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <table id="t2" align="center" width="900" border="1" bordercolor="black" bgcolor="white">
+            <tbody>
+              <tr>
+                <td bgcolor="gainsboro" align="center"><b>Claim No.</b></td>
+                <td bgcolor="gainsboro" align="center"><b>Date</b></td>
+                <td bgcolor="gainsboro" align="center"><b>Customer No.</b></td>
+                <td bgcolor="gainsboro" align="center"><b>Sales Office</b></td>
+                <td bgcolor="gainsboro" align="center"><b>Period</b></td>
+              </tr>
+              <tr>
+                <td height="35" align="center">VAR_CLAIM_NBR</td>
+                <td height="35" align="center">VAR_DATE</td>
+                <td height="35" align="center">VAR_CUST_NBR</td>
+                <td height="35" align="center">VAR_SALES_OFF</td>
+                <td height="35" align="center">VAR_PERIOD</td>
+              </tr>
+            </tbody>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <table id="t3" align="center" width="900" border="1" bordercolor="black" bordercolorlight="black" bordercolordark="black" bgcolor="white">
+            <tbody>
+              <tr>
+                <td width="160" bgcolor="royalblue" align="center"><font color="white"><b>Contractor No.</b></font></td>
+                <td bgcolor="royalblue" align="center"><font color="white"><b>Name</b></font></td>
+                <td width="150" bgcolor="royalblue" align="center"><font color="white"><b>Amount</b></font></td>
+              </tr>
+              VAR_ITEM_LINES_TABLE
+            </tbody>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <table id="t4" border="1" width="900" bordercolor="black" bgcolor="white">
+            <tbody>
+              <tr>
+                <td bgcolor="royalblue" align="center"><font color="white"><b>PREPARED BY</b></font></td>
+                <td bgcolor="royalblue" align="center"><font color="white"><b>CLAIM NO.</b></font></td>
+                <td bgcolor="royalblue" align="center"><font color="white"><b>DATE</b></font></td>
+                <td bgcolor="royalblue" align="center"><font color="white"><b>TOTAL</b></font></td>
+              </tr>
+              <tr>
+                <td height="35" bgcolor="white" align="center">VAR_USERNAME</td>
+                <td height="35" bgcolor="white" align="center">VAR_CLAIM_NBR</td>
+                <td height="35" bgcolor="white" align="center">VAR_DATE</td>
+                <td height="35" bgcolor="white" align="right">VAR_TOTAL_AMT</td>
+              </tr>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td>
+		  <font color="BlueViolet">VAR_RESPONSE_MSG</font>
+          <br><hr><br>	  
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <table id="t5" align="center" width="900" border="0" bordercolor="black" bgcolor="white">
+            <tbody>
+              <tr>
+                <td align="right">
+                  <a href="VAR_URL_APPROVE"><font color="blue" size="3">Approve</font></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                  <a href="VAR_URL_REJECT"><font color="blue" size="3">Reject</font></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                  <a href="VAR_URL_NOT_MINE"><font color="blue" size="3">Not Mine</font></a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

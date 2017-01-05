@@ -1,0 +1,178 @@
+     SUBROUTINE JJ_ODBC
+* Short program description here...
+* VERSION 8.2.3
+*
+*
+*
+*
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+
+     PROGRAM='JJ_ODBC'
+     $INCLUDE IIPLUS.TOP
+     $INCLUDE IIPLUS.TEXTLOAD
+     $INCLUDE IIPLUS.DEBUG
+
+     $INCLUDE TUBP TU.API.H
+     $INCLUDE TUBP ROC.H
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*              This program is used to ...
+*
+*              <<<NOTE>>>
+*
+*              1. Input Parameters (delimited by @FM):
+*                 ARGS_IN<1>  ->
+*                 ARGS_IN<2>  ->
+*
+*              2. Output Parameters (delimited by @FM):
+*                 ARGS_OUT<1> ->
+*                 ARGS_OUT<2> ->
+*
+* MODIFICATIONS:
+* ==============
+*              2013/xx/xx juntan xxx - Initial creation.
+*
+**************************************************************************
+
+
+A100_MAIN:
+
+   GOSUB A200_INITIALIZATION
+   IF L_ERR_NUM # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF L_ERR_NUM "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF L_ERR_NUM # "" THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+   GO A500_CONCLUSION
+
+
+****************************************
+* Definition of local variables & initialization of other variables.
+****************************************
+A200_INITIALIZATION:
+
+   RTN.FLAG     = 0
+
+   L_SYSCON_KEY = ""
+   L_SYSCON_REC = ""
+
+   L_ERR_NUM    = ""
+   L_ERR_MSG    = ""
+
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open the files needed in this subroutine.
+****************************************
+A300_OPEN_FILES:
+
+   FILE.ERR = 0
+
+   CALL SB.OPEN.FILE("SYSCON",SYSCON,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_NUM = "A300-ERROR-1"
+      L_ERR_MSG = "Program ":PROGRAM:" aborted at ":L_ERR_NUM:" -> "
+      GO A300_EXIT
+   END
+
+A300_EXIT:
+   RETURN
+
+
+****************************************
+* Main process logic structure.
+****************************************
+A400_MAIN_PROCESS:
+
+  * GOSUB B200_READ_SYSCON_SETUP
+  * IF L_ERR_NUM # "" THEN
+  *    GO A400_EXIT
+  * END
+   DB.HANDLE = ''
+   STATUS = ''
+   CALL TU.SQL.CONNECT("DRV=idssrvsql", DB.HANDLE, STATUS)
+   CRT DB.HANDLE
+   CRT STATUS
+
+A400_EXIT:
+   RETURN
+
+
+****************************************
+* Read SYSCON table setup.
+****************************************
+B200_READ_SYSCON_SETUP:
+
+   READ L_SYSCON_REC FROM SYSCON, L_SYSCON_KEY
+   ON ERROR
+      L_ERR_NUM = "B200-ERROR-1"
+      L_ERR_MSG = "Program ":PROGRAM:" aborted at ":L_ERR_NUM:" -> "
+   END THEN
+*      GOSUB B300_XXX
+   END ELSE
+      L_ERR_NUM = "B200-ERROR-2"
+      L_ERR_MSG = "Program ":PROGRAM:" aborted at ":L_ERR_NUM:" -> "
+   END
+   
+B100_EXIT:
+   RETURN
+
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+   IF L_ERR_NUM # "" THEN
+      BEGIN CASE
+         CASE L_ERR_NUM = "A300-ERROR-1"
+            CALL SB.PROCESS("SYS0061,IP2564\":"SYSCON")
+         CASE L_ERR_NUM = "B200-ERROR-1"
+            CALL SB.PROCESS('SYS0061,IP2434\':L_SYSCON_KEY)
+         CASE L_ERR_NUM = "B200-ERROR-2"
+            CALL SB.PROCESS('SYS0061,6308\':L_SYSCON_KEY)
+      END CASE
+   END
+
+   REFRESH = -2
+   RTN.FLAG = 0
+
+A500_EXIT:
+   GO 9999
+
+
+****************************************
+* Exit  
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END

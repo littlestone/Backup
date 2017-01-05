@@ -1,0 +1,387 @@
+   SUBROUTINE SYSS0404.1(ARGS_IN,ARGS_OUT,STATUS)
+* Infoflo DDE Application Programming Interface (API)
+* VERSION 8.2.3
+*
+* 27 JAN 14 8.2.3 juntan PRJ*JUNTAN.63-UniBasic DDE API.
+*
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+   $INCLUDE IIPLUS.TOP
+   PROGRAM='SYSS0404.1'
+   $INCLUDE IIPLUS.TEXTLOAD
+   $INCLUDE IIPLUS.DEBUG
+
+   $INCLUDE TUBP TU.API.H
+   $INCLUDE TUBP ROC.H
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ===========
+*              This function is used to read/write data block directly
+*              from an opened Excel document though DDE connection between
+*              the Excel process and the SBClient process on Windows OS.
+*
+*              <<< API definition >>>
+*
+*              INPUT: Accept 7 arguments
+*                1. ARGS_IN<1>: Excel worksheet name (string & mandatory)
+*                               -> Key
+*                               -> Leave it empty to call entry screen
+*                2. ARGS_IN<2>: Read or Write flag (string & optional)
+*                               -> R or W (R by default)
+*                3. ARGS_IN<3>: Excel version (string & optional)
+*                               -> 2010 or 2003 (2010 by default)
+*                4. ARGS_IN<4>: Starting row number (integer & optional)
+*                               -> 1 by default
+*                5. ARGS_IN<5>: Ending row number (integer & optional)
+*                               -> 1048576 by default as Excel 2010
+*                6. ARGS_IN<6>: Starting column number (integer & optional)
+*                               -> 1 by default
+*                7. ARGS_IN<7>: Ending column number (integer & optional)
+*                               -> 16384 by default as Excel 2010
+*              OUTPUT: Return a data structure with the delimiter defined
+*                1. @FM -> Per row delimiter
+*                2. @VM -> Per cell delimiter
+*
+*              STATUS: Return an error code with message if applicable
+*                1. STATUS<1> = Program name
+*                2. STATUS<2> = Error code
+*                3. STATUS<3> = Error message
+*
+* MODIFICATIONS:
+* =============
+*              2013/10/04 juntan - Initial creation.
+*
+**************************************************************************
+
+A100_MAIN:
+
+   GOSUB A200_INITIALIZATION
+   IF RTN.FLAG THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF RTN.FLAG THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF RTN.FLAG THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+   GO A500_CONCLUSION
+
+
+****************************************
+* Definition of local variables & initialization of other variables.
+****************************************
+A200_INITIALIZATION:
+
+   STATUS             = ''
+
+   RTN.FLAG           = 0
+   HEXCEL             = ''
+   APPLICATION        = ''
+   TOPIC              = ''
+   L_SYSTEM_TOPICS    = ''
+   L_RF               = ''  ;* excel row reference letter based on OS language (R or L)
+
+   L_ERR_CODE         = ''
+   L_ERR_MSG          = ''
+   L_TEMP             = ''
+   L_CELL_RANGE       = ''
+
+   L_MAX_ROW_NBR_2003 = 65536    ;* maximum row limit for Excel 2003
+   L_MAX_COL_NBR_2003 = 256      ;* maximum column limit for Excel 2003
+   L_MAX_ROW_NBR_2010 = 1048576  ;* maximum row limit for Excel 2010
+   L_MAX_COL_NBR_2010 = 16384    ;* maximum column limit for Excel 2010
+
+   L_WORKSHEET_NAME   = ''
+   L_RW_FLAG          = ''
+   L_EXCEL_VERSION    = ''
+   L_ROW_START        = ''
+   L_ROW_END          = ''
+   L_COL_START        = ''
+   L_COL_END          = ''
+
+   L_SAVE_PARAM       = ''
+
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open the files needed in this subroutine.
+****************************************
+A300_OPEN_FILES:
+
+A300_EXIT:
+   RETURN
+
+
+****************************************
+* Main Program Logic
+****************************************
+A400_MAIN_PROCESS:
+
+   *** Call entry screen for user input ***
+   IF ARGS_IN<1> = "" THEN
+      L_SAVE_PARAM = PARAM
+      CALL SB.PROCESS("SYS0404")
+      ARGS_IN<1> = PARAM<1>
+      ARGS_IN<2> = PARAM<2>
+      ARGS_IN<3> = PARAM<3>
+      ARGS_IN<4> = PARAM<4>
+      ARGS_IN<5> = PARAM<5>
+      ARGS_IN<6> = PARAM<6>
+      ARGS_IN<7> = PARAM<7>
+      PARAM = L_SAVE_PARAM
+   END
+
+   L_WORKSHEET_NAME = ARGS_IN<1>
+   L_RW_FLAG        = ARGS_IN<2>
+   L_EXCEL_VERSION  = ARGS_IN<3>
+   L_ROW_START      = ARGS_IN<4>
+   L_ROW_END        = ARGS_IN<5>
+   L_COL_START      = ARGS_IN<6>
+   L_COL_END        = ARGS_IN<7>
+
+   *** PRINT "==> Step #0: Validating input arguments..."
+   IF ARGS_IN # "" THEN
+      * Verify the worksheet name *
+      IF L_WORKSHEET_NAME = "" THEN
+         L_ERR_CODE = "A400-ERROR-0-2"
+         L_ERR_MSG = "No worksheet name is provided which is required."
+         GO A400_EXIT
+      END
+
+      * Verify the action flag (R or W) *
+      IF L_RW_FLAG = "" THEN
+         L_RW_FLAG = "R"
+      END ELSE
+         IF L_RW_FLAG # "R" AND L_RW_FLAG # "W" THEN
+            L_ERR_CODE = "A400-ERROR-0-1"
+            L_ERR_MSG = "Invalid action flag ":L_RW_FLAG:" found, please use either R or W."
+            GO A400_EXIT
+         END
+      END
+
+      * Verify the Excel version (2003 or 2010) *
+      IF L_EXCEL_VERSION = "" THEN
+         L_EXCEL_VERSION = "2010"
+      END ELSE
+         IF L_EXCEL_VERSION # "2003" AND L_EXCEL_VERSION # "2010" THEN
+            L_ERR_CODE = "A400-ERROR-0-3"
+            L_ERR_MSG = "Invalid Excel version ":L_EXCEL_VERSION:" found, please use either 2003 or 2010."
+            GO A400_EXIT
+         END
+      END
+
+      * Verify the starting row number *
+      IF L_ROW_START = "" THEN
+         L_ROW_START = 1
+      END ELSE
+         IF NOT(NUM(L_ROW_START)) THEN
+            L_ERR_CODE = "A400-ERROR-0-4"
+            L_ERR_MSG = "Non-numeric starting row number ":L_ROW_START:" found."
+            GO A400_EXIT
+         END
+      END
+
+      * Verfiy the ending row number *
+      IF L_ROW_END = "" THEN
+         L_ROW_END = L_MAX_ROW_NBR_2010
+      END ELSE
+         IF NOT(NUM(L_ROW_END)) THEN
+            L_ERR_CODE = "A400-ERROR-0-5-1"
+            L_ERR_MSG = "Non-numeric ending row number ":L_ROW_END:" found."
+            GO A400_EXIT
+         END ELSE
+            BEGIN CASE
+               CASE L_EXCEL_VERSION = "2003"
+                  IF L_ROW_START > L_MAX_ROW_NBR_2003 THEN
+                     L_ERR_CODE = "A400-ERROR-0-5-2"
+                     L_ERR_MSG = "The maximum row number limit for Excel 2003 is ":L_MAX_ROW_NBR_2003:"."
+                     GO A400_EXIT
+                  END
+               CASE L_EXCEL_VERSION = "2010"
+                  IF L_ROW_START > L_MAX_ROW_NBR_2010 THEN
+                     L_ERR_CODE = "A400-ERROR-0-5-3"
+                     L_ERR_MSG = "The maximum row number limit for Excel 2010 is ":L_MAX_ROW_NBR_2010:"."
+                     GO A400_EXIT
+                  END
+            END CASE
+         END
+      END
+
+      * Verfiy the starting column number *
+      IF L_COL_START = "" THEN
+         L_COL_START = 1
+      END ELSE
+         IF NOT(NUM(L_COL_START)) THEN
+            L_ERR_CODE = "A400-ERROR-0-6"
+            L_ERR_MSG = "Non-numeric starting row number ":L_COL_START:" found."
+            GO A400_EXIT
+         END
+      END
+
+      * Verfiy the ending column number *
+      IF L_COL_END = "" THEN
+         L_COL_END = L_MAX_COL_NBR_2010
+      END ELSE
+         BEGIN CASE
+            CASE L_EXCEL_VERSION = "2003"
+               IF L_COL_END > L_MAX_COL_NBR_2003 THEN
+                  L_ERR_CODE = "A400-ERROR-0-7-1"
+                  L_ERR_MSG = "The maximum column number limit for Excel 2003 is ":L_MAX_ROW_NBR_2003:"."
+                  GO A400_EXIT
+               END
+            CASE L_EXCEL_VERSION = "2010"
+               IF L_COL_END > L_MAX_COL_NBR_2010 THEN
+                  L_ERR_CODE = "A400-ERROR-0-7-2"
+                  L_ERR_MSG = "The maximum column number limit for Excel 2010 is ":L_MAX_ROW_NBR_2010:"."
+                  GO A400_EXIT
+               END
+         END CASE
+      END
+   END ELSE
+      L_ERR_CODE = "A400-ERROR-0"
+      L_ERR_MSG = "No input arguments found, program aborted."
+      GO A400_EXIT
+   END
+
+   *** PRINT "==> Step #1: Detecting running Excel process..."
+   CALL TU.DDE.CONNECT('EXCEL', 'System', HEXCEL, RTN.FLAG)
+   IF RTN.FLAG THEN
+      HEXCEL = ''
+      L_ERR_CODE = "A400-ERROR-1"
+      L_ERR_MSG = "No running Excel process found, please open your Excel document first."
+      GO A400_EXIT
+   END
+
+   *** PRINT "==> Step #2: Verifying opened Excel spreadsheet..."
+   CALL TU.DDE.READ(HEXCEL, 'Topics', 10, L_SYSTEM_TOPICS, RTN.FLAG)
+   IF RTN.FLAG THEN
+      L_ERR_CODE = "A400-ERROR-2-1"
+      L_ERR_MSG = "Error occurred while reading system topics."
+      GO A400_EXIT
+   END ELSE
+      SWAP CHAR(9) WITH @VM IN L_SYSTEM_TOPICS
+      FOR L_INC = 1 TO DCOUNT(L_SYSTEM_TOPICS,@VM)
+         IF L_WORKSHEET_NAME # "" AND INDEX(FIELD(L_SYSTEM_TOPICS,@VM,L_INC,1),L_WORKSHEET_NAME,1) THEN
+            TOPIC = FIELD(L_SYSTEM_TOPICS,@VM,L_INC,1)
+            EXIT
+         END ELSE
+            TOPIC = ''
+         END
+      NEXT L_INC
+      IF TOPIC = '' THEN
+         L_ERR_CODE = "A400-ERROR-2-2"
+         L_ERR_MSG = "Invalid worksheet name - ":L_WORKSHEET_NAME:"."
+         GO A400_EXIT
+      END
+   END
+
+   *** PRINT "==> Step #3: Establish DDE connection between Excel and SBClient..."
+   CALL TU.DDE.CONNECT('EXCEL', TOPIC, HEXCEL, RTN.FLAG)
+   IF RTN.FLAG THEN
+      L_ERR_CODE = "A400-ERROR-3"
+      L_ERR_MSG = "Error occurred while establishing DDE connection."
+      GO A400_EXIT
+   END
+
+   *** PRINT "==> Step #4. Determining OS language..."
+   CALL TU.DDE.READ(HEXCEL, 'R1C1:R1C1', 10, L_TEMP, RTN.FLAG)
+   IF RTN.FLAG THEN
+      CALL TU.DDE.READ(HEXCEL, 'L1C1:L1C1', 10, L_TEMP, RTN.FLAG)
+      IF RTN.FLAG THEN
+         L_ERR_CODE = "A400-ERROR-4"
+         L_ERR_MSG = "Error occurred while determining the OS language."
+         GO A400_EXIT
+      END
+      L_RF = 'L'  ;* French environment
+   END ELSE
+      L_RF = 'R'  ;* English environment
+   END
+
+   *** PRINT "==> Step #5: Build cell range for data block reading..."
+   L_CELL_RANGE = L_RF:L_ROW_START:"C":L_COL_START:":":L_RF:L_ROW_END:"C":L_COL_END
+
+   *** PRINT "==> Step #6. Reading/Writing data block from Excel..."
+   BEGIN CASE
+      CASE L_RW_FLAG = "R"
+         CALL TU.DDE.READ(HEXCEL, L_CELL_RANGE, 10, ARGS_OUT, RTN.FLAG)
+         IF RTN.FLAG THEN
+            L_ERR_CODE = "A400-ERROR-6"
+            L_ERR_MSG = "Error occurred while reading data from Excel."
+            GO A400_EXIT
+         END
+
+         * Generate output data structure *
+         SWAP @VM WITH @FM IN ARGS_OUT      ;* per row
+         SWAP CHAR(9) WITH @VM IN ARGS_OUT  ;* per cell
+      CASE L_RW_FLAG = "W"
+         CALL TU.DDE.WRITE(HEXCEL, L_CELL_RANGE, 10, ARGS_OUT, RTN.FLAG)
+         IF RTN.FLAG THEN
+            L_ERR_CODE = "A400-ERROR-6"
+            L_ERR_MSG = "Error occurred while writing data to Excel."
+            GO A400_EXIT
+         END
+   END CASE
+
+   *** PRINT "==> Step #7: Clean up..."
+   IF HEXCEL # '' THEN
+      CALL TU.DDE.DISCONNECT(HEXCEL, RTN.FLAG)
+      IF RTN.FLAG THEN
+         L_ERR_CODE = "A400-ERROR-7"
+         L_ERR_MSG = "Error occurred while disconnecting DDE."
+         GO A400_EXIT
+      END
+   END
+
+A400_EXIT:
+   RETURN
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+   IF L_ERR_CODE # "" THEN
+      STATUS<1> = PROGRAM
+      STATUS<2> = L_ERR_CODE
+      STATUS<3> = L_ERR_MSG
+   END
+
+   REFRESH = -2
+   RTN.FLAG = 0
+
+A500_EXIT:
+   GO 9999
+
+****************************************
+* Exit
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END
+*
+*
+*

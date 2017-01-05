@@ -1,0 +1,197 @@
+     SUBROUTINE SYSS9220.3(ARGS_IN,ARGS_OUT)
+* Generic function to check user access right based on SYSCON table setup
+* VERSION 8.2.3
+*
+* 14 MAR 13 8.2.3 juntan PRJ*SYS097D-INTERNAL CONTROLS PROJECT - BLOCK ACCESS TO GENERAL JOU
+*
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+
+     PROGRAM='SYSS9220.3'
+     $INCLUDE IIPLUS.TOP
+     $INCLUDE IIPLUS.TEXTLOAD
+     $INCLUDE IIPLUS.DEBUG
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*              This program is used to check user access right based on
+*              SYSCON table setup for various purposes in a common sense.
+*
+*              <<<NOTE>>>
+*
+*              1. Input Parameters (delimited by @FM):
+*                 ARGS_IN<1>  ->  SYSCON table key
+*                 ARGS_IN<2>  ->  Userid to validate access right
+*
+*              2. Output Parameters (delimited by @FM):
+*                 ARGS_OUT<1> ->  Return flag
+*                    a. 0     ->  The user has no access right
+*                    b. 1     ->  The user has access right
+*                    c. empty ->  Some errors occurred
+*                 ARGS_OUT<2> ->  Return message
+*                    a. empty ->  No message return if return flag = 0 or 1    
+*                    b. non-empty -> Detail error message in text string 
+* MODIFICATIONS:
+* ==============
+*              2013/03/14 juntan SYS097D - Initial creation.
+*
+**************************************************************************
+
+A100_MAIN: 
+
+     GOSUB A200_INITIALIZATION
+     IF L_ERR_NUM # "" THEN
+        GO A100_EXIT
+     END
+
+     GOSUB A300_OPEN_FILES
+     IF L_ERR_NUM # "" THEN
+        GO A100_EXIT
+     END
+
+     GOSUB A400_MAIN_PROCESS
+     IF L_ERR_NUM # "" THEN
+        GO A100_EXIT
+     END
+
+A100_EXIT: 
+     GO A500_CONCLUSION
+
+
+****************************************
+* Definition of local variables & initialization of other variables.
+****************************************
+A200_INITIALIZATION: 
+
+     RTN.FLAG      = 0
+     ARGS_OUT      = ""
+
+     L_SYSCON_KEY  = ARGS_IN<1>
+     L_USERID      = ARGS_IN<2>
+     L_SYSCON_REC  = ""
+     L_USERID_LIST = ""
+     L_POS         = 0
+
+     L_ERR_NUM     = ""
+     L_ERR_MSG     = ""
+
+A200_EXIT: 
+     RETURN
+
+
+****************************************
+* Open the files needed in this subroutine.
+****************************************
+A300_OPEN_FILES: 
+
+     FILE.ERR = 0
+
+     CALL SB.OPEN.FILE("SYSCON",SYSCON,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERR_NUM = "A300-ERROR-1"
+        L_ERROR_MSG = "Program ":PROGRAM:" aborted at ":L_ERR_NUM:" -> Cannot open file SYSCON."
+        GO A300_EXIT
+     END
+
+A300_EXIT: 
+     RETURN
+
+
+****************************************
+* Main process logic sturcture.
+****************************************
+A400_MAIN_PROCESS: 
+
+     GOSUB B100_READ_SYSCON_TABLE_SETUP
+     IF L_ERR_NUM # "" THEN
+        GO A400_EXIT
+     END
+
+     GOSUB B200_CHECK_USER_ACCESS_RIGHT
+     IF L_ERR_NUM # "" THEN
+        GO A400_EXIT
+     END
+
+A400_EXIT: 
+     RETURN
+
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION: 
+
+     IF L_ERR_NUM # "" THEN
+        ARGS_OUT<1> = ""
+        ARGS_OUT<2> = L_ERR_MSG
+     END
+
+     RTN.FLAG = 0
+     REFRESH = -2
+
+A500_EXIT: 
+     GO 9999
+
+
+****************************************
+* Read SYSCON table setup to determine user access right.
+****************************************
+B100_READ_SYSCON_TABLE_SETUP: 
+
+     READ L_SYSCON_REC FROM SYSCON, L_SYSCON_KEY
+     ON ERROR
+        L_ERR_NUM = "B100-ERROR-1"
+        L_ERR_MSG = "Program ":PROGRAM:" aborted at ":L_ERR_NUM:" -> SYSCON record ":L_SYSCON_KEY:" cannot be read."
+     END THEN
+        L_USERID_LIST = TRIM(FIELD(L_SYSCON_REC<1>,';',1))
+     END ELSE
+        L_ERR_NUM = "B100-ERROR-2"
+        L_ERR_MSG = "Program ":PROGRAM:" aborted at ":L_ERR_NUM:" -> SYSCON record ":L_SYSCON_KEY:" does not exist."
+     END
+
+B100_EXIT: 
+     RETURN
+
+
+****************************************
+* Check user access right based on SYSCON table setup.
+****************************************
+B200_CHECK_USER_ACCESS_RIGHT: 
+
+     IF L_USERID = "" THEN
+        L_ERR_NUM = "B200-ERROR-1"
+        L_ERR_MSG = "Program ":PROGRAM:" aborted at ":L_ERR_NUM:" -> Input argument Userid cannot be empty."
+        GO B200_EXIT
+     END
+
+     LOCATE L_USERID IN L_USERID_LIST<1> SETTING L_POS THEN
+        ARGS_OUT<1> = 1  ;* has access
+     END ELSE
+        ARGS_OUT<1> = 0  ;* no access
+     END
+
+B200_EXIT: 
+     RETURN
+
+
+****************************************
+* Exit  
+****************************************
+
+     $INCLUDE IIPLUS.BOTTOM
+
+  END

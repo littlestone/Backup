@@ -1,0 +1,102 @@
+     SUBROUTINE JJ.CALLHTTP
+* Infoflo Web API Programmatic Interfaces
+* VERSION 8.2.3
+*
+* 24 SEP 13 8.2.3 juntan PRJ*JUNTAN.2-JUNTAN TEST
+*
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+     $INCLUDE IIPLUS.TOP
+     PROGRAM='JJ.CALLHTTP'
+     $INCLUDE IIPLUS.TEXTLOAD
+     $INCLUDE IIPLUS.DEBUG
+*     $INCLUDE /usr/igi/ud/sys/INCLUDE UDO.H   ;* JSON parser available in UniData v7.3
+     $INCLUDE /usr/igi/ud/sys/INCLUDE XML.H    ;* XML parser
+
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*              This program is used to call various function interfaces
+*              supported in InfofloWebAPI web appliction which is hosted
+*              in IIS on windows server web4stl (dev), and parse the return
+*              data which is in JSON or XML format.
+*
+* MODIFICATIONS:
+* ==============
+*              2013/24/09 juntan - Initial creation.
+*
+**************************************************************************
+
+*** Getting the Current HTTP Default Settings ***
+OPTION = "HEADERS" ;* PROXY_NAME, PROXY_PORT, VERSION, BUFSIZE, AUTHENTICATE, HEADERS
+X.RTN.CODE = getHTTPDefault(OPTION,VALUE)
+IF X.RTN.CODE = 1 THEN
+   STOP 'getHTTPDefault: ':X.RTN.CODE
+END
+*CRT OPTION:" = ":VALUE
+
+*** Configuring the Default HTTP Settings         
+*** HTTP Header Field Name/Value Delimiter -> @VM
+*** HTTP Header Field Name/Value Pair Delimiter -> @FM
+HTTP_HEADER = "Accept":@VM:"application/json"  ;* Content-Types that are acceptable for the response -> application/xml | application/json | text/plain (default encoding for JSON is UTF-8)
+HTTP_HEADER = "Content-Type":@VM:"application/json":@FM
+X.RTN.CODE = setHTTPDefault(OPTION,HTTP_HEADER)
+*CRT X.RTN.CODE
+
+**** Setup HTTP Request Parameters for Get Method ***
+*URL="http://10.6.6.14:8080/api/values"  ;* web4stl
+*HTTP.METHOD = "GET"
+
+**** Setup HTTP Request Parameters for Post Method ***
+URL="http://10.6.6.14:8080/api/request"  ;* web4stl
+HTTP.METHOD = "POST"
+
+*** Creating an HTTP Request ***
+X.RTN.CODE = createRequest(URL, HTTP.METHOD, X.HANDLE)
+IF X.RTN.CODE = 1 THEN
+   STOP 'createRequest: ':X.RTN.CODE
+END
+
+*** Adding a Parameter to the Request ***
+*addRequestParameter(request_handle, parameter_name, parameter_value, content_handling)
+
+
+DATA_BEFORE = '"dataBefore":[["RTG","029581","2","07405","0018-A","Desc-123","1","121","2","3","074","juntan","360"],["T","HydraTransportDataSegments=HY72_AU_HD_001_A              0000000000000000000000000000000000000999999"]]'
+DATA_AFTER = '"dataAfter":[["RTG","029582","2","07405","0018-A","Desc-123","1","121","2","3","074","juntan","360"]]'
+MATRIX = '{VECTOR-1,VECTOR-2}'  ;* JSON -> 2 Vector objects; each vector object is arrays within an array.
+SWAP "VECTOR-1" WITH DATA_BEFORE IN MATRIX
+SWAP "VECTOR-2" WITH DATA_AFTER IN MATRIX
+
+*** Pass Parameters though HTTP Post Request ***
+* Instead of the fairly standard key=value encoding that most *
+* client-and-server-side frameworks expect, Web API’s model   *
+* binder expects to find the [FromBody] values in the POST    *
+* body without a key name at all. In other words, instead of  *
+* key=value, it's looking for =value.                         *
+X.POST.DATA = "=":MATRIX   ;* applicable for POST method only as the input parms
+
+*** Submitting a Request ***
+X.TIMEOUT = 30000  ;* in milliseconds
+X.RTN.CODE = submitRequest(X.HANDLE, X.TIMEOUT, X.POST.DATA, X.RESPONSE.HEADERS, X.RESPONSE.DATA, X.HTTP.STATUS)
+IF X.RTN.CODE = 1 THEN
+   STOP 'submitRequest: ':X.RTN.CODE
+END
+
+*** Displying HTTP Response Message ***
+CRT 'X.RESPONSE.HEADERS = ':X.RESPONSE.HEADERS
+CRT 'X.RESPONSE.DATA = ':X.RESPONSE.DATA
+CRT 'X.HTTP.STATUS = ':X.HTTP.STATUS

@@ -1,0 +1,888 @@
+   SUBROUTINE CRMS9000.2(IN_DATA, STATUS)
+* CRM to Infoflo Gateway Integration Endpoint UniBasic Program Interface
+* VERSION 8.2.3
+*
+* 15 DEC 16 8.2.3 piedes PRJ*PIEDES.112-Fix somes bugs related to CRM
+* 25 AUG 16 8.2.3 piedes PRJ*SLS086D-ICONNECT - CRM PROJECT - SALES MANAGER AND SALES AGENT 
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+   $INCLUDE IIPLUS.TOP
+   PROGRAM = 'CRMS9000.2'
+   $INCLUDE IIPLUS.TEXTLOAD
+   $INCLUDE IIPLUS.DEBUG
+
+   $INCLUDE TUBP TU.API.H
+   $INCLUDE TUBP ROC.H
+*  $INCLUDE /usr/igi/ud/sys/INCLUDE UDO.H   ;* JSON parser available in UniData v7.3
+*  $INCLUDE /usr/igi/ud/sys/INCLUDE XML.H   ;* XML parser
+*
+*   Include program to initialize 2 variables of ASCII specials characters
+*   to convert the characters of the ASCII table to the LATIN 1 table.
+*
+*   L_CODES_ASCII  = "" ;* ASCII characters codes
+*   L_CODES_LATIN1 = "" ;* Latin 1 characters codes used by Word Software
+*
+    $INCLUDE SYSS9170.1
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*              This program is used to send HTTP post request to InfofloWebAPI Web Service
+*              hosted in IIS on Hydra windows server (mes0) to post data to CRM system.
+*
+*              <<<NOTE>>>
+*
+*              1. Input arguments: Vector IN_DATA
+*                   a) Per record is delimited by @AM or @FM.
+*                   b) Per attribute is delimited by @VM.
+*
+*              2. Return status (null or 0 if no error occurred)
+*                 STATUS<1> -> Error code
+*                 STATUS<2> -> Error message
+*
+* text followw come from SOPS3081.1
+*
+*    ** Conversion ASCII Characters Codes to LATIN 1 Characters Codes.
+*       AWFORMS is based on a technology that dynamically loads
+*       the form information from our business system directly
+*       into a Microsoft Word template. Then AWFORMS utilizes the
+*       printing engine in Microsoft Word to print or to fax.
+*       Word software uses the LATIN 1 characters codes and 
+*       2 variables will be used to convert the ASCII characters codes
+*       to LATIN 1 characters codes.
+*
+*       Example:
+*       Some characters as french characters or specials symbols
+*       have to be converted in LATIN 1 characters codes.
+*       CHAR(174) ® of the ASCII table is CHAR(171) of the LATIN 1 table.
+*
+*       L_CODES_ASCII  * ASCII characters codes
+*       L_CODES_LATIN1 * Latin 1 characters codes used by Word Software
+*
+*       The include program SYSS9170.1 is included in the GOSUB A010_INITIALIZATION
+*       to initialize the 2 variables.
+*
+*    ** This program will extract the data from our business system
+*       convert the characters codes to LATIN 1 codes
+*       and will map the information to the template (rtf) by using
+*       specified Common Variables
+*       (See Common Variables paragraph A010_INITIALIZATION)
+*       that will be passed to the AWFORMS program.
+*
+* MODIFICATIONS:
+* ==============
+*              2016/07/13 piedes - Initial creation.
+*
+**************************************************************************
+
+A100_MAIN:
+
+*   L_TS = OCONV(DATE(),"D4/"):" ":OCONV(TIME(),"MTS")
+*   STATUS<1> = "[":L_TS:"] STATUS:OK"
+*   STATUS<2> = " -> {":IN_DATA:"}"
+*   RETURN
+
+   GOSUB A200_INITIALIZATION
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+
+   GO A500_CONCLUSION
+
+****************************************
+* Define & initialize variables.
+****************************************
+A200_INITIALIZATION:
+
+   READ HDD FROM SYSCON,"HDD" ELSE HDD = ""
+   ACNT.NAME     = HDD<2>
+   READ CRMOPP_EQUATE_REC FROM SYSCON,"CRMOPP_EQUATE" ELSE CRMOPP_EQUATE_REC = ""
+   READ CONTMST_EQUATE_REC FROM SYSCON,"CONTMST_EQUATE" ELSE CONTMST_EQUATE_REC = ""
+
+   READV DEBUG_MOD FROM SYSCON,"CRM.HTTP.PARAMETERS", 6 ELSE DEBUG_MOD = 0
+   DEBUG_MOD     = TRIM(FIELD(DEBUG_MOD, ";",1))
+
+
+   L_GS_ERPKEY   = ""
+   L_DATE        = OCONV(DATE(),"D4-")
+   L_TIME        = OCONV(TIME(),"MTS")
+
+   L_MOD_ON      = FIELD(L_DATE,"-",3):"-":FIELD(L_DATE,"-",1):"-":FIELD(L_DATE,"-",2): "T" : OCONV(TIME(),"MTS"):"Z"
+   L_MOD_ON_FILE = FIELD(L_DATE,"-",3):"-":FIELD(L_DATE,"-",1):"-":FIELD(L_DATE,"-",2): "_" : OCONV(TIME(),"MTS")
+
+   SWAP "-" WITH "" IN L_MOD_ON_FILE
+   SWAP ":" WITH "" IN L_MOD_ON_FILE
+   SWAP " " WITH "" IN L_MOD_ON_FILE
+   SWAP "|" WITH VM IN IN_DATA
+   SWAP "\n" WITH " " IN IN_DATA
+
+   L_FILE_DIR    = "CRM.LOG"
+
+   RTN.FLAG      = 0
+   STATUS        = ""
+   
+   L_TS          = ""
+   L_ERR_CODE    = ""
+   L_ERR_MSG     = ""
+
+   L_IDENTITY    = IN_DATA<2,2>
+
+   L_CRMOPP_KEY  = ""
+
+   L_KEY         = ""
+
+   SWAP CHAR(10) WITH SVM IN IN_DATA
+   SWAP SVM WITH "|" IN IN_DATA
+
+   CRMOPP_REC     = ""
+   CRMOPPCRM_REC  = ""
+   CONTMST_REC    = ""
+   CONTMSTCRM_REC = ""
+   L_CUSTMST_NBR  = ""
+
+   SYSCON_REC     = ""
+   L_FIELD_NAME   = ""
+   L_FIELD_VALUE  = ""
+   L_FIELD_NAMES  = ""
+   L_FIELD_ATT    = ""
+
+A200_EXIT:
+
+   RETURN
+
+
+****************************************
+* Open any data files requried.
+****************************************
+A300_OPEN_FILES:
+
+   FILE.ERR = 0
+
+   OPEN '', "CONTMST" TO CONTMST ELSE
+      FILE.ERR = 1
+      L_ERR_CODE = "A300-ERROR-1"
+      L_ERR_MSG = "Open CONTMST file error."
+      GO A300_EXIT
+   END
+
+   OPEN '', "CRMOPP" TO CRMOPP ELSE
+      FILE.ERR = 1
+      L_ERR_CODE = "A300-ERROR-2"
+      L_ERR_MSG = "Open CRMOPP file error."
+      GO A300_EXIT
+   END
+
+   OPEN '', "CRMOPPCRM" TO CRMOPPCRM ELSE
+      FILE.ERR = 1
+      L_ERR_CODE = "A300-ERROR-3"
+      L_ERR_MSG = "Open CRMOPPCRM file error."
+      GO A300_EXIT
+   END
+
+   OPEN '', "QUHDR" TO QUHDR ELSE
+      FILE.ERR = 1
+      L_ERR_CODE = "A300-ERROR-4"
+      L_ERR_MSG = "Open QUHDR file error."
+      GO A300_EXIT
+   END
+
+   OPEN '', "QUDET" TO QUDET ELSE
+      FILE.ERR = 1
+      L_ERR_CODE = "A300-ERROR-5"
+      L_ERR_MSG = "Open QUDET file error."
+      GO A300_EXIT
+   END
+
+   OPEN '', "QUXRF" TO QUXRF ELSE
+      FILE.ERR = 1
+      L_ERR_CODE = "A300-ERROR-6"
+      L_ERR_MSG = "Open QUXRF file error."
+      GO A300_EXIT
+   END
+
+   OPEN '', "QUHDRCRM" TO QUHDRCRM ELSE 
+      FILE.ERR = 1
+      L_ERR_CODE = "A300-ERROR-7"
+      L_ERR_MSG = "Open QUHDRCRM file error."
+      GO A300_EXIT
+   END
+
+   OPEN '', "SYSCON" TO SYSCON ELSE
+      FILE.ERR = 1
+      L_ERR_CODE = "A300-ERROR-8"
+      L_ERR_MSG = "Open SYSCON file error."
+      GO A300_EXIT
+   END
+
+   OPEN '', "SYSTBL" TO SYSTBL ELSE 
+      FILE.ERR = 1
+      L_ERR_CODE = "A300-ERROR-9"
+      L_ERR_MSG = "Open SYSTBL file error."
+      GO A300_EXIT
+   END
+
+   OPEN '', "SYSTBLCRM" TO SYSTBLCRM ELSE 
+      FILE.ERR = 1
+      L_ERR_CODE = "A300-ERROR-10"
+      L_ERR_MSG = "Open SYSTBLCRM file error."
+      GO A300_EXIT
+   END
+
+   OPEN '', "CRM.LOG" TO CRM.LOG ELSE
+      FILE.ERR = 1
+      L_ERR_CODE = "A300-ERROR-11"
+      L_ERR_MSG = "Open CRM.LOG file error."
+      GO A300_EXIT
+   END
+
+   OPEN '', "CONTMSTCRM" TO CONTMSTCRM ELSE
+      FILE.ERR = 1
+      L_ERR_CODE = "A300-ERROR-12"
+      L_ERR_MSG = "Open CONTMSTCRM file error."
+      GO A300_EXIT
+   END
+
+
+A300_EXIT:
+   RETURN
+
+
+****************************************
+* Main process logic structure.
+****************************************
+A400_MAIN_PROCESS:
+
+   IF DEBUG_MOD  = "1" THEN
+     WRITE IN_DATA ON CRM.LOG, ACNT.NAME:"_CRM_IFF_":L_MOD_ON_FILE:".debug"
+   END
+
+   GOSUB B100_BUILD_DATA
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+A400_EXIT:
+   RETURN
+
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+   L_TS = OCONV(DATE(),"D4/"):" ":OCONV(TIME(),"MTS")
+   IF L_ERR_CODE # "" THEN
+      STATUS<1> = L_ERR_CODE
+      STATUS<2> = L_ERR_MSG
+      GOSUB B300_EMAIL
+   END ELSE
+      STATUS<1> = "[":L_TS:"] STATUS:OK"
+      STATUS<2> = " -> {":IN_DATA:"}"
+   END
+
+   RTN.FLAG = 0
+
+   GOSUB C500_WRITE_CRM_LOG
+
+A500_EXIT:
+   GO 9999
+
+
+****************************************
+* Validate CRM integration request data.
+****************************************
+B100_BUILD_DATA:
+
+   BEGIN CASE
+
+     CASE L_IDENTITY = "opportunity"
+        GOSUB C100_BUILD_OPPORTUNITY
+
+     CASE L_IDENTITY = "account" ; * Contractor
+        GOSUB C200_BUILD_CONTRACTOR
+
+     CASE L_IDENTITY = "quote"
+        GOSUB C300_UPDATE_QUOTE_STATUS
+
+     CASE L_IDENTITY = "gs_relatedaccount"
+        GOSUB C400_BUILD_RELATED_ACCOUNT
+
+   END CASE
+
+
+B100_EXIT:
+   RETURN
+
+
+****************************************
+* 
+****************************************
+B300_EMAIL:
+
+   L_EMAIL_ADD = ""
+   READ L_SYSCON_ERR FROM SYSCON, "CRM.ERROR.HANDLING" THEN
+      L_EMAIL_LIST = TRIM(FIELD(L_SYSCON_ERR<2>,";",1))
+      L_NB_EMAIL   = DCOUNT(L_EMAIL_LIST, VM)
+      FOR L_IND = 1 TO L_NB_EMAIL
+         LOC = ""
+         LOC = INDEX(L_EMAIL_LIST<1,L_IND>,"@",1)
+         IF LOC # 0 THEN
+            L_EMAIL_ADD<1,-1> = L_EMAIL_LIST<1,L_IND>
+         END ELSE
+            ARG_EMAIL   = ""
+            ARG_USER_ID = L_EMAIL_LIST<1,L_IND>
+            CALL SYSS9300.1(ARG_EMAIL,ARG_USER_ID)
+            L_EMAIL_ADD<1,-1> = ARG_EMAIL
+         END
+      NEXT L_IND
+      SWAP VM WITH ";" IN L_EMAIL_ADD
+   END ELSE
+      L_EMAIL_ADD = "devteam@ipexna.com"
+   END
+
+   L_SAVE_PARAM = PARAM
+   PARAM    = ""
+   PARAM<1> = TRIM(FIELD(L_SYSCON_ERR<3>, ";",1)) :", ": STATUS<1>:", ": STATUS<2> 
+   IF L_CRMOPP_KEY # "" AND L_IDENTITY # "" THEN
+      PARAM<2> = TRIM(FIELD(L_SYSCON_ERR<4>, ";",1)) : " - " : L_IDENTITY : " - " : L_CRMOPP_KEY : " - " : L_DATE : " - " : OCONV(TIME(),"MTS")
+   END ELSE
+      PARAM<2> = TRIM(FIELD(L_SYSCON_ERR<4>, ";",1)) : " - " : L_DATE : " - " : OCONV(TIME(),"MTS")
+   END
+   PARAM<3> = L_EMAIL_ADD
+   PARAM<4> = "do-not-reply-crm-admin@itinfonet.com"
+   PARAM<5> = ""
+   PARAM<6> = 0
+   PARAM<7> = ""
+   PARAM<8> = "" ; * CC USER
+   CALL SYSS9060.6(PARAM)
+
+   PARAM = L_SAVE_PARAM
+
+B300_EXIT:
+   RETURN
+
+
+****************************************
+* 
+****************************************
+C100_BUILD_OPPORTUNITY:
+
+   L_OPP_REC = ""
+
+   L_NB_FIELD = DCOUNT(CRMOPP_EQUATE_REC,AM)
+   FOR L_IND = 1 TO L_NB_FIELD
+      L_FIELD_NAMES<-1>  = FIELD(CRMOPP_EQUATE_REC<L_IND>,"|",1)
+      L_FIELD_ATT<-1>    = FIELD(CRMOPP_EQUATE_REC<L_IND>,"|",2)
+   NEXT L_IND
+
+   L_MAX     = DCOUNT(IN_DATA, AM)
+
+   FOR L_IND = 2 TO L_MAX
+
+      BEGIN CASE
+
+         CASE IN_DATA<L_IND,1> = "gs_opportunitynumber"
+            L_CRMOPP_KEY = IN_DATA<L_IND,2>
+            L_FILE_NAME = "IN_":L_IDENTITY:"_":L_CRMOPP_KEY:"_":L_MOD_ON_FILE:'.log'
+
+            OPENSEQ L_FILE_DIR, L_FILE_NAME TO L_CRM_LOG_FILE
+            ON ERROR
+               L_ERR_CODE = "C100-ERROR-1-1"
+               L_ERR_MSG = "Cannot open the CRM JSON file ":L_FILE_NAME:" in directory ":L_FILE_DIR:"."
+               GO C100_EXIT
+            END LOCKED
+               L_ERR_CODE = "C100-ERROR-1-2"
+               L_ERR_MSG  = "The CRM log file ":L_FILE_NAME:" in directory ":L_FILE_DIR:" is currently locked by ":L_FILE_DIR:" is currently locked by ":GETUSERNAME(STATUS()):"."
+               GO C100_EXIT
+            END ELSE
+               IF STATUS() # 0 THEN
+                  L_ERR_CODE = "C100-ERROR-1-3"
+                  L_ERR_MSG  = "Error occurred while opening the CRM log file ":L_FILE_NAME:" in directory ":L_FILE_DIR:" { ":STATUS():" }."
+                  GO C100_EXIT
+               END
+            END
+
+            L_CRMOPPCRM_KEY = ACNT.NAME:"*":L_CRMOPP_KEY
+
+         CASE IN_DATA<L_IND,1> = "opportunityid"
+            CRMOPPCRM_REC<1> = "C"
+            CRMOPPCRM_REC<2> = IN_DATA<L_IND,2>
+            CRMOPPCRM_REC<3> = OCONV(DATE(),"D4/")
+            CRMOPPCRM_REC<4> = OCONV(TIME(),"MTS")
+
+         CASE 1
+
+            L_FIELD_NAME = IN_DATA<L_IND,1>
+            L_FIELD_VALUE = IN_DATA<L_IND,2>
+            LOCATE L_FIELD_NAME IN L_FIELD_NAMES SETTING POS THEN
+               BEGIN CASE
+                  CASE IN_DATA<L_IND,1> = "transactioncurrencyid"
+                     READ L_SYSTBL_CUR FROM SYSTBLCRM, ACNT.NAME:"*CUR" THEN
+                        L_NB_CUR = DCOUNT(L_SYSTBL_CUR, AM)
+                        FOR L_IND2 = 1 TO L_NB_CUR
+                           IF L_FIELD_VALUE = FIELD(L_SYSTBL_CUR<L_IND2>,"|",2) THEN
+                              CRMOPP_REC<POS> = FIELD(L_SYSTBL_CUR<L_IND2>,"|",1)
+                           END
+                        NEXT L_IND2
+                     END
+
+                  CASE IN_DATA<L_IND,1> = "description"
+***
+                     L_SWAP_ASCII = L_FIELD_VALUE
+                     GOSUB A250_SWAP_LATIN_1_TO_ASCII_CODE
+                     L_FIELD_VALUE = L_SWAP_ASCII
+                     SWAP SVM WITH VM IN L_FIELD_VALUE
+***
+                     SWAP "|" WITH VM IN L_FIELD_VALUE
+
+                     CRMOPP_REC<POS> = L_FIELD_VALUE
+
+                  CASE IN_DATA<L_IND,1> = "name"
+***
+                     L_SWAP_ASCII = L_FIELD_VALUE
+                     GOSUB A250_SWAP_LATIN_1_TO_ASCII_CODE
+                     L_FIELD_VALUE = L_SWAP_ASCII
+
+                     L_TMP_FRENCH_CODE = L_FIELD_VALUE
+                     GOSUB A220_SWAP_FRENCH_TO_ENGLISH
+                     CRMOPP_REC<14> = UPCASE(L_TMP_FRENCH_CODE)
+***
+                     CRMOPP_REC<POS> = L_FIELD_VALUE
+
+                  CASE IN_DATA<L_IND,1> = "gs_companyvalue_can" OR IN_DATA<L_IND,1> = "gs_companyvalue_us"
+                     CRMOPP_REC<POS> = OCONV(ICONV(L_FIELD_VALUE,'MD2'),'MD2')
+
+                  CASE IN_DATA<L_IND,1> = "gs_exchangerate"
+                     CRMOPP_REC<POS> = OCONV(ICONV(L_FIELD_VALUE,'MD6'),'MD6')
+
+                  CASE IN_DATA<L_IND,1> = "statuscode"
+                     IF L_FIELD_VALUE # 1 THEN
+                        L_FIELD_VALUE = 0
+                     END
+                     CRMOPP_REC<POS> = L_FIELD_VALUE
+
+                  CASE 1
+***
+                     L_SWAP_ASCII = L_FIELD_VALUE
+                     GOSUB A250_SWAP_LATIN_1_TO_ASCII_CODE
+                     L_FIELD_VALUE = L_SWAP_ASCII
+***
+                     CRMOPP_REC<POS> = L_FIELD_VALUE
+
+               END CASE
+            END
+
+      END CASE
+   NEXT L_IND
+
+   WRITE CRMOPPCRM_REC ON CRMOPPCRM, L_CRMOPPCRM_KEY
+
+   WRITE CRMOPP_REC ON CRMOPP, L_CRMOPP_KEY
+
+C100_EXIT:
+   RETURN
+
+****************************************
+* 
+****************************************
+C200_BUILD_CONTRACTOR:
+
+   L_CONTMSTREC = ""
+
+   L_NB_FIELD = DCOUNT(CONTMST_EQUATE_REC,AM)
+   FOR L_IND = 1 TO L_NB_FIELD
+      L_FIELD_NAMES<-1>  = FIELD(CONTMST_EQUATE_REC<L_IND>,"|",1)
+      L_FIELD_ATT<-1>    = FIELD(CONTMST_EQUATE_REC<L_IND>,"|",2)
+   NEXT L_IND
+
+   L_MAX     = DCOUNT(IN_DATA, AM)
+
+   FOR L_IND = 2 TO L_MAX
+
+      BEGIN CASE
+
+         CASE IN_DATA<L_IND,1> = "accountnumber"
+            L_CONTMST_KEY = IN_DATA<L_IND,2>
+
+            L_FILE_NAME = "IN_contractor_":L_CONTMST_KEY:"_":L_MOD_ON_FILE:'.log'
+
+            OPENSEQ L_FILE_DIR, L_FILE_NAME TO L_CRM_LOG_FILE
+            ON ERROR
+               L_ERR_CODE = "C200-ERROR-1-1"
+               L_ERR_MSG = "Cannot open the CRM JSON file ":L_FILE_NAME:" in directory ":L_FILE_DIR:"."
+               GO C100_EXIT
+            END LOCKED
+               L_ERR_CODE = "C200-ERROR-1-2"
+               L_ERR_MSG  = "The CRM log file ":L_FILE_NAME:" in directory ":L_FILE_DIR:" is currently locked by ":L_FILE_DIR:" is currently locked by ":GETUSERNAME(STATUS()):"."
+               GO C100_EXIT
+            END ELSE
+               IF STATUS() # 0 THEN
+                  L_ERR_CODE = "C200-ERROR-1-3"
+                  L_ERR_MSG  = "Error occurred while opening the CRM log file ":L_FILE_NAME:" in directory ":L_FILE_DIR:" { ":STATUS():" }."
+                  GO C100_EXIT
+               END
+            END
+            L_CONTMSTCRM_KEY = ACNT.NAME:"*":L_CONTMST_KEY
+
+         CASE IN_DATA<L_IND,1> = "accountid"
+            CONTMSTCRM_REC<1> = "C"
+            CONTMSTCRM_REC<2> = IN_DATA<L_IND,2>
+            CONTMSTCRM_REC<3> = OCONV(DATE(),"D4/")
+            CONTMSTCRM_REC<4> = OCONV(TIME(),"MTS")
+
+         CASE 1
+
+            POS = ""
+            L_FIELD_NAME = IN_DATA<L_IND,1>
+            L_FIELD_VALUE = IN_DATA<L_IND,2>
+***
+            BEGIN CASE
+
+               CASE L_FIELD_NAME = "name"
+
+                  L_SWAP_ASCII = L_FIELD_VALUE
+                  GOSUB A250_SWAP_LATIN_1_TO_ASCII_CODE
+                  L_FIELD_VALUE = L_SWAP_ASCII
+
+                  L_TMP_FRENCH_CODE = L_FIELD_VALUE
+                  GOSUB A220_SWAP_FRENCH_TO_ENGLISH
+                  CONTMST_REC<11> = UPCASE(L_TMP_FRENCH_CODE)
+
+               CASE 1
+
+                  L_SWAP_ASCII = L_FIELD_VALUE
+                  GOSUB A250_SWAP_LATIN_1_TO_ASCII_CODE
+                  L_FIELD_VALUE = L_SWAP_ASCII
+
+            END CASE
+***
+            LOCATE L_FIELD_NAME IN L_FIELD_NAMES SETTING POS THEN
+               CONTMST_REC<L_FIELD_ATT<POS>> = L_FIELD_VALUE
+            END
+
+            
+      END CASE
+
+   NEXT L_IND
+
+   WRITE CONTMSTCRM_REC ON CONTMSTCRM, L_CONTMSTCRM_KEY
+
+   WRITE CONTMST_REC ON CONTMST, L_CONTMST_KEY
+
+C200_EXIT:
+     
+   RETURN
+
+****************************************
+* 
+****************************************
+C300_UPDATE_QUOTE_STATUS:
+
+   L_QUHDR_REC  = ""
+   L_VALID_STATUS = 0
+   L_QUHDR_KEY  = IN_DATA<3,2>
+   L_CRM_STATUS = IN_DATA<5,2>
+
+   READ L_QUHDR_REC FROM QUHDR, L_QUHDR_KEY THEN
+
+         L_QUHDR_STATUS  = L_QUHDR_REC<167>
+         L_OPP_KEY       = L_QUHDR_REC<262>
+
+         BEGIN CASE
+            CASE L_CRM_STATUS = 2
+               L_CRM_STATUS = 3     ; * Accepted
+               L_CRM_DET_STATUS = 2  
+               L_VALID_STATUS = 1
+            CASE L_CRM_STATUS = 3
+               L_CRM_STATUS = 4     ; * Rejected
+               L_CRM_DET_STATUS = 3  
+               L_VALID_STATUS = 1
+         END CASE
+         IF L_VALID_STATUS = 1 THEN
+            L_QUHDR_STATUS   = INSERT(L_QUHDR_STATUS,1,1,0,L_CRM_STATUS)
+            L_QUHDR_REC<167> = L_QUHDR_STATUS
+            WRITE L_QUHDR_REC TO QUHDR, L_QUHDR_KEY
+            IF TRIM(L_OPP_KEY) # "" THEN
+               READ L_OPP_REC FROM CRMOPP, L_OPP_KEY THEN
+                   LOCATE L_QUHDR_KEY IN L_OPP_REC<11> SETTING POS THEN
+                      L_OPP_REC<12,POS> = L_CRM_STATUS
+                      WRITE L_OPP_REC TO CRMOPP, L_OPP_KEY
+                   END
+               END  
+            END
+            GOSUB C350_UPDATE_QUDET
+         END
+
+   END ELSE
+      L_ERR_CODE = "C300-ERROR-1-1-1"
+      L_ERR_MSG = "Cannot read record ":L_QUHDR_KEY:" in file QUHDR."
+   END
+
+   L_FILE_NAME = "IN_":L_IDENTITY:"_":L_QUHDR_KEY:"_":L_MOD_ON_FILE:'.log'
+
+   OPENSEQ L_FILE_DIR, L_FILE_NAME TO L_CRM_LOG_FILE
+      ON ERROR
+         L_ERR_CODE = "C300-ERROR-2-1"
+         L_ERR_MSG = "Cannot open the CRM JSON file ":L_FILE_NAME:" in directory ":L_FILE_DIR:"."
+         GO C100_EXIT
+      END LOCKED
+         L_ERR_CODE = "C300-ERROR-2-2"
+         L_ERR_MSG  = "The CRM log file ":L_FILE_NAME:" in directory ":L_FILE_DIR:" is currently locked by ":L_FILE_DIR:" is currently locked by ":GETUSERNAME(STATUS()):"."
+         GO C100_EXIT
+      END ELSE
+         IF STATUS() # 0 THEN
+            L_ERR_CODE = "C300-ERROR-2-3"
+            L_ERR_MSG  = "Error occurred while opening the CRM log file ":L_FILE_NAME:" in directory ":L_FILE_DIR:" { ":STATUS():" }."
+            GO C300_EXIT
+         END
+      END
+
+C300_EXIT:
+   RETURN
+
+C350_UPDATE_QUDET:
+
+* 1. Read QUXRF in order to obtain the QUDET line numbers
+     READV L_QUDET_LINE_NUMBERS FROM QUXRF, L_QUHDR_KEY, 1 ELSE L_QUDET_LINE_NUMBERS = ""
+     IF L_QUDET_LINE_NUMBERS # "" THEN
+
+* 2. If the QUXRF record was found, loop through the lines to update QUDET
+        L_NO_OF_LINES = DCOUNT(L_QUDET_LINE_NUMBERS,VM)
+        FOR L_LINE_SUB = 1 TO L_NO_OF_LINES
+           L_QUDET_KEY =  L_QUHDR_KEY : "*" : L_QUDET_LINE_NUMBERS<1,L_LINE_SUB>
+           READ  L_QUDET_REC FROM QUDET, L_QUDET_KEY ELSE L_QUDET_REC = ""
+           IF L_QUDET_REC # "" AND L_QUDET_REC<79> = 1 THEN
+              L_QUDET_REC<79>   =  L_CRM_DET_STATUS
+              L_QUDET_REC<81>   =  "CRM"
+              WRITE L_QUDET_REC TO QUDET, L_QUDET_KEY
+           END ELSE
+              IF L_QUDET_REC = "" THEN
+                 L_ERR_CODE = "C350-ERROR-1-1"
+                 L_ERR_MSG  = "Cannot find record ":L_QUDET_KEY :" in QUDET file."
+                 GO C350_EXIT
+              END
+           END
+        NEXT L_LINE_SUB
+     END ELSE
+        L_ERR_CODE = "C350-ERROR-1-2"
+        L_ERR_MSG  = "Cannot find record ":L_QUHDR_KEY :" in QUXRF file."
+        GO C350_EXIT
+     END
+C350_EXIT:
+     RETURN
+
+****************************************
+* 
+****************************************
+C400_BUILD_RELATED_ACCOUNT:
+
+   L_OPP_REC = ""
+
+   L_MAX     = DCOUNT(IN_DATA, AM)
+
+   FOR L_IND = 2 TO L_MAX
+
+      BEGIN CASE
+
+         CASE IN_DATA<L_IND,1> = "gs_opportunitynumber"
+
+            L_CRMOPP_KEY = IN_DATA<L_IND,2>
+
+            L_FILE_NAME = "IN_":L_IDENTITY:"_":L_CRMOPP_KEY:"_":L_MOD_ON_FILE:'.log'
+
+            OPENSEQ L_FILE_DIR, L_FILE_NAME TO L_CRM_LOG_FILE
+            ON ERROR
+               L_ERR_CODE = "C100-ERROR-1-1"
+               L_ERR_MSG = "Cannot open the CRM JSON file ":L_FILE_NAME:" in directory ":L_FILE_DIR:"."
+               GO C100_EXIT
+            END LOCKED
+               L_ERR_CODE = "C100-ERROR-1-2"
+               L_ERR_MSG  = "The CRM log file ":L_FILE_NAME:" in directory ":L_FILE_DIR:" is currently locked by ":L_FILE_DIR:" is currently locked by ":GETUSERNAME(STATUS()):"."
+               GO C100_EXIT
+            END ELSE
+               IF STATUS() # 0 THEN
+                  L_ERR_CODE = "C100-ERROR-1-3"
+                  L_ERR_MSG  = "Error occurred while opening the CRM log file ":L_FILE_NAME:" in directory ":L_FILE_DIR:" { ":STATUS():" }."
+                  GO C100_EXIT
+               END
+            END
+            READ CRMOPP_REC FROM CRMOPP, L_CRMOPP_KEY ELSE CRMOPP_REC = ""
+
+         CASE IN_DATA<L_IND,1> = "gs_erpkey"
+
+             L_GS_ERPKEY = IN_DATA<L_IND,2>
+
+      END CASE
+   NEXT L_IND
+
+   IF TRIM(L_GS_ERPKEY) # 0 THEN
+      LOCATE L_GS_ERPKEY IN CRMOPP_REC<10> SETTING POS ELSE
+         CRMOPP_REC<10,-1> =  FIELD(L_GS_ERPKEY,"*",2):"*":FIELD(L_GS_ERPKEY,"*",3)
+         WRITE CRMOPP_REC ON CRMOPP, L_CRMOPP_KEY
+      END
+   END
+
+C400_EXIT:
+   RETURN
+
+
+
+****************************************
+* 
+****************************************
+C500_WRITE_CRM_LOG:
+
+   WRITESEQ L_DATE : " - " :L_TIME APPEND ON L_CRM_LOG_FILE THEN END
+   WRITESEQ "DEBUG MOD: " : DEBUG_MOD APPEND ON L_CRM_LOG_FILE THEN END
+
+   BEGIN CASE
+
+     CASE L_IDENTITY = "opportunity"
+
+         WRITESEQ "Create/Update  Opportunity " : L_CRMOPP_KEY ON L_CRM_LOG_FILE THEN END
+
+     CASE L_IDENTITY = "gs_relatedaccount"
+        IF TRIM(L_GS_ERPKEY) # 0 THEN
+           WRITESEQ "Add Related Account to Opportunity " : L_CRMOPP_KEY ON L_CRM_LOG_FILE THEN END
+        END ELSE
+           WRITESEQ "Related Account NOT ADDED to Opportunity because ERPKEY equal to 0" ON L_CRM_LOG_FILE THEN END
+        END
+
+     CASE L_IDENTITY = "account" ; * Contractor
+
+         WRITESEQ "Create/update  Contractor " : L_CONTMST_KEY ON L_CRM_LOG_FILE THEN END
+
+     CASE L_IDENTITY = "quote"
+        IF L_VALID_STATUS = 1 THEN
+           WRITESEQ "Update Status of " : L_QUHDR_KEY : " to " : L_CRM_STATUS APPEND ON L_CRM_LOG_FILE THEN END
+        END ELSE
+           WRITESEQ "No update Status of " : L_QUHDR_KEY : " because non valid status: "  : L_CRM_STATUS APPEND ON L_CRM_LOG_FILE THEN END
+        END
+     END CASE
+
+
+     WRITESEQ "ERROR: " : L_ERR_CODE : " - " : L_ERR_MSG APPEND ON L_CRM_LOG_FILE THEN END
+     WRITESEQ "STATUS: " : STATUS<1> APPEND ON L_CRM_LOG_FILE THEN END
+
+     WRITESEQ "IN_DATA:" APPEND ON L_CRM_LOG_FILE THEN END
+     WRITESEQ IN_DATA APPEND ON L_CRM_LOG_FILE THEN END
+
+
+C500_EXIT:
+   RETURN
+*
+*************************************************************************************************************
+* This Sub is to put all Character in field name in Upercase and change french character to English Character
+*************************************************************************************************************
+*
+A220_SWAP_FRENCH_TO_ENGLISH: 
+*
+    L_LEN = LEN(L_TMP_FRENCH_CODE)
+    L_LEN2 = LEN(L_FRENCH_CODE)
+    FOR L_IND1 = 1 TO L_LEN
+       IF TRIM(L_TMP_FRENCH_CODE[L_IND1,1]) # "" THEN
+          FOR L_IND2 = 1 TO L_LEN2
+             IF L_TMP_FRENCH_CODE[L_IND1,1] = L_FRENCH_CODE[L_IND2,1] THEN
+                L_TMP_FRENCH_CODE[L_IND1,1] = L_ENGLISH_CODE[L_IND2,1]
+                L_IND2 = L_LEN2 + 1
+             END
+          NEXT L_IND2
+       END
+    NEXT L_IND1
+*
+A220_EXIT: 
+    RETURN
+
+*
+************************************************************
+*** Conversion of ASCII characters codes to LATIN 1 characters codes
+************************************************************
+*
+* The Word software uses the LATIN 1 characters codes.
+* Some characters as french characters or specials symbols have
+* to be converted in LATIN 1 characters codes.
+*
+*       Example:
+*       CHAR(174) ® of the ASCII table is CHAR(171) of the LATIN 1 table.
+*
+************************************************************
+*
+*
+************************************************************
+*** Conversion of LATIN 1 characters codes to ASCII characters codes
+************************************************************
+*
+* The Word software uses the LATIN 1 characters codes.
+* Some characters as french characters or specials symbols have
+* to be converted in LATIN 1 characters codes.
+*
+*       Example:
+*       CHAR(174) ® of the ASCII table is CHAR(171) of the LATIN 1 table.
+*
+************************************************************
+*
+A250_SWAP_LATIN_1_TO_ASCII_CODE: 
+*
+*    L_CODES_ASCII  ->  ASCII characters codes
+*    L_CODES_LATIN1 ->  Latin 1 characters codes used by Word Software
+
+    L_LEN = LEN(L_SWAP_ASCII)
+    L_LEN2 = LEN(L_CODES_ASCII)
+
+
+    FOR L_IND1 = 1 TO L_LEN
+
+       IF TRIM(L_SWAP_ASCII[L_IND1,1]) # "" THEN
+          FOR L_IND2 = 1 TO L_LEN2
+             IF L_SWAP_ASCII[L_IND1,1] = L_CODES_LATIN1[L_IND2,1] THEN
+                L_SWAP_ASCII[L_IND1,1] = L_CODES_ASCII[L_IND2,1]
+                L_IND2 = L_LEN2 + 1
+             END
+          NEXT L_IND2
+       END
+
+    NEXT L_IND1
+
+*
+A250_EXIT: 
+    RETURN
+
+
+
+****************************************
+* Exit
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END
+*
+*
+*
+*
+*

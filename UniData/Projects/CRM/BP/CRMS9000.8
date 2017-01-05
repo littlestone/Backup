@@ -1,0 +1,412 @@
+   SUBROUTINE CRMS9000.8 
+* Infoflo to CRM Send MAtrix change in PHANTOM/BATCH mode
+* VERSION 8.2.3
+*
+* 13 DEC 16 8.2.3 piedes PRJ*PIEDES.112-Fix somes bugs related to CRM
+* 17 OCT 16 8.2.3 piedes PRJ*SLS086D.1-(Sub #1) ICONNECT - CRM PROJECT - One shot Customer Ini
+* 18 OCT 16 8.2.3 piedes PRJ*SLS086D.1-(Sub #1) ICONNECT - CRM PROJECT - One shot Customer Ini
+*
+* 
+*  
+* 
+*  
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+
+   PROGRAM = 'CRMS9000.8'
+
+   $INCLUDE IIPLUS.TOP
+   $INCLUDE IIPLUS.TEXTLOAD
+   $INCLUDE IIPLUS.DEBUG
+
+   $INCLUDE TUBP TU.API.H
+   $INCLUDE TUBP ROC.H
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*
+* MODIFICATIONS:
+* ==============
+*              2016/07/16 piedes - Initial creation.
+*
+**************************************************************************
+
+
+A100_MAIN:
+
+   GOSUB A200_INITIALIZATION
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+
+   GO A500_CONCLUSION
+
+
+****************************************
+* Define & initialize variables.
+****************************************
+A200_INITIALIZATION:
+
+   RTN.FLAG = 0
+   STATUS   = ""
+   L_ERR_CODE = ""
+   L_ERR_MSG  = ""
+
+   L_TERMINATE_1 = 0
+   L_TERMINATE_2 = 0
+   L_TERMINATE_3 = 0
+   L_SLS_FLAG   = 0 ; * 0 = Agent, 1 = Sales Rep, 2 = Manager
+   L_IFFCRM_LIST = ""
+
+
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open any data files requried.
+****************************************
+A300_OPEN_FILES:
+
+   FILE.ERR = 0
+
+   CALL SB.OPEN.FILE("IFFCRM",IFFCRM,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-1"
+      L_ERR_MSG = "Open IFFCRM file error."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("IFFCRMHST",IFFCRMHST,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-1.1"
+      L_ERR_MSG = "Open IFFCRMHST file error."
+      GO A300_EXIT
+   END
+
+
+   CALL SB.OPEN.FILE("CUSTMST",CUSTMST,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-2"
+      L_ERR_MSG = "Unable to open file CUSTMST."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("CUSTMSTCRM",CUSTMSTCRM,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-2"
+      L_ERR_MSG = "Unable to open file CUSTMSTCRM."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("SYSTBL",SYSTBL,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-2"
+      L_ERR_MSG = "Unable to open file SYSTBL."
+      GO A300_EXIT
+   END
+*** \/ PIEDES.112
+
+   CALL SB.OPEN.FILE("CRMMATRIXGUID",CRMMATRIXGUID,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-2"
+      L_ERR_MSG = "Unable to open file CRMMATRIXGUID."
+      GO A300_EXIT
+   END
+
+*** /\ PIEDES.112
+
+A300_EXIT:
+   RETURN
+
+****************************************
+* Main process.
+****************************************
+A400_MAIN_PROCESS:
+
+   GOSUB B100_BUILD_DATA
+
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+A400_EXIT:
+   RETURN
+
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+   IF L_ERR_CODE # "" THEN
+      STATUS<1> = L_ERR_CODE
+      STATUS<2> = L_ERR_MSG
+   END
+
+   RTN.FLAG = 0
+   REFRESH = -2
+
+A500_EXIT:
+   GO 9999
+
+
+****************************************
+* Validate CRM integration request data.
+****************************************
+B100_BUILD_DATA:
+
+  EXECUTE "CLEARSELECT" CAPTURING GARBAGE
+  L_STMT_1 = 'SSELECT IFFCRM BY DF_DATE BY DF_TIME'
+  PRINT "-----------------------------------------------------------------"
+  PRINT "FIRST Select record in IFFCRM: " : L_STMT_1
+  EXECUTE L_STMT_1 CAPTURING CARBAGE
+  PRINT "Select result: " : @SYSTEM.RETURN.CODE
+
+  LOOP
+     READNEXT L_IFFCRM_KEY ELSE L_TERMINATE_1 = 1
+  UNTIL L_TERMINATE_1 = 1
+     L_IFFCRM_LIST<-1> = L_IFFCRM_KEY
+  REPEAT
+
+  L_NB_IFFCRM_REC = DCOUNT(L_IFFCRM_LIST, AM)
+
+  FOR L_IND = 1 TO L_NB_IFFCRM_REC
+
+     L_IFFCRM_KEY = L_IFFCRM_LIST<L_IND>
+
+     PRINT "-----------------------------------------------------------------"
+     PRINT "IFFCRM KEY: " : L_IFFCRM_KEY
+     PRINT "-----------------------------------------------------------------"
+
+     READ L_IFFCRM_REC FROM IFFCRM, L_IFFCRM_KEY THEN
+        L_SLS_FLAG = TRIM(FIELD(L_IFFCRM_KEY,"*",1))
+        BEGIN CASE
+
+           CASE L_SLS_FLAG = "2" ; * Manager
+              L_LIST = ""
+              L_MGR_CODE = TRIM(FIELD(L_IFFCRM_KEY,"*",2))
+              EXECUTE "CLEARSELECT" CAPTURING GARBAGE
+              L_STMT_2 = 'SSELECT CUSTMST WITH DEF_MGR_OVERIDE = "':L_MGR_CODE:'" OR WITH MS_MGR_OVERIDE = "[':L_MGR_CODE:']"'
+              PRINT "AND NOW -> ":L_STMT_2
+
+              EXECUTE L_STMT_2 RTNLIST L_LIST CAPTURING GARBAGE
+
+              PRINT "Select result: " : @SYSTEM.RETURN.CODE
+
+              L_TERMINATE_2 = 0
+              LOOP
+                 READNEXT KEY FROM L_LIST ELSE L_TERMINATE_2 = 1
+              UNTIL L_TERMINATE_2 = 1
+                 READ L_CUSTMSTCRM FROM CUSTMSTCRM, ACNT.NAME:"*":KEY THEN
+                    IF L_CUSTMSTCRM<2> # "" THEN
+                       READ RECORD FROM CUSTMST, KEY THEN
+                          ORIG.REC = RECORD
+                          PRINT "-----------------------------------------------------------------"
+                          PRINT "Processing: " : KEY : ", " : L_MGR_CODE
+                          CALL SB.PROCESS("ARMP3000.84")
+                       END
+                    END ELSE
+                       PRINT "-----------------------------------------------------------------"
+                       PRINT KEY : " Skipped because no GUID."
+                    END
+                 END ELSE
+                    PRINT "-----------------------------------------------------------------"
+                    PRINT KEY : " Skipped because no GUID."
+                 END
+              REPEAT
+              WRITE L_IFFCRM_REC ON IFFCRMHST, L_IFFCRM_KEY
+              DELETE IFFCRM, L_IFFCRM_KEY
+
+           CASE L_SLS_FLAG = "1" ; * Sales Rep
+              L_LIST = ""
+              L_SLS_CODE = TRIM(FIELD(L_IFFCRM_KEY,"*",2))
+              EXECUTE "CLEARSELECT" CAPTURING GARBAGE
+              L_STMT_2 = 'SSELECT CUSTMST WITH SLS.NO = "':L_SLS_CODE:'" OR WITH MKT_SEG_REP = "[':L_SLS_CODE:']"'
+              PRINT "AND NOW -> ":L_STMT_2
+
+              EXECUTE L_STMT_2 RTNLIST L_LIST CAPTURING GARBAGE
+
+              PRINT "Select result: " : @SYSTEM.RETURN.CODE
+
+              L_TERMINATE_2 = 0
+              LOOP
+                 READNEXT KEY FROM L_LIST ELSE L_TERMINATE_2 = 1
+              UNTIL L_TERMINATE_2 = 1
+                 GOSUB B150_DEFINE_SLS_FLAG
+                 IF L_SLS_COM_FLAG = L_SLS_FLAG THEN
+                    READ L_CUSTMSTCRM FROM CUSTMSTCRM, ACNT.NAME:"*":KEY THEN
+                      IF L_CUSTMSTCRM<2> # "" THEN
+                         READ RECORD FROM CUSTMST, KEY THEN
+                            ORIG.REC = RECORD
+                            PRINT "-----------------------------------------------------------------"
+                            PRINT "Processing: " : KEY : ", " : L_SLS_CODE
+                            CALL SB.PROCESS("ARMP3000.84")
+                         END
+                      END ELSE
+                         PRINT "-----------------------------------------------------------------"
+                         PRINT KEY : " Skipped because no GUID."
+                      END
+                   END ELSE
+                      PRINT "-----------------------------------------------------------------"
+                      PRINT KEY : " Skipped because no GUID."
+                   END
+                 END
+              REPEAT
+              WRITE L_IFFCRM_REC ON IFFCRMHST, L_IFFCRM_KEY
+              DELETE IFFCRM, L_IFFCRM_KEY
+
+           CASE L_SLS_FLAG = "0" ; * Agent
+              L_LIST = ""
+              L_AGENT_CODE = TRIM(FIELD(L_IFFCRM_KEY,"*",2))
+              L_STATE = TRIM(L_IFFCRM_REC<2>)
+              EXECUTE "CLEARSELECT" CAPTURING GARBAGE
+              L_STMT_3 = 'SELECT CUSTMST WITH SLS_AGENT = "':L_AGENT_CODE:'" OR WITH MKT_SEG_AGENT = "[':L_AGENT_CODE:']"'
+              PRINT "NOW -> ":L_STMT_3
+
+              IF L_STATE # "" THEN
+                 EXECUTE L_STMT_3
+                 L_STMT_3 = 'SELECT CUSTMST WITH STATE = "':L_STATE:'"'
+                 PRINT "BECAUSE SPECIFIC STATE, NOW -> ":L_STMT_3
+                 EXECUTE L_STMT_3 RTNLIST L_LIST
+              END ELSE
+                 EXECUTE L_STMT_3 RTNLIST L_LIST
+              END
+
+              PRINT "Select result: " : @SYSTEM.RETURN.CODE
+
+              L_TERMINATE_3 = 0
+              LOOP
+                 READNEXT KEY FROM L_LIST ELSE L_TERMINATE_3 = 1
+              UNTIL L_TERMINATE_3 = 1
+                 GOSUB B150_DEFINE_SLS_FLAG
+                 IF L_SLS_COM_FLAG = L_SLS_FLAG THEN
+                   READ L_CUSTMSTCRM FROM CUSTMSTCRM, ACNT.NAME:"*":KEY THEN
+                      IF L_CUSTMSTCRM<2> # "" THEN
+                         READ RECORD FROM CUSTMST, KEY THEN
+                            ORIG.REC = RECORD
+                            PRINT "-----------------------------------------------------------------"
+                            IF L_STATE # "" THEN
+                               READV L_STATE_DESC FROM SYSTBL, "TAX*":L_STATE, 4 ELSE L_STATE_DESC = ""
+                               PRINT "Processing: " : KEY : ", " : L_AGENT_CODE:", ":L_STATE: " - " : L_STATE_DESC
+                            END ELSE
+                               PRINT "Processing: " : KEY : ", " : L_AGENT_CODE
+                            END
+                            CALL SB.PROCESS("ARMP3000.84")
+                         END
+                      END ELSE
+                         PRINT "-----------------------------------------------------------------"
+                         PRINT KEY : " Skipped because no GUID."
+                      END
+                   END ELSE
+                      PRINT "-----------------------------------------------------------------"
+                      PRINT KEY : " Skipped because no GUID."
+                   END
+                 END
+              REPEAT
+              WRITE L_IFFCRM_REC ON IFFCRMHST, L_IFFCRM_KEY
+              DELETE IFFCRM, L_IFFCRM_KEY
+
+        END CASE
+     END
+  NEXT L_IND
+
+*** \/ PIEDES.112
+
+  L_TERMINATE_1 = 0
+
+  EXECUTE "CLEARSELECT" CAPTURING GARBAGE
+  L_STMT_1 = 'SSELECT CRMMATRIXGUID WITH TO_DELETE = "1"'
+  PRINT "-----------------------------------------------------------------"
+  PRINT "Select record To delete in CRMMATRIXGUID: " : L_STMT_1
+  EXECUTE L_STMT_1 CAPTURING CARBAGE
+  PRINT "Select result: " : @SYSTEM.RETURN.CODE
+
+  LOOP
+     READNEXT L_CRMMATRIXGUID_KEY ELSE L_TERMINATE_1 = 1
+  UNTIL L_TERMINATE_1 = 1
+     L_GUID = ""
+     READV L_GUID FROM CRMMATRIXGUID, L_CRMMATRIXGUID_KEY, 2 THEN
+        IF TRIM(L_GUID) # "" THEN
+           PARAM<1,1> = "CRM.HTTP.SETTINGS"
+           PARAM<1,2> = "CRM.HTTP.PARAMETERS"
+
+           PARAM<3>  = "SLSMATRIX"
+           PARAM<7>  = "DELETE"
+           PARAM<12> = TRIM(L_GUID)
+
+           PARAM<14> = 1
+           PARAM<16> = L_CRMMATRIXGUID_KEY
+
+           CALL SB.PROCESS("CRMS9000.1")
+        END
+     END
+  REPEAT
+*** /\ PIEDES.112
+
+B100_BUILD_DATA_EXIT:
+  RETURN
+
+B150_DEFINE_SLS_FLAG:
+  L_SLS_COM_FLAG                 = ""
+  L_SAVE_PARAM               =  PARAM
+  PARAM                      =  ""
+  L_COMPANY_CODE             =  FIELD(KEY,"*",1)
+  PARAM<1>                   =  L_COMPANY_CODE
+
+  CALL  SB.PROCESS("SYSS9901.1")
+
+  L_COMPANY_SLS_AGENT_FLAG   =  PARAM<2>
+  PARAM                      =  ""
+  PARAM                      =  L_SAVE_PARAM
+
+  IF L_COMPANY_SLS_AGENT_FLAG  =  "0" THEN
+     L_ERR_CODE = "B150-ERROR-1-1"
+     L_ERR_MSG  = "Company '" : L_COMPANY_CODE : "' not setup in system constant CRM.COMPANY"
+     GO  B150_DEFINE_SLS_FLAG_EXIT
+  END ELSE
+     IF L_COMPANY_SLS_AGENT_FLAG = "1" OR L_COMPANY_SLS_AGENT_FLAG = "3" THEN
+        L_SLS_COM_FLAG = 1
+     END ELSE
+        L_SLS_COM_FLAG = 0
+     END
+  END
+
+ B150_DEFINE_SLS_FLAG_EXIT:
+
+  RETURN
+
+
+
+****************************************
+* Exit
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END
+*
+*
+*
+*

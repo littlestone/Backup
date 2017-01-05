@@ -1,0 +1,731 @@
+﻿<?xml version="1.0"?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:refId="Package"
+  DTS:CreationDate="3/4/2016 5:11:59 PM"
+  DTS:CreationName="SSIS.Package.3"
+  DTS:CreatorComputerName="63RJGV1"
+  DTS:CreatorName="CORP\juntan"
+  DTS:DTSID="{37C0C369-FF92-41DB-A26C-DB292E8DB46B}"
+  DTS:ExecutableType="SSIS.Package.3"
+  DTS:LastModifiedProductVersion="11.0.5583.0"
+  DTS:LocaleID="4105"
+  DTS:ObjectName="MarketingHierarchyView"
+  DTS:PackageType="5"
+  DTS:ProtectionLevel="0"
+  DTS:VersionBuild="26"
+  DTS:VersionGUID="{DAD32DD6-2DB1-48C1-8971-145BAD8AD7A0}">
+  <DTS:Property
+    DTS:Name="PackageFormatVersion">6</DTS:Property>
+  <DTS:ConnectionManagers>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[step.stepview]"
+      DTS:CreationName="OLEDB"
+      DTS:DTSID="{6280328F-A55F-40D7-8D5A-6BA9BE0BC938}"
+      DTS:ObjectName="step.stepview">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:Retain="True"
+          DTS:ConnectionString="Data Source=step;User ID=stepview;Provider=OraOLEDB.Oracle.1;Persist Security Info=True;">
+          <DTS:Password
+            DTS:Name="Password"
+            Sensitive="1"></DTS:Password>
+        </DTS:ConnectionManager>
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+  </DTS:ConnectionManagers>
+  <DTS:Variables />
+  <DTS:Executables>
+    <DTS:Executable
+      DTS:refId="Package\Sequence Container"
+      DTS:CreationName="STOCK:SEQUENCE"
+      DTS:Description="Sequence Container"
+      DTS:DTSID="{9E6F66D5-896B-4162-9D35-F73007F8FAE9}"
+      DTS:ExecutableType="STOCK:SEQUENCE"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Sequence Container">
+      <DTS:Variables />
+      <DTS:Executables>
+        <DTS:Executable
+          DTS:refId="Package\Sequence Container\Copy MarketingHierarchyView"
+          DTS:CreationName="SSIS.Pipeline.3"
+          DTS:Description="Data Flow Task"
+          DTS:DTSID="{01F1E8EA-9E72-4106-BB06-EFFF5519E75C}"
+          DTS:ExecutableType="SSIS.Pipeline.3"
+          DTS:LocaleID="-1"
+          DTS:ObjectName="Copy MarketingHierarchyView"
+          DTS:TaskContact="Performs high-performance data extraction, transformation and loading;Microsoft Corporation; Microsoft SQL Server; (C) 2007 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1">
+          <DTS:Variables />
+          <DTS:ObjectData>
+            <pipeline
+              version="1">
+              <components>
+                <component
+                  refId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM"
+                  componentClassID="{4ADA7EAA-136C-4215-8098-D7A7C27FC0D1}"
+                  contactInfo="OLE DB Destination;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;4"
+                  description="OLE DB Destination"
+                  name="DataWarehouse PIM"
+                  usesDispositions="true"
+                  version="4">
+                  <properties>
+                    <property
+                      dataType="System.Int32"
+                      description="The number of seconds before a command times out.  A value of 0 indicates an infinite time-out."
+                      name="CommandTimeout">0</property>
+                    <property
+                      dataType="System.String"
+                      description="Specifies the name of the database object used to open a rowset."
+                      name="OpenRowset">[dbo].[MarketingHierarchyView]</property>
+                    <property
+                      dataType="System.String"
+                      description="Specifies the variable that contains the name of the database object used to open a rowset."
+                      name="OpenRowsetVariable"></property>
+                    <property
+                      dataType="System.String"
+                      description="The SQL command to be executed."
+                      name="SqlCommand"
+                      UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor, Microsoft.DataTransformationServices.Controls, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"></property>
+                    <property
+                      dataType="System.Int32"
+                      description="Specifies the column code page to use when code page information is unavailable from the data source."
+                      name="DefaultCodePage">1252</property>
+                    <property
+                      dataType="System.Boolean"
+                      description="Forces the use of the DefaultCodePage property value when describing character data."
+                      name="AlwaysUseDefaultCodePage">false</property>
+                    <property
+                      dataType="System.Int32"
+                      description="Specifies the mode used to access the database."
+                      name="AccessMode"
+                      typeConverter="AccessMode">3</property>
+                    <property
+                      dataType="System.Boolean"
+                      description="Indicates whether the values supplied for identity columns will be copied to the destination. If false, values for identity columns will be auto-generated at the destination. Applies only if fast load is turned on."
+                      name="FastLoadKeepIdentity">false</property>
+                    <property
+                      dataType="System.Boolean"
+                      description="Indicates whether the columns containing null will have null inserted in the destination. If false, columns containing null will have their default values inserted at the destination. Applies only if fast load is turned on."
+                      name="FastLoadKeepNulls">false</property>
+                    <property
+                      dataType="System.String"
+                      description="Specifies options to be used with fast load.  Applies only if fast load is turned on."
+                      name="FastLoadOptions">TABLOCK</property>
+                    <property
+                      dataType="System.Int32"
+                      description="Specifies when commits are issued during data insertion.  A value of 0 specifies that one commit will be issued at the end of data insertion.  Applies only if fast load is turned on."
+                      name="FastLoadMaxInsertCommitSize">2147483647</property>
+                  </properties>
+                  <connections>
+                    <connection
+                      refId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Connections[OleDbConnection]"
+                      connectionManagerID="{8D6DB1AA-86B9-44CA-AAC3-F419A009453B}:external"
+                      connectionManagerRefId="Project.ConnectionManagers[sql11.DataWarehouse_PIM]"
+                      description="The OLE DB runtime connection used to access the database."
+                      name="OleDbConnection" />
+                  </connections>
+                  <inputs>
+                    <input
+                      refId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Inputs[OLE DB Destination Input]"
+                      errorOrTruncationOperation="Insert"
+                      errorRowDisposition="FailComponent"
+                      hasSideEffects="true"
+                      name="OLE DB Destination Input">
+                      <inputColumns>
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[PRODUCTLINEID]"
+                          cachedDataType="wstr"
+                          cachedLength="40"
+                          cachedName="PRODUCTLINEID"
+                          externalMetadataColumnId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[ProductLineID]"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].Columns[PRODUCTLINEID]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[PRODUCTLINE]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="PRODUCTLINE"
+                          externalMetadataColumnId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[ProductLine]"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].Columns[PRODUCTLINE]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[APPLICATION]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="APPLICATION"
+                          externalMetadataColumnId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[Application]"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].Columns[APPLICATION]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[MARKETSEGMENT]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="MARKETSEGMENT"
+                          externalMetadataColumnId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[MarketSegment]"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].Columns[MARKETSEGMENT]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[COMPANY]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="COMPANY"
+                          externalMetadataColumnId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[Company]"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].Columns[COMPANY]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[DESCRIPTION]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="DESCRIPTION"
+                          externalMetadataColumnId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[Description]"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].Columns[DESCRIPTION]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[FEATURESANDBENEFITS]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="FEATURESANDBENEFITS"
+                          externalMetadataColumnId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[FeaturesAndBenefits]"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].Columns[FEATURESANDBENEFITS]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[WEBSITEURL]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="WEBSITEURL"
+                          externalMetadataColumnId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[WebsiteURL]"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].Columns[WEBSITEURL]" />
+                      </inputColumns>
+                      <externalMetadataColumns
+                        isUsed="True">
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[ProductLineID]"
+                          dataType="wstr"
+                          length="255"
+                          name="ProductLineID" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[ProductLine]"
+                          dataType="wstr"
+                          length="255"
+                          name="ProductLine" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[Application]"
+                          dataType="wstr"
+                          length="255"
+                          name="Application" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[MarketSegment]"
+                          dataType="wstr"
+                          length="255"
+                          name="MarketSegment" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[Company]"
+                          dataType="wstr"
+                          length="255"
+                          name="Company" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[Description]"
+                          dataType="nText"
+                          name="Description" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[FeaturesAndBenefits]"
+                          dataType="nText"
+                          name="FeaturesAndBenefits" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[WebsiteURL]"
+                          dataType="wstr"
+                          length="255"
+                          name="WebsiteURL" />
+                      </externalMetadataColumns>
+                    </input>
+                  </inputs>
+                  <outputs>
+                    <output
+                      refId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Outputs[OLE DB Destination Error Output]"
+                      exclusionGroup="1"
+                      isErrorOut="true"
+                      name="OLE DB Destination Error Output"
+                      synchronousInputId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Inputs[OLE DB Destination Input]">
+                      <outputColumns>
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
+                          dataType="i4"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
+                          name="ErrorCode"
+                          specialFlags="1" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
+                          dataType="i4"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
+                          name="ErrorColumn"
+                          specialFlags="2" />
+                      </outputColumns>
+                      <externalMetadataColumns />
+                    </output>
+                  </outputs>
+                </component>
+                <component
+                  refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query"
+                  componentClassID="{165A526D-D5DE-47FF-96A6-F8274C19826B}"
+                  contactInfo="OLE DB Source;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;7"
+                  description="OLE DB Source"
+                  name="Oracle Query"
+                  usesDispositions="true"
+                  version="7">
+                  <properties>
+                    <property
+                      dataType="System.Int32"
+                      description="The number of seconds before a command times out.  A value of 0 indicates an infinite time-out."
+                      name="CommandTimeout">0</property>
+                    <property
+                      dataType="System.String"
+                      description="Specifies the name of the database object used to open a rowset."
+                      name="OpenRowset"></property>
+                    <property
+                      dataType="System.String"
+                      description="Specifies the variable that contains the name of the database object used to open a rowset."
+                      name="OpenRowsetVariable"></property>
+                    <property
+                      dataType="System.String"
+                      description="The SQL command to be executed."
+                      name="SqlCommand"
+                      UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor, Microsoft.DataTransformationServices.Controls, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91">select line.name ProductLineID, pimviewapipck.getcontextname(line.id) ProductLine, 
+  pimviewapipck.getcontextname(appli.parentid) Application, pimviewapipck.getcontextname(segm.parentid) MarketSegment, pimviewapipck.getcontextname(comp.parentid) Company,
+  pimviewapipck.getcontextvalue4node(line.id,1754617) Description,
+  REPLACE(pimviewapipck.getcontextvalues4node_multisep(line.id,1754587), '&lt;multisep/&gt;', ';') FeaturesAndBenefits,
+  pimviewapipck.getcontextvalue4node(line.id,1754242) WebsiteURL
+from (((classification_v line left join classificationhierlink_v appli on appli.childid = line.id) 
+  left join classificationhierlink_v segm on segm.childid = appli.parentid) 
+  left join classificationhierlink_v comp on comp.childid = segm.parentid)
+where line.subtypeid=1753145</property>
+                    <property
+                      dataType="System.String"
+                      description="The variable that contains the SQL command to be executed."
+                      name="SqlCommandVariable"></property>
+                    <property
+                      dataType="System.Int32"
+                      description="Specifies the column code page to use when code page information is unavailable from the data source."
+                      name="DefaultCodePage">1252</property>
+                    <property
+                      dataType="System.Boolean"
+                      description="Forces the use of the DefaultCodePage property value when describing character data."
+                      name="AlwaysUseDefaultCodePage">false</property>
+                    <property
+                      dataType="System.Int32"
+                      description="Specifies the mode used to access the database."
+                      name="AccessMode"
+                      typeConverter="AccessMode">2</property>
+                    <property
+                      dataType="System.String"
+                      description="The mappings between the parameters in the SQL command and variables."
+                      name="ParameterMapping"></property>
+                  </properties>
+                  <connections>
+                    <connection
+                      refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Connections[OleDbConnection]"
+                      connectionManagerID="Package.ConnectionManagers[step.stepview]"
+                      connectionManagerRefId="Package.ConnectionManagers[step.stepview]"
+                      description="The OLE DB runtime connection used to access the database."
+                      name="OleDbConnection" />
+                  </connections>
+                  <outputs>
+                    <output
+                      refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output]"
+                      name="OLE DB Source Output">
+                      <outputColumns>
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].Columns[PRODUCTLINEID]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[PRODUCTLINEID]"
+                          length="40"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].Columns[PRODUCTLINEID]"
+                          name="PRODUCTLINEID"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].Columns[PRODUCTLINE]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[PRODUCTLINE]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].Columns[PRODUCTLINE]"
+                          name="PRODUCTLINE"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].Columns[APPLICATION]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[APPLICATION]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].Columns[APPLICATION]"
+                          name="APPLICATION"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].Columns[MARKETSEGMENT]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[MARKETSEGMENT]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].Columns[MARKETSEGMENT]"
+                          name="MARKETSEGMENT"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].Columns[COMPANY]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[COMPANY]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].Columns[COMPANY]"
+                          name="COMPANY"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].Columns[DESCRIPTION]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[DESCRIPTION]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].Columns[DESCRIPTION]"
+                          name="DESCRIPTION"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].Columns[FEATURESANDBENEFITS]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[FEATURESANDBENEFITS]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].Columns[FEATURESANDBENEFITS]"
+                          name="FEATURESANDBENEFITS"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].Columns[WEBSITEURL]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[WEBSITEURL]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].Columns[WEBSITEURL]"
+                          name="WEBSITEURL"
+                          truncationRowDisposition="FailComponent" />
+                      </outputColumns>
+                      <externalMetadataColumns
+                        isUsed="True">
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[PRODUCTLINEID]"
+                          dataType="wstr"
+                          length="40"
+                          name="PRODUCTLINEID" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[PRODUCTLINE]"
+                          dataType="wstr"
+                          length="4000"
+                          name="PRODUCTLINE" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[APPLICATION]"
+                          dataType="wstr"
+                          length="4000"
+                          name="APPLICATION" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[MARKETSEGMENT]"
+                          dataType="wstr"
+                          length="4000"
+                          name="MARKETSEGMENT" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[COMPANY]"
+                          dataType="wstr"
+                          length="4000"
+                          name="COMPANY" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[DESCRIPTION]"
+                          dataType="wstr"
+                          length="4000"
+                          name="DESCRIPTION" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[FEATURESANDBENEFITS]"
+                          dataType="wstr"
+                          length="4000"
+                          name="FEATURESANDBENEFITS" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[WEBSITEURL]"
+                          dataType="wstr"
+                          length="4000"
+                          name="WEBSITEURL" />
+                      </externalMetadataColumns>
+                    </output>
+                    <output
+                      refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Error Output]"
+                      isErrorOut="true"
+                      name="OLE DB Source Error Output">
+                      <outputColumns>
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[PRODUCTLINEID]"
+                          dataType="wstr"
+                          length="40"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[PRODUCTLINEID]"
+                          name="PRODUCTLINEID" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[PRODUCTLINE]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[PRODUCTLINE]"
+                          name="PRODUCTLINE" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[APPLICATION]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[APPLICATION]"
+                          name="APPLICATION" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[MARKETSEGMENT]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[MARKETSEGMENT]"
+                          name="MARKETSEGMENT" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[COMPANY]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[COMPANY]"
+                          name="COMPANY" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[DESCRIPTION]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[DESCRIPTION]"
+                          name="DESCRIPTION" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[FEATURESANDBENEFITS]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[FEATURESANDBENEFITS]"
+                          name="FEATURESANDBENEFITS" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[WEBSITEURL]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[WEBSITEURL]"
+                          name="WEBSITEURL" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ErrorCode]"
+                          dataType="i4"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ErrorCode]"
+                          name="ErrorCode"
+                          specialFlags="1" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ErrorColumn]"
+                          dataType="i4"
+                          lineageId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ErrorColumn]"
+                          name="ErrorColumn"
+                          specialFlags="2" />
+                      </outputColumns>
+                      <externalMetadataColumns />
+                    </output>
+                  </outputs>
+                </component>
+              </components>
+              <paths>
+                <path
+                  refId="Package\Sequence Container\Copy MarketingHierarchyView.Paths[OLE DB Source Output]"
+                  endId="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM.Inputs[OLE DB Destination Input]"
+                  name="OLE DB Source Output"
+                  startId="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query.Outputs[OLE DB Source Output]" />
+              </paths>
+            </pipeline>
+          </DTS:ObjectData>
+        </DTS:Executable>
+        <DTS:Executable
+          DTS:refId="Package\Sequence Container\Setting Oracle Session Varaible"
+          DTS:CreationName="Microsoft.SqlServer.Dts.Tasks.ExecuteSQLTask.ExecuteSQLTask, Microsoft.SqlServer.SQLTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+          DTS:Description="Execute SQL Task"
+          DTS:DTSID="{AD0E4BED-7A27-4A73-B84D-40A49B00E7CC}"
+          DTS:ExecutableType="Microsoft.SqlServer.Dts.Tasks.ExecuteSQLTask.ExecuteSQLTask, Microsoft.SqlServer.SQLTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+          DTS:LocaleID="-1"
+          DTS:ObjectName="Setting Oracle Session Varaible"
+          DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2012; © 2007 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+          DTS:ThreadHint="0">
+          <DTS:Variables />
+          <DTS:ObjectData>
+            <SQLTask:SqlTaskData
+              SQLTask:Connection="{6280328F-A55F-40D7-8D5A-6BA9BE0BC938}"
+              SQLTask:BypassPrepare="False"
+              SQLTask:SqlStatementSource="begin pimviewapipck.setviewcontext('Context1','Approved') ; end;" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+          </DTS:ObjectData>
+        </DTS:Executable>
+      </DTS:Executables>
+      <DTS:PrecedenceConstraints>
+        <DTS:PrecedenceConstraint
+          DTS:refId="Package\Sequence Container.PrecedenceConstraints[Constraint]"
+          DTS:CreationName=""
+          DTS:DTSID="{DE483EB6-0B12-4F07-8A04-1303CD47D651}"
+          DTS:From="Package\Sequence Container\Setting Oracle Session Varaible"
+          DTS:LogicalAnd="True"
+          DTS:ObjectName="Constraint"
+          DTS:To="Package\Sequence Container\Copy MarketingHierarchyView" />
+      </DTS:PrecedenceConstraints>
+    </DTS:Executable>
+    <DTS:Executable
+      DTS:refId="Package\Truncate MarketingHierarchyView"
+      DTS:CreationName="Microsoft.SqlServer.Dts.Tasks.ExecuteSQLTask.ExecuteSQLTask, Microsoft.SqlServer.SQLTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+      DTS:Description="Execute SQL Task"
+      DTS:DTSID="{7A8D9BEB-0259-4F64-96F6-EE7230379C6A}"
+      DTS:ExecutableType="Microsoft.SqlServer.Dts.Tasks.ExecuteSQLTask.ExecuteSQLTask, Microsoft.SqlServer.SQLTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Truncate MarketingHierarchyView"
+      DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2012; © 2007 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{8D6DB1AA-86B9-44CA-AAC3-F419A009453B}"
+          SQLTask:BypassPrepare="False"
+          SQLTask:SqlStatementSource="TRUNCATE TABLE dbo.MarketingHierarchyView" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+  </DTS:Executables>
+  <DTS:PrecedenceConstraints>
+    <DTS:PrecedenceConstraint
+      DTS:refId="Package.PrecedenceConstraints[Constraint]"
+      DTS:CreationName=""
+      DTS:DTSID="{190BD04B-13F1-4C45-9AF0-B8F866CFE355}"
+      DTS:From="Package\Truncate MarketingHierarchyView"
+      DTS:LogicalAnd="True"
+      DTS:ObjectName="Constraint"
+      DTS:To="Package\Sequence Container" />
+  </DTS:PrecedenceConstraints>
+  <DTS:DesignTimeProperties><![CDATA[<?xml version="1.0"?>
+<!--This CDATA section contains the layout information of the package. The section includes information such as (x,y) coordinates, width, and height.-->
+<!--If you manually edit this section and make a mistake, you can delete it. -->
+<!--The package will still be able to load normally but the previous layout information will be lost and the designer will automatically re-arrange the elements on the design surface.-->
+<Objects
+  Version="sql11">
+  <!--Each node below will contain properties that do not affect runtime behavior.-->
+  <Package
+    design-time-name="Package">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="8" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
+        <NodeLayout
+          Size="220.8,41.6"
+          Id="Package\Sequence Container\Copy MarketingHierarchyView"
+          TopLeft="32.228573803026,123.34118051166" />
+        <NodeLayout
+          Size="225.6,41.6"
+          Id="Package\Sequence Container\Setting Oracle Session Varaible"
+          TopLeft="29.9428594783861,30.964708627879" />
+        <EdgeLayout
+          Id="Package\Sequence Container.PrecedenceConstraints[Constraint]"
+          TopLeft="142.685716640706,72.564708627879">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,50.7764718837807"
+              Start="0,0"
+              End="0,43.2764718837807">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,43.2764718837807" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+        <ContainerLayout
+          HeaderHeight="43"
+          IsExpanded="True"
+          PanelSize="281.6,220.8"
+          Size="281.6,264"
+          Id="Package\Sequence Container"
+          TopLeft="107.428573258069,127.247060608122" />
+        <NodeLayout
+          Size="238.4,41.6"
+          Id="Package\Truncate MarketingHierarchyView"
+          TopLeft="131.428573666787,25.9294121507955" />
+        <EdgeLayout
+          Id="Package.PrecedenceConstraints[Constraint]"
+          TopLeft="249.428573462428,67.5294121507955">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,59.7176484573265"
+              Start="0,0"
+              End="0,52.2176484573265">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,52.2176484573265" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+      </GraphLayout>
+    </LayoutInfo>
+  </Package>
+  <TaskHost
+    design-time-name="Package\Sequence Container\Copy MarketingHierarchyView">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="4" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
+        <NodeLayout
+          Size="176,41.6"
+          Id="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM"
+          TopLeft="288.8,190.588235285538" />
+        <NodeLayout
+          Size="142.4,41.6"
+          Id="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query"
+          TopLeft="300.8,60" />
+        <EdgeLayout
+          Id="Package\Sequence Container\Copy MarketingHierarchyView.Paths[OLE DB Source Output]"
+          TopLeft="374.4,101.6">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,88.9882352855379"
+              Start="0,0"
+              End="0,81.4882352855379">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,81.4882352855379" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+      </GraphLayout>
+    </LayoutInfo>
+  </TaskHost>
+  <PipelineComponentMetadata
+    design-time-name="Package\Sequence Container\Copy MarketingHierarchyView\DataWarehouse PIM">
+    <Properties>
+      <Property>
+        <Name>DataSourceViewID</Name>
+      </Property>
+      <Property>
+        <Name>TableInfoObjectType</Name>
+        <Value
+          type="q2:string">Table</Value>
+      </Property>
+    </Properties>
+  </PipelineComponentMetadata>
+  <PipelineComponentMetadata
+    design-time-name="Package\Sequence Container\Copy MarketingHierarchyView\Oracle Query">
+    <Properties>
+      <Property>
+        <Name>DataSourceViewID</Name>
+      </Property>
+    </Properties>
+  </PipelineComponentMetadata>
+</Objects>]]></DTS:DesignTimeProperties>
+</DTS:Executable>

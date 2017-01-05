@@ -1,0 +1,269 @@
+   SUBROUTINE API_NAME(ARGS_IN,ARGS_OUT,STATUS)
+* Short program description here...
+* VERSION 8.2.3
+*
+*
+*
+*
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+
+   PROGRAM = 'API_NAME'
+
+   $INCLUDE IIPLUS.TOP
+   $INCLUDE IIPLUS.TEXTLOAD
+   $INCLUDE IIPLUS.DEBUG
+
+   $INCLUDE TUBP TU.API.H
+   $INCLUDE TUBP ROC.H
+   $INCLUDE /usr/igi/ud/sys/INCLUDE XML.H
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*              This program is used to ...
+*
+*              <<<NOTE>>>
+*
+*              1. Input arguments (delimited by @FM):
+*                 ARGS_IN<1> ->
+*                 ARGS_IN<2> ->
+*                 ...
+*
+*              2. Output arguments (null if any error occurred):
+*                 ARGS_OUT<1> ->
+*                 ARGS_OUT<2> ->
+*                 ...
+*
+*              3. Return status (null if no error occurred)
+*                 STATUS<1> -> Error code
+*                 STATUS<2> -> Error message
+*                 STATUS<3> -> Program name
+*
+* MODIFICATIONS:
+* ==============
+*              2014/xx/xx juntan xxx - Initial creation.
+*
+**************************************************************************
+
+
+A100_MAIN:
+
+   CALL SB.DISP(9, "Initializing data, please wait...":@AM:1:@AM:3)
+   GOSUB A200_INITIALIZATION
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   CALL SB.DISP(9, "Opening files, please wait...":@AM:2:@AM:3)
+   GOSUB A300_OPEN_FILES
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   CALL SB.DISP(9, "Processing, please wait...":@AM:3:@AM:3)
+   GOSUB A400_MAIN_PROCESS
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+   GO A500_CONCLUSION
+
+
+****************************************
+* Define & initialize variables.
+****************************************
+A200_INITIALIZATION:
+
+   RTN.FLAG      = 0
+
+   ARGS_OUT      = ""
+   STATUS        = ""
+
+   L_ERR_CODE    = ""
+   L_ERR_MSG     = ""
+
+   L_KEY         = ""
+   L_REC         = ""
+
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open any data files requried.
+****************************************
+A300_OPEN_FILES:
+
+   FILE.ERR = 0
+
+   CALL SB.OPEN.FILE("XXX",XXX,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-1"
+      L_ERR_MSG = "Unable to open file XXX."
+      GO A300_EXIT
+   END
+
+A300_EXIT:
+   RETURN
+
+
+****************************************
+* Main process logic structure.
+****************************************
+A400_MAIN_PROCESS:
+
+   CALL SB.DISP(9, "Reading data, please wait...":@AM:1:@AM:4)
+   GOSUB B100_READ_DATA
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+   CALL SB.DISP(9, "Validating data, please wait...":@AM:2:@AM:4)
+   GOSUB B200_VALIDATE_DATA
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+   CALL SB.DISP(9, "Manipulating data, please wait...":@AM:3:@AM:4)
+   GOSUB B300_MANIPULATE_DATA
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+   CALL SB.DISP(9, "Outputting data, please wait...":@AM:4:@AM:4)
+   GOSUB B400_OUTPUT_DATA
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+A400_EXIT:
+   RETURN
+
+
+****************************************
+* Internal subroutine to read all data source(s)
+****************************************
+B100_READ_DATA:
+
+   L_KEY = ""
+   READ L_REC FROM FILENAME, L_KEY
+   ON ERROR
+      L_ERR_CODE = "B100-ERROR-1"
+      L_ERR_MSG = "Unable to read record ":L_KEY:" in file FILENAME."
+   END THEN
+   END ELSE
+      L_ERR_CODE = "B100-ERROR-2"
+      L_ERR_MSG = "Record ":L_KEY:" in file FILENAME does not exist."
+   END
+
+B100_EXIT:
+   RETURN
+
+
+****************************************
+* Internal subroutine to build data validation rule(s)
+****************************************
+B200_VALIDATE_DATA:
+
+   IF TRUE AND TRUE OR NOT(FALSE) THEN
+   END ELSE
+   END
+
+   BEGIN CASE
+      CASE A
+      CASE B
+      CASE C
+      CASE 1
+   END CASE
+
+B200_EXIT:
+   RETURN
+
+
+****************************************
+* Internal subroutine to manipulate data based on business rule(s)
+****************************************
+B300_MANIPULATE_DATA:
+
+   GOSUB B310_BUILD_DATA_STRUCTURE  ;* customize name based on requirements
+   GOSUB B320_BUILD_ALGORITHM       ;* customize name based on requirements
+
+B300_EXIT:
+   RETURN
+
+
+****************************************
+* Internal subroutine to build various data structure(s)
+****************************************
+B310_BUILD_DATA_STRUCTURE:
+
+B310_EXIT:
+   RETURN
+
+
+****************************************
+* Internal subroutine to build various algorithm(s)
+****************************************
+B320_BUILD_ALGORITHM:
+
+B320_EXIT:
+   RETURN
+
+
+****************************************
+* Internal subroutine to output data in various formats
+****************************************
+B400_OUTPUT_DATA:
+
+B400_EXIT:
+   RETURN
+
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+   IF L_ERR_CODE # "" THEN
+      STATUS<1> = L_ERR_CODE
+      STATUS<2> = L_ERR_MSG
+      STATUS<3> = PROGRAM
+      ARGS_OUT = ""
+
+*      CALL SB.PROCESS("SYS0061,IP3000\":OCONV(TIME(),"MTS"):@VM:PROGRAM:@VM:L_ERR_CODE:@VM:L_ERR_MSG)
+*      CALL SB.DISP(8,L_ERR_CODE:": ":L_ERR_MSG)
+
+*      PRINT ""
+*      PRINT "===> [":OCONV(TIME(),"MTS"):"] Program ":PROGRAM:" aborted at ":L_ERR_CODE:" -> ":L_ERR_MSG
+*      PRINT ""
+   END
+
+   RTN.FLAG = 0
+   REFRESH = -2
+
+A500_EXIT:
+   GO 9999
+
+
+****************************************
+* Exit
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END

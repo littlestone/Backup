@@ -1,0 +1,2736 @@
+     SUBROUTINE PURS8000.4
+* Purchase Order Form Email for Approval
+* VERSION 8.2.3
+*
+* 14 AUG 13 8.2.3 juntan PRJ*JUNTAN.59-Bug fix for PIC project.
+* 27 MAY 13 8.2.3 piedes PRJ*PUR083D.13-(Sub #13) PO INTERNAL CONTROLS
+* 26 FEB 13 8.2.3 piedes PRJ*PUR083D.1-(Sub #1) PO INTERNAL CONTROLS
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+
+     $INCLUDE IIPLUS.TOP
+     PROGRAM='PURS8000.4'
+     $INCLUDE IIPLUS.TEXTLOAD
+     $INCLUDE IIPLUS.DEBUG
+
+** equates pertaining to files used within subroutine
+*
+     $INCLUDE EQU_POHDR
+     $INCLUDE EQU_PODET
+     $INCLUDE EQU_SUPPMST
+     $INCLUDE EQU_WHSMST
+     $INCLUDE EQU_INVWHS
+     $INCLUDE EQU_ITMMST
+     $INCLUDE EQU_ITMXRF
+     $INCLUDE EQU_DIVMST
+     $INCLUDE EQU_ADDRESSBOOK
+     $INCLUDE EQU_SYSTEMPLATE
+     $INCLUDE EQU_NTPRTNAME
+     $INCLUDE EQU_PRTCONTROL
+     $INCLUDE EQU_SYSTBL
+     $INCLUDE EQU_COMPMST
+
+     $INCLUDE EQU_IECHISTOUT
+
+     $INCLUDE AWFORMS.EQUATE
+*
+****************************************
+* DESCRIPTION:
+*
+*       This program creates Purchase Order document
+*       in Word (.doc) format using AWFORMS product.
+*
+*       The document form is generated using a form template
+*       that contains the layout (graphics, content, fonts, etc) of the
+*       Puchase Order. This template is created using MS WORD and
+*       MUST always to be saved with an RTF (Rich Text Format) extension.
+*
+*    ** Very important: never save a template as type DOC format and
+*       after save it as type RTF format because the AWPDF.EXE can not
+*       convert the template. (THE NT SERVER WHERE IS EXECUTED AWPDF.EXE
+*       CREATES WINWORD.EXE WARNING.
+*
+*       To have a better performance, ensure that the RTF template
+*       does not exceed 200K.
+*
+*    ** Conversion ASCII Characters Codes to LATIN 1 Characters Codes.
+*       AWFORMS is based on a technology that dynamically loads
+*       the form information from our business system directly
+*       into a Microsoft Word template. Then AWFORMS utilizes the
+*       printing engine in Microsoft Word to print or to fax.
+*       Word software uses the LATIN 1 characters codes and 
+*       2 variables will be used to convert the ASCII characters codes
+*       to LATIN 1 characters codes.
+*
+*       Example:
+*       Some characters as french characters or specials symbols
+*       have to be converted in LATIN 1 characters codes.
+*       CHAR(174) Æ of the ASCII table is CHAR(171) of the LATIN 1 table.
+*
+*       L_CODES_ASCII  * ASCII characters codes
+*       L_CODES_LATIN1 * Latin 1 characters codes used by Word Software
+*
+*       The include program SYSS9170.1 is included in the GOSUB A010_INITIALIZATION
+*       to initialize the 2 variables.
+*
+*    ** This program will extract the data from our business system
+*       convert the characters codes to LATIN 1 codes
+*       and will map the information to the template (rtf) by using
+*       specified Common Variables
+*       (See Common Variables paragraph A010_INITIALIZATION)
+*       that will be passed to the AWFORMS program.
+*
+*    ** The Purchase Order Template Code is composed as following.
+*        "T_PUR" Suffix & template type
+*         Company Code according the Purchase Order
+*         Division Code according the Purchase Order
+*         Language code according the supplier of the Purchase Order
+*       Then the rtf template is retrieved from the SYSTEMPLATE file using
+*       the template code as key.
+*
+*    ** AWFORMS Options;
+*
+*       When the Print option is selected, a document in format .doc
+*       is generated with AWFORMS and saved in /usr/igi/ADVWARE/AWFORMS/AWFORMSFILES.
+*       The NT printed name is read in the PRTCONTROL file with the
+*       code "PO" + the Attribute<1> value associated to the PO's buyer
+*       in the SYSTBL file record BYR*
+*       Then AWFORMS.EXE (NT SERVER) program manages the Print Queue
+*       Directories to print the document with the Word sofware.
+*
+*       When the Fax option is selected, a document in format .doc
+*       is generated with AWFORMS. The existing Fax Header Information screen
+*       is displayed to complete the entering of the information.
+*       Then the message and the document are faxed using our actual
+*       Goldfax software.
+*
+*       When the Email option is selected, a document in format .doc
+*       is generated with AWFORMS. The Email Header Information screen
+*       is displayed to complete the entering of the information.
+*       Then AWMAIL.EXE converts the .doc to .pdf with the program AWPDF.EXE
+*       and manages the email Directories to email the message and
+*       pdf document.
+*
+*       Architecture of AWFORMS
+*
+*       NT Server that will manage the printing & emailing: (NFS Link)
+*          AWFORMS.EXE - Manages the Print Queue Directories
+*          AWMAIL.EXE  - Manages the Email being sent out
+*          AWPDF.EXE   - Converts the DOC to PDF format for Email use.
+*
+*          ADVWARE/AWFORMS/ Directory
+*             AWFORMSFILES    - Temporary repository of documents generated
+*             AWFORMSTEMPLATES- Templates .rtf
+*                       Item  - AWFORMS.TABLE
+*                               Parameters used by AWForms as the default values.
+*             AWFORMSQUEUE    - Print Queue Directorie(s) - Queue of DOCS being printed
+*             AWEMAILLOGHST   - Log of emails sent using AWForms.
+*
+*          ADVWARE/AWMAIL/ Directory
+*             AWMAILFILES     - Emails to be sent using AWForms.
+*
+*       UNIX Server:
+*          AWFORMS.EQUATE     - Infoflo Basic Include Program
+*          AWFORMS            - Infoflo Basic Subroutine
+*          AWMAIL             - Infoflo Basic Subroutine
+*          AWMAILPARAMETERS   - AWmail Parameters File
+*                      Item   - UNIXNFSPATH
+*                               Contains the path where are stored the 
+*                               Emails to be sent using AWForms.
+*
+*          VOC file pointers To:
+*            AWFORMSFILES     - Temporary repository of documents generated
+*            AWFORMSTEMPLATES - Templates .rtf
+*                       Item  - AWFORMS.TABLE
+*                               Parameters used by AWForms as the default values.
+*            AWFORMSQUEUE     - Print Queue Directorie(s) - Queue of DOCS being printed
+*            AWEMAILLOGHST    - Log of emails sent using AWForms.
+*            AWMAILPARAMETERS - AWmail Parameters File
+*
+*************************************************************************
+*
+*       COMMON WORK VARIABLES
+*
+*       This program is called by PUR
+*       Here is a definitions of the common variables used.
+*
+*       @WORK<601> * Purchase Order Number
+*       @WORK<602> * Company
+*       @WORK<603> * Division
+*       @WORK<604> * Fax Number
+*       @WORK<605> * Variable Reserved - Fax Subject
+*       @WORK<606> * To Vendor
+*       @WORK<607> * To Contact
+*       @WORK<608> * Path for the attach file
+*       @WORK<609> * AWform Option 'P'rint, 'F'ax, 'E'mail
+*
+*******************************************************************************
+* MODIFICATIONS:
+*
+*      2013-08-14 juntan JUNTAN.59 - Bug fix. 
+*      2012-02-26 piedes PUR062D -Creation of the program from PURS5100.1
+*
+*******************************************************************************
+*
+A001_MAIN:
+*
+     L_PRINTER_ID = ""
+     L_NBR_COPIES = 1
+     L_SAVE_WORK2    = ""  
+     L_FIRST_PASS = 1
+     L_COPY_VERSION = WORK<106>
+     L_COPY_TYPE = WORK<106>
+
+     GOSUB A002_PROCESS
+
+     IF RTN.FLAG THEN
+       GO A001_EXIT
+     END
+*
+A001_EXIT:
+
+     PARAM = L_SAVE_PIC_PARAM
+
+     GO 9999
+*
+A002_PROCESS:
+
+     GOSUB A010_INITIALIZATION
+     GOSUB A011_INITIALIZATION
+     GOSUB A012_INITIALIZATION
+
+     GOSUB A020_OPEN_FILES
+     IF RTN.FLAG THEN
+        GO A002_EXIT
+     END
+
+     GOSUB A013_GET_EMAIL_ADDRESS
+
+     GOSUB A025_READ_HEADER_RECORD
+     IF RTN.FLAG THEN
+       GO A002_EXIT
+     END
+*
+     GOSUB A029_GET_SYSTBL_INFO
+     IF RTN.FLAG THEN
+       GO A002_EXIT
+     END
+
+     GOSUB A026_LANGUAGE_INIT
+
+     GOSUB A1300_BUYER_ADDRESS
+     IF RTN.FLAG THEN
+       GO A002_EXIT
+     END
+
+     GOSUB A110_TEMPLATE.RTF
+     IF RTN.FLAG THEN
+        GO A002_EXIT
+     END
+
+     GOSUB A205_GET_FONT ; *Get all fonts to be used in the template (Optional)
+     IF  RTN.FLAG THEN
+         GO A002_EXIT
+     END
+
+     GOSUB A1400_EDI_MESSAGE
+
+     GOSUB A030_MAIN_PROCESS
+     IF RTN.FLAG THEN
+       GO A002_EXIT
+     END
+*
+A002_EXIT:
+     RETURN
+*
+****************************************
+* Definition of local variables & initialization of other variables.
+****************************************
+A010_INITIALIZATION: 
+*
+     L_WATERMARK          = "FOR APPROVAL ONLY"
+     L_PO_KEY             = WORK<601>
+     L_ORIGINAL_VALUE     = WORK<100> ;* Original Value 1=Yes, 0=No
+     L_LEVEL              = WORK<110>
+     L_PO_NBR             = ""
+     L_VENDOR_NBR         = ""
+     L_DIVISION_NAME      = ""
+     L_BUYER_ADDRESS      = ""
+     L_SUPPLIER_ADDRESS   = ""
+     L_SHIPTO_ADDRESS     = ""
+     L_PO_DATE            = ""
+     L_TERMS_PAYMENT      = ""
+     L_PROV_TAX           = ""
+     L_FREIGHT_TYPE       = ""
+     L_FOB                = ""
+     L_CARRIER            = ""
+     L_BUYER_NAME         = ""
+     L_ALT_USER_CODE      = ""
+     L_BUYER_PRT_CODE     = ""
+     L_REQUESTOR_NAME     = ""
+     L_COPY_MESSAGE       = ""
+     L_PO_STATUS          = ""
+     L_HDR_MESSAGE_1      = ""
+
+     L_CUR_FUND           = ""
+     L_PO_TOTAL           = 0
+     L_MAIL_ADDRESS       = ""
+     L_FOOTER_MESSAGE_1   = ""
+     L_FOOTER_MESSAGE_2   = ""
+*** juntan \/ PUR062D.1 - 2008/09/08
+     L_SIGNATURE          = "Signature"
+*** juntan /\ PUR062D.1 - 2008/09/08
+*
+     L_IND                = 1
+     L_IND_ITEM           = 1
+     L_MAX_ITEM           = 0
+     L_MAX_DESC           = 0
+     L_MAX_QTY            = 0
+     L_MAX_ITEM_DEL_LINE  = 0
+     L_MAX_VM             = 0
+     L_IND_DEL_LINE       = 0
+     L_COUNT_VALUE        = 0
+     L_IND1               = 1
+     L_PAGE_BREAK_FLG     = 1
+
+     L_COMMA          = ""
+     L_DCOUNT         = 0
+
+     L_ADDRESSBOOK_KEY= ""
+
+     L_PUR_CONTACT_EMAIL = ""
+
+     L_VENDOR_LANGUAGE= ""
+     L_CPN            =''
+     L_DATE           = ""
+     L_BS             ="\"
+     L_ERR_MSG_MASK20 = "L#20 : "
+*
+* Get the account code dev, live, prep
+     L_STMT_RESULT = ""
+     L_STMT = "!pwd"
+     EXECUTE L_STMT CAPTURING L_STMT_RESULT
+     L_ACCOUNT_DIR = ":":L_BS : FIELD(L_STMT_RESULT<1>,'/',5) : L_BS
+*
+     L_SYSTBL_KEY     = ""
+     SYSTBL_REC       = ""
+     L_DOMAIN_NAME    = ""
+     L_WEB_TCP_LINK = ""
+     L_TCP_FLAG = 0
+
+     L_PRTCONTROL_KEY = ""
+
+     L_NTPRTNAME_KEY  = ""
+     NTPRTNAME_REC    = ""
+*    L_NT_PRINTER_SERVER = ""
+*
+     L_PODET_KEY = ""
+     PODET_REC = ""
+
+     L_INVWHS_KEY = ""
+     INVWHS_REC   = ""
+*
+     ADDRESSBOOK_REC  = ""
+     L_FROM_EMAIL    = ""
+     L_TO_NAME       = ""
+     L_TO_EMAIL      = ""
+
+     L_TEMPLATE_KEY  = ""
+     SYSTEMPLATE_REC = ""
+
+     IECHISTOUT_REC = ""
+
+     L_SAVE_WORK     = ""
+     L_SAVE_PARAM    = ""
+
+     L_SAVE_RTN_FLAG = ""
+     L_SAVE_PIC_PARAM = PARAM
+
+     L_SAVE_WORK1    = ""  
+     L_SAVE_PARAM1   = ""
+
+     L_STMT = ""
+     L_JUNK = ""
+
+     L_T_D01_COUNT_LINES = 0  ;* Counter of lines in the detail section
+     L_T_D01_MAX_LINES   = 46 ;* Maximum of lines in the detail section
+
+     L_SUBJECT = ""
+     L_H_TEXT1 = ""
+     L_H_PO_STATUS = ""
+     L_EDI_SENT_DATE_USER = ""
+     L_EDI_BUYER_NAME = ""
+     L_EDI_CREATED_DATE = ""
+*
+*   Include program to initialize 2 variables of ASCII specials characters
+*   to convert the characters of the ASCII table to the LATIN 1 table.
+*
+*   L_CODES_ASCII  = "" ;* ASCII characters codes
+*   L_CODES_LATIN1 = "" ;* Latin 1 characters codes used by Word Software
+*
+    $INCLUDE SYSS9170.1
+*
+*    Awforms Init
+*
+
+     MAT AW.ARGS = ''
+     AW.PASSWORD = '~I~P~E~X~'
+
+     L_TAB = CHAR(9)
+     L_CR = CHAR(10)
+*
+     L_AW_BLACK_BOLD8 = ""
+     L_AW_BLACK8      = ""
+
+     L_MERROR     = ""
+     L_AW_ERROR   = ""
+     L_AW_ERRTEXT = ""
+     L_AW_RECORD_KEY  = "" ;* Document Identifier i.e. PO#, SO#, INV#, Etc
+*
+* Common Variables that will be passed to the AWFORMS program.
+* Initialization of the variables of the Purchase Order Template .rtf.
+*
+************************************************************************
+* Header Section:
+************************************************************************
+*   
+     T_H01 = "" ;* Purchase Order number    A(15)
+     T_H02 = "" ;* Vendor Number            A(6)
+     T_H03 = "" ;* Vendor Name              A(35)
+     T_H04 = "" ;* Vendor Address line 1    A(35)
+     T_H05 = "" ;* Vendor Address line 2    A(35)
+     T_H06 = "" ;* Vendor Address line 3    A(35)
+     T_H07 = "" ;* Vendor City              A(35)
+*               ;  Prov/State/Zip Code
+     T_H08 = "" ;* Vendor Country           A(35)
+
+     T_H09 = "" ;* Sold To Name             A(35)
+     T_H10 = "" ;* Sold To Address line 1   A(35)
+     T_H11 = "" ;* Sold To Address line 2   A(35)
+     T_H12 = "" ;* Sold To Address line 3   A(35)
+     T_H13 = "" ;* Sold To Address line 4   A(35)
+     T_H14 = "" ;* Sold To Address line 5   A(35)
+     T_H15 = "" ;* Sold To Address line 6   A(35)
+     T_H16 = "" ;* Order Date yyyy-mm-dd    A(10)
+     T_H17 = "" ;* Terms of Payment         A(24)
+     T_H18 = "" ;* Provincial Tax           A(22)
+     T_H19 = "" ;* Freight Type             A(21)
+     T_H20 = "" ;* FOB / Incoterm           A(22)
+     T_H21 = "" ;* Carrier                  A(35)
+     T_H22 = "" ;* Buyer                    A(30)
+     T_H23 = "" ;* Requested By             A(30)
+     T_H24 = "" ;* Copy Message             A(15)
+     T_H25 = "" ;* PO Status                A(20)
+     T_H26 = "" ;* Message_ 1               A(85)
+
+     T_H27 = "" ;* Division Name            A(40)
+     T_H28 = "" ;* Buyer Address line 1     A(40)
+     T_H29 = "" ;* Buyer Address line 2     A(40)
+     T_H30 = "" ;* Buyer Address line 3     A(40)
+     T_H31 = "" ;* Buyer Address line 4     A(40)
+     T_H32 = "" ;* Buyer Address line 5     A(40)
+     T_H33 = "" ;* Buyer Address line 6     A(40)
+     T_H34 = "" ;* Buyer Address line 7     A(40)
+     T_H35 = "" ;* Watermark
+*
+************************************************************************
+*Detail Section:
+************************************************************************
+*
+*    The detail section contains 8 tabs and xx lines
+*
+     T_D01 = ""
+*       line 1
+*          tab Item                   A(3)
+*          tab Product Code           A(26)
+*          tab Vendor Product Code    A(20)
+*          tab Ordered Quantity       N(15) 999,999,999.999   ML
+*          tab UOM                    A(3)                    ML
+*          tab Unit Price             N(18)$999,999,999.99999 ML
+*          tab Extension Price        N(15)$999,999,999.99    ML
+*          tab Dock Date yyyy-mm-dd   A(10)                   ML
+*       Next Line
+*          tab Product Description    A(26)                   ML
+*      *Next Line
+*          tab Internal or external comments if Available  A(95)
+*      *Next Line
+*          tab other instructions if Available             A(95)
+*       Note: * Comments or instructions will be printed at the end of the detail lines
+*       ML Information can be printed on many lines
+*
+*    Very important
+*
+*    An additional space is needed when you switch fonts the first time
+*    on the detail section. Force the default font at the beginning of
+*    each line of the detail variable will eliminated the space.
+*
+*    -@SM is used to mark the end of the line when setting up the T_D01 lines.
+*    -TAB should separate each data element in the variable T_D01
+*     if tabs are used in the template to align the columns.
+*    -A page break can be forced any time in the detail section by
+*     setting T_D01 = 'AW.PAGE.BREAK':@SM
+*
+************************************************************************
+* Footer Section:
+************************************************************************
+*
+     T_F01 = "" ;*  Currency                A(3)
+     T_F02 = "" ;*  Total Amount            N(15) $999,999,999.99
+     T_F03 = "" ;*  Mail Address 1          A(35)
+     T_F04 = "" ;*  Mail Address 2          A(35)
+     T_F05 = "" ;*  Mail Address 3          A(35)
+     T_F06 = "" ;*  Mail Address 4          A(35)
+     T_F07 = "" ;*  Mail Address 5          A(35)
+     T_F08 = "" ;*  Message_1               A(90)
+     T_F09 = "" ;*  Message_2               A(90)
+*** juntan \/ PUR062D.1 - 2008/09/08
+     T_F10 = "" ;*  Signature               A(9)
+*** juntan /\ PUR062D.1 - 2008/09/08
+     T_F99 = "" ;*  Date and Time printed   yyyy-mm-dd hh-mm-ss
+*
+A010_EXIT: 
+     RETURN
+*
+****************************************
+*    Error variables 
+****************************************
+A011_INITIALIZATION: 
+     RTN.FLAG             = 0
+     L_PARAM_SYS0061      = "SYS0061,"
+     L_PARAM_VALUE        = ""
+     L_ERROR_FLAG         = 0
+     L_PROGRAM            = PROGRAM
+     L_PARAGRAPH          = ""
+     L_ERROR_CODE         = ""
+     L_ERROR_MESSAGE      = ""
+     L_FILENAME           = "N/A"
+     L_ERROR_KEY          = "N/A"
+     L_INFORMATION        = ""
+*
+     L_CURRENT_DATE       = OCONV(DATE(),'D4-')
+     L_CURRENT_DATE       = L_CURRENT_DATE[7,4]:"-":L_CURRENT_DATE[1,5]
+     L_CURRENT_TIME       = OCONV(TIME(),'MTS')
+*
+     L_MERROR             = ''
+*
+*** juntan \/ SPC014D.8 - 2009/07/17
+     L_ERROR_DEF_EMAIL_ADDRESS = 'pierre.desjardins@ipexna.com' ;* Default email address
+*** juntan /\ SPC014D.8 - 2009/07/17
+     L_ERROR_EMAIL_ADDRESS = L_ERROR_DEF_EMAIL_ADDRESS ;* email address to send error msg
+*
+A011_EXIT: 
+     RETURN
+*
+****************************************
+* Variables Detail Section
+****************************************
+A012_INITIALIZATION:
+*
+     L_ITEM_NBR           = ""
+     L_ITEM_CODE          = ""
+     L_ITEM_SUPP_PART_NBR = ""
+     L_QTY_ORDERED        = 0
+     L_UOM                = ""
+     L_UNIT_PRICE         = 0
+     L_EXT_PRICE          = 0
+     L_DOCK_DATE          = ""
+     L_ITEM_DESC          = ""
+     L_ITEM_INT_COMMENTS  = ""
+     L_ITEM_EXT_COMMENTS  = ""
+     L_ITEM_ISO_MESS      = ""
+
+     L_ITEM_STATUS        = ""
+     L_T_D01_COUNT_LINES_NEEDED = 0 ; *Count lines to reserve in the detail section to print an item
+
+     ITMMST_REC     = ''
+     ITMSUPPACT_KEY = ''
+     ITMSUPPACT_REC = ''
+     L_ISO_CERTIF_NBR = ''
+     L_ISO_MSG_TYPE = ''
+     L_POS          = ''
+     L_PROD_TYPE    = ''
+     L_ISO_FLAG     = ""
+
+A012_EXIT: 
+     RETURN
+*
+***************************************************************
+*   Get the email address in the file SYSTBL
+*   by default the email address is devteam@ipexna.com
+***************************************************************
+*
+A013_GET_EMAIL_ADDRESS: 
+*
+     L_SYSTBL_KEY = "I88*":L_PROGRAM:".A"
+*     READV L_ERROR_EMAIL_ADDRESS FROM SYSTBL, L_SYSTBL_KEY,2 ELSE L_ERROR_EMAIL_ADDRESS = ''
+     L_ERROR_EMAIL_ADDRESS = 'pierre.desjardins@ipexna.com'
+
+     IF TRIM(L_ERROR_EMAIL_ADDRESS) = "" THEN
+        L_ERROR_EMAIL_ADDRESS = L_ERROR_DEF_EMAIL_ADDRESS ; *Default Email Address
+        L_FILENAME = "SYSTBL"
+        L_ERROR_KEY = L_SYSTBL_KEY
+        L_PARAGRAPH = "A013_GET_EMAIL_ADDRESS:"
+        L_ERROR_CODE = "2367"
+        L_PARAM_VALUE = L_ERROR_KEY
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_INFORMATION   = 'Email address missing'
+        GOSUB A022_PROCESS_SYS9060 ;*Send an email
+        GOSUB A011_INITIALIZATION
+     END
+A013_EXIT: 
+     RETURN
+*
+****************************************
+* Open the files needed in this subroutine.
+****************************************
+A020_OPEN_FILES: 
+
+     L_PARAGRAPH = "A020_OPEN_FILES:"
+*
+     FILE.ERR = 0
+     L_FILENAME = "IIPTEXT"
+     CALL SB.OPEN.FILE(L_FILENAME,IIPTEXT.FILE,FILE.ERR)
+     IF FILE.ERR THEN
+        RTN.FLAG = 1 
+        GO TO A020_EXIT
+     END
+*
+     FILE.ERR = 0
+     L_FILENAME = "POHDR"
+     CALL SB.OPEN.FILE(L_FILENAME,POHDR,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERROR_CODE = "2366"
+        L_PARAM_VALUE = L_FILENAME
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_ERROR_FLAG = 1 
+        GOSUB A021_PROCESS_SYS0061
+        GO TO A020_EXIT
+     END
+*
+     FILE.ERR = 0
+     L_FILENAME = "PODET"
+     CALL SB.OPEN.FILE(L_FILENAME,PODET,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERROR_CODE = "2366"
+        L_PARAM_VALUE = L_FILENAME
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_ERROR_FLAG = 1 
+        GOSUB A021_PROCESS_SYS0061
+        GO TO A020_EXIT
+     END
+*
+     FILE.ERR = 0
+     L_FILENAME = "SUPPMST"
+     CALL SB.OPEN.FILE(L_FILENAME,SUPPMST,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERROR_CODE = "2366"
+        L_PARAM_VALUE = L_FILENAME
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_ERROR_FLAG = 1 
+        GOSUB A021_PROCESS_SYS0061
+        GO TO A020_EXIT
+     END
+*
+     FILE.ERR = 0
+     L_FILENAME = "SYSCON"
+     CALL SB.OPEN.FILE(L_FILENAME,SYSCON,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERROR_CODE = "2366"
+        L_PARAM_VALUE = L_FILENAME
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_ERROR_FLAG = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO TO A020_EXIT
+     END
+*
+     FILE.ERR = 0
+     L_FILENAME = "DIVMST"
+     CALL SB.OPEN.FILE(L_FILENAME,DIVMST,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERROR_CODE = "2366"
+        L_PARAM_VALUE = L_FILENAME
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_ERROR_FLAG = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO TO A020_EXIT
+     END
+*
+     FILE.ERR = 0
+     L_FILENAME = "SYSTBL"
+     CALL SB.OPEN.FILE(L_FILENAME,SYSTBL,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERROR_CODE = "2366"
+        L_PARAM_VALUE = L_FILENAME
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_ERROR_FLAG = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO TO A020_EXIT
+     END
+*
+     FILE.ERR = 0
+     L_FILENAME = "WHSMST"
+     CALL SB.OPEN.FILE(L_FILENAME,WHSMST,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERROR_CODE = "2366"
+        L_PARAM_VALUE = L_FILENAME
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_ERROR_FLAG = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO TO A020_EXIT
+     END
+*
+     FILE.ERR = 0
+     L_FILENAME = "IECHISTOUT"
+     CALL SB.OPEN.FILE(L_FILENAME,IECHISTOUT,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERROR_CODE = "2366"
+        L_PARAM_VALUE = L_FILENAME
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_ERROR_FLAG = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO TO A020_EXIT
+     END
+*
+     FILE.ERR = 0
+     L_FILENAME = "ADDRESSBOOK"
+     CALL SB.OPEN.FILE(L_FILENAME,ADDRESSBOOK,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERROR_CODE = "2366"
+        L_PARAM_VALUE = L_FILENAME
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_ERROR_FLAG = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO TO A020_EXIT
+     END
+*
+     FILE.ERR = 0
+     L_FILENAME = "SYSTEMPLATE"
+     CALL SB.OPEN.FILE(L_FILENAME,SYSTEMPLATE,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERROR_CODE = "2366"
+        L_PARAM_VALUE = L_FILENAME
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_ERROR_FLAG = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO TO A020_EXIT
+     END
+*
+     FILE.ERR = 0
+     L_FILENAME = "NTPRTNAME"
+     CALL SB.OPEN.FILE(L_FILENAME,NTPRTNAME,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERROR_CODE = "2366"
+        L_PARAM_VALUE = L_FILENAME
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_ERROR_FLAG = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO TO A020_EXIT
+     END
+*
+     FILE.ERR = 0
+     L_FILENAME = "PRTCONTROL"
+     CALL SB.OPEN.FILE(L_FILENAME,PRTCONTROL,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERROR_CODE = "2366"
+        L_PARAM_VALUE = L_FILENAME
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_ERROR_FLAG = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO TO A020_EXIT
+     END
+
+     FILE.ERR = 0
+     L_FILENAME = "COMPMST"
+     CALL SB.OPEN.FILE(L_FILENAME,COMPMST,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERROR_CODE = "2366"
+        L_PARAM_VALUE = L_FILENAME
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_ERROR_FLAG = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO TO A020_EXIT
+     END
+
+     FILE.ERR = 0
+     L_FILENAME = "INVWHS"
+     CALL SB.OPEN.FILE(L_FILENAME,INVWHS,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERROR_CODE = "2366"
+        L_PARAM_VALUE = L_FILENAME
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_ERROR_FLAG = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO TO A020_EXIT
+     END
+
+     FILE.ERR = 0
+     L_FILENAME = "ITMMST"
+     CALL SB.OPEN.FILE(L_FILENAME,ITMMST,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERROR_CODE = "2366"
+        L_PARAM_VALUE = L_FILENAME
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_ERROR_FLAG = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO TO A020_EXIT
+     END
+
+     FILE.ERR = 0
+     L_FILENAME = "ITMXRF"
+     CALL SB.OPEN.FILE(L_FILENAME,ITMXRF,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERROR_CODE = "2366"
+        L_PARAM_VALUE = L_FILENAME
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_ERROR_FLAG = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO TO A020_EXIT
+     END
+
+     FILE.ERR = 0
+     L_FILENAME = "ITMSUPPACT"
+     CALL SB.OPEN.FILE(L_FILENAME,ITMSUPPACT,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERROR_CODE = "2366"
+        L_PARAM_VALUE = L_FILENAME
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_ERROR_FLAG = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO TO A020_EXIT
+     END
+
+     GOSUB A011_INITIALIZATION
+*
+A020_EXIT: 
+     RETURN
+*
+****************************************
+*    Email & Display error message
+****************************************
+*
+A021_PROCESS_SYS0061: 
+* RETURN
+*
+     GOSUB A999_ERROR_MESSAGE
+*
+     CALL SB.PROCESS (L_PARAM_SYS0061)
+     RTN.FLAG = 1
+*
+A021_EXIT: 
+     RETURN
+*
+****************************************
+*    Email error message
+****************************************
+*
+A022_PROCESS_SYS9060: 
+*
+     L_ERROR_FLAG = 1
+     GOSUB A999_ERROR_MESSAGE
+*
+A022_EXIT: 
+     RETURN
+*
+**********************************************************************
+*  Retrieve Purchase order information
+**********************************************************************
+A025_READ_HEADER_RECORD: 
+*
+     READ POHDR_REC FROM POHDR, L_PO_KEY ELSE POHDR_REC = ""
+     IF POHDR_REC = "" THEN
+        L_FILENAME = "POHDR"
+        L_ERROR_KEY = L_PO_KEY
+        L_PARAGRAPH = "A025_READ_HEADER_RECORD:"
+        L_ERROR_CODE = "IP2343"
+        L_PARAM_VALUE = L_ERROR_KEY:VM:L_FILENAME ;* PO not found
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_ERROR_FLAG = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO A025_EXIT
+     END
+*
+********************************************************************
+***  Validate data & init Variables
+********************************************************************
+
+     L_PO_NBR    = L_PO_KEY
+     IF POH1_CURR_REV # "" THEN L_PO_NBR = L_PO_KEY : "-" : POH1_CURR_REV
+
+     L_COMPANY_CODE = POH1_COMPANY
+     WORK<602>   = L_COMPANY_CODE
+     WORK<604>   = POH1_FAX
+     WORK<607>   = POH1_CONTACT
+     L_PO_DATE   = POH1_PO_DT
+*
+*    Verify the Company Code is existing
+*
+     READ COMPMST_REC FROM COMPMST, L_COMPANY_CODE ELSE COMPMST_REC = ""
+     IF COMPMST_REC = "" THEN 
+        L_FILENAME = "COMPMST"
+        L_ERROR_KEY = L_COMPANY_CODE
+        L_PARAGRAPH = "A025_READ_HEADER_RECORD:"
+        L_ERROR_CODE = "IP1005"
+        L_PARAM_VALUE = L_ERROR_KEY
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_ERROR_FLAG = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO A025_EXIT
+     END
+*
+*    Retrieve the Division Address (Mail Invoice To)
+*
+     READ SYSTBL_REC FROM SYSTBL,"WHS*":POH1_WHS ELSE SYSTBL_REC = ""
+     L_DIVISION_CODE = SYS2_FIELD2
+     WORK<603> = L_DIVISION_CODE
+
+     READ DIVMST_REC FROM DIVMST,L_COMPANY_CODE:"*":L_DIVISION_CODE ELSE DIVMST_REC = ""
+     IF DIVMST_REC = "" THEN
+        L_FILENAME = "DIVMST"
+        L_ERROR_KEY = L_COMPANY_CODE:"*":L_DIVISION_CODE
+        L_PARAGRAPH = "A025_READ_HEADER_RECORD:"
+        L_ERROR_CODE = "IP2344"
+        L_PARAM_VALUE = L_DIVISION_CODE:VM: L_COMPANY_CODE
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_ERROR_FLAG = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO A025_EXIT
+     END
+
+     L_DIVISION_NAME = DIV1_DIVISION_NAME
+
+     L_ADDRESS_SECTION = ""
+     L_ADDRESS_SECTION<-1> = TRIM(DIV1_SUPPLIER_IVC_ADDR1,' ','B')
+     L_ADDRESS_SECTION<-1> = TRIM(DIV1_SUPPLIER_IVC_ADDR2,' ','B')
+     L_ADDRESS_SECTION<-1> = TRIM(DIV1_SUPPLIER_IVC_ADDR3,' ','B')
+     L_COMMA = ""
+     IF TRIM(DIV1_SUPPLIER_IVC_CITY) # "" THEN 
+        IF TRIM(DIV1_SUPPLIER_IVC_STATE) # "" OR TRIM(DIV1_SUPPLIER_IVC_ZIP) # "" THEN
+           L_COMMA = ", "
+        END
+     END
+     L_ADDRESS_SECTION<-1> = TRIM(DIV1_SUPPLIER_IVC_CITY,' ','B') : L_COMMA : TRIM(DIV1_SUPPLIER_IVC_STATE,' ','B') : " " : TRIM(DIV1_SUPPLIER_IVC_ZIP,' ','B')
+     L_ADDRESS_SECTION<-1> = TRIM(DIV1_SUPPLIER_IVC_COUNTRY,' ','B')
+
+     GOSUB A100_ELIMINATE_BLANK_LINE
+     L_MAIL_ADDRESS = L_ADDRESS_SECTION
+*
+*    Read the Vendor Info - Language - Purchase Contact Email Address
+*
+     READ SUPPMST_REC FROM SUPPMST,L_COMPANY_CODE:"*":POH1_VENDOR_NBR ELSE SUPPMST_REC = ""
+     IF SUPPMST_REC = "" THEN
+        L_FILENAME = "SUPPMST"
+        L_ERROR_KEY = L_COMPANY_CODE:"*":POH1_VENDOR_NBR
+        L_PARAGRAPH = "A025_READ_HEADER_RECORD:"
+        L_ERROR_CODE  = "IP2346"
+        L_PARAM_VALUE = POH1_VENDOR_NBR:VM:L_COMPANY_CODE:VM:L_FILENAME
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_ERROR_FLAG = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO A025_EXIT
+     END
+     L_VENDOR_LANGUAGE = SUP1_LANGUAGE
+     L_VENDOR_NBR = POH1_VENDOR_NBR
+
+     IF L_VENDOR_LANGUAGE = "" THEN
+       READV L_VENDOR_LANGUAGE FROM SYSCON,"STANDARD_LANGUAGE",1 ELSE L_VENDOR_LANGUAGE = "ENG"
+     END
+     L_PUR_CONTACT_EMAIL = TRIM(SUP1_PUR_CONTACT_EMAIL)
+     SWAP ";" WITH @VM IN L_PUR_CONTACT_EMAIL
+*
+***************************
+*    Read the Warehouse Info Info - Provincial Tax Code
+***************************
+     READ WHSMST_REC FROM WHSMST,POH1_WHS ELSE WHSMST_REC = ""
+     IF WHSMST_REC = "" THEN
+        L_FILENAME = "WHSMST"
+        L_ERROR_KEY = POH1_WHS
+        L_PARAGRAPH = "A025_READ_HEADER_RECORD:"
+        L_ERROR_CODE = "IP2345"
+        L_PARAM_VALUE = L_ERROR_KEY:VM:L_FILENAME
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_ERROR_FLAG = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO A025_EXIT
+     END
+     IF POH1_TAX # "Y" THEN
+        L_PROV_TAX = WHS1_PROV_TAX_LICENCE
+     END
+*
+***************************
+*    Supplier Purchasing Address
+***************************
+*
+     L_ADDRESS_SECTION = ""
+     L_ADDRESS_SECTION<-1> = TRIM(SUP1_FRONT_NAME : " " : SUP1_BACK_NAME,' ','B')
+     WORK<606> = TRIM(SUP1_FRONT_NAME : " " : SUP1_BACK_NAME,' ','B')
+     L_ADDRESS_SECTION<-1> = TRIM(SUP1_P_ADDRESS1,' ','B')
+     L_ADDRESS_SECTION<-1> = TRIM(SUP1_P_ADDRESS2,' ','B')
+     L_ADDRESS_SECTION<-1> = TRIM(SUP1_P_ADDRESS3,' ','B')
+     L_COMMA = ""
+     IF TRIM(SUP1_P_CITY) # "" THEN
+        IF TRIM(SUP1_P_STATE) # "" OR TRIM(SUP1_P_POSTAL_CD) # "" THEN
+           L_COMMA = ", "
+        END
+     END
+     L_ADDRESS_SECTION<-1> = TRIM(SUP1_P_CITY,' ','B') : L_COMMA : TRIM(SUP1_P_STATE,' ','B') : " " : TRIM(SUP1_P_POSTAL_CD,' ','B')
+     L_ADDRESS_SECTION<-1> = TRIM(SUP1_P_COUNTRY,' ','B')
+
+     GOSUB A100_ELIMINATE_BLANK_LINE
+     L_SUPPLIER_ADDRESS = L_ADDRESS_SECTION
+*
+***************************
+*    Drop Shipment Address
+***************************
+
+     L_ADDRESS_SECTION = ""
+     IF (POH1_DROP_SHIP_ID # "" OR POH1_DROP_NM # "") THEN
+        L_ADDRESS_SECTION<-1> = POH1_DROP_NM
+        L_ADDRESS_SECTION<-1> = POH1_DROP_ADD1
+        L_ADDRESS_SECTION<-1> = POH1_DROP_ADD2
+        L_ADDRESS_SECTION<-1> = POH1_DROP_ADD3
+        L_ADDRESS_SECTION<-1> = POH1_DROP_ADD4
+        L_ADDRESS_SECTION<-1> = POH1_DROP_ADD5
+        L_ADDRESS_SECTION<-1> = POH1_DROP_ADD6
+     END ELSE
+*
+***************************
+*     Warehouse Address
+***************************
+*
+**** lucthe \/ 2009-06-09 SPC016D.4
+*        L_ADDRESS_SECTION<-1> = TRIM(WHS1_NAME,' ','B')
+**** lucthe /\ 2009-06-09 SPC016D.4
+        L_ADDRESS_SECTION<-1> = TRIM(WHS1_ADDRESS1,' ','B')
+        L_ADDRESS_SECTION<-1> = TRIM(WHS1_ADDRESS2,' ','B')
+        L_ADDRESS_SECTION<-1> = TRIM(WHS1_ADDRESS3,' ','B')
+        L_COMMA = ""
+        IF TRIM(WHS1_CITY) # "" THEN
+           IF TRIM(WHS1_STATE) # "" OR TRIM(WHS1_ZIP) # "" THEN
+              L_COMMA = ", "
+           END
+        END
+        L_ADDRESS_SECTION<-1> = TRIM(WHS1_CITY,' ','B') : L_COMMA : TRIM(WHS1_STATE,' ','B') : " " : TRIM(WHS1_ZIP,' ','B')
+        L_ADDRESS_SECTION<-1> = TRIM(WHS1_COUNTRY_CODE,' ','B')
+*** juntan \/ 2009-10-14 PUR067D
+        IF WHS1_PHONE # "" THEN
+           IF L_VENDOR_LANGUAGE = "FRN" THEN
+              L_ADDRESS_SECTION<-1> = TRIM("TÇl.: ":WHS1_PHONE,' ','B')
+           END ELSE
+              L_ADDRESS_SECTION<-1> = TRIM("Tel.: ":WHS1_PHONE,' ','B')
+           END
+        END
+
+*** juntan /\ 2009-10-14 PUR067D
+     END
+
+***************************
+*    Assign Watermark
+***************************
+
+     IF L_VENDOR_LANGUAGE = "FRN" THEN
+        L_WATERMARK = "POUR APPROBATION SEULEMENT"
+     END ELSE
+        L_WATERMARK = "FOR APPROVAL ONLY"
+     END
+***************************
+
+     GOSUB A100_ELIMINATE_BLANK_LINE
+     L_SHIPTO_ADDRESS = L_ADDRESS_SECTION
+*
+A025_EXIT: 
+     RETURN
+*
+**********************************************************************
+*  Init Variable based on the language Code of the PO's supplier
+**********************************************************************
+A026_LANGUAGE_INIT:
+*     L_APPROVER_LANGUAGE = "ENG"
+     IF L_VENDOR_LANGUAGE  = "FRN" THEN
+        IF L_COPY_TYPE     = 'I' THEN L_COPY_MESSAGE = 'COPIE INTERNE'
+        IF TRIM(L_WEB_TCP_LINK) # "" THEN 
+           L_FOOTER_MESSAGE_1 = "Ce bon de commande est soumis aux termes et conditions affichÇs au ":L_WEB_TCP_LINK
+           L_FOOTER_MESSAGE_2 = "et aucune modification stipulÇe par le fournisseur n'engage l'acheteur."
+        END
+        L_H_TEXT1        = "TÇl.: "
+        L_H_PO_STATUS<1> = "ANNULê"
+        L_H_PO_STATUS<2> = "EXêCUTê"
+*** juntan \/ SYS092D - 2011/05/30
+        CALL SYSS9046.1(L_COMPANY_CODE:".":L_DIVISION_CODE,"FRN","N",L_DIVISION_NAME)
+*** juntan /\ SYS092D - 2011/05/30
+      END ELSE
+        IF L_COPY_TYPE   = 'I' THEN L_COPY_MESSAGE = 'INTERNAL COPY'
+        IF TRIM(L_WEB_TCP_LINK) # "" THEN 
+           L_FOOTER_MESSAGE_1 = "This purchase order is subject to terms and conditions posted at ": L_WEB_TCP_LINK
+           L_FOOTER_MESSAGE_2 = "and no modification thereto will bind the purchaser."
+        END
+        L_H_TEXT1        = "Tel.: "
+        L_H_PO_STATUS<1> = "CANCELLED"
+        L_H_PO_STATUS<2> = "COMPLETED"
+     END
+*
+A026_EXIT:
+     L_SUBJECT = WORK<109>
+
+     RETURN
+*
+A029_GET_SYSTBL_INFO: 
+*************************************************************************
+***  Pickup the descriptions from SYSTBL
+***  that matches the language of the supplier.
+*************************************************************************
+*
+     L_SAVE_PARAM    =  PARAM
+     L_SAVE_RTN_FLAG =  RTN.FLAG
+*
+*    Get the term of payment TRM
+*
+     PARAM           =  ""
+     PARAM<1>        =  "PTM"
+     PARAM<2>        =  POH1_PTM_CD
+     PARAM<3>        =  L_VENDOR_LANGUAGE
+*     CALL  SB.PROCESS("SYSS9005.1W")
+     CALL  SYSS9005.1
+
+     IF RTN.FLAG THEN
+        L_FILENAME = "SYSTBL"
+        L_ERROR_KEY = PARAM<1>:"*": PARAM<2>
+        L_PARAGRAPH = "A029_GET_SYSTBL_INFO:"
+        L_ERROR_CODE = "IP1009"
+        L_PARAM_VALUE = L_ERROR_KEY
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_ERROR_FLAG = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO A029_EXIT
+     END
+     L_TERMS_PAYMENT = PARAM<4>
+*
+***************************
+* Get the freight term description I15
+***************************
+*
+     IF TRIM(POH1_FREIGHT_TERMS) # "" THEN 
+        PARAM          =  ""
+        PARAM<1>       =  "I15"
+        PARAM<2>       =  POH1_FREIGHT_TERMS 
+        PARAM<3>       =  L_VENDOR_LANGUAGE
+*        CALL  SB.PROCESS("SYSS9005.1W")
+        CALL  SYSS9005.1
+        IF RTN.FLAG THEN
+           L_FILENAME = "SYSTBL"
+           L_ERROR_KEY = PARAM<1>:"*": PARAM<2>
+           L_PARAGRAPH = "A029_GET_SYSTBL_INFO:"
+           L_ERROR_CODE = "IP1010"
+           L_PARAM_VALUE = L_ERROR_KEY
+           L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+           L_ERROR_FLAG = 1
+           GOSUB A021_PROCESS_SYS0061
+           GO A029_EXIT
+        END
+        L_FREIGHT_TYPE = PARAM<4>
+     END
+*
+***************************
+* Get the currency description CUR
+***************************
+*
+     PARAM          =  ""
+     PARAM<1>       =  "CUR"
+     PARAM<2>       =  POH1_CURR_CD
+     PARAM<3>       =  L_VENDOR_LANGUAGE
+*     CALL  SB.PROCESS("SYSS9005.1W")
+     CALL  SYSS9005.1
+     IF RTN.FLAG THEN
+        L_FILENAME = "SYSTBL"
+        L_ERROR_KEY = PARAM<1>:"*": PARAM<2>
+        L_PARAGRAPH = "A029_GET_SYSTBL_INFO:"
+        L_ERROR_CODE = "IP1011"
+        L_PARAM_VALUE = L_ERROR_KEY
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_ERROR_FLAG = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO A029_EXIT
+     END
+     L_CUR_FUND =  PARAM<5>
+*
+***************************
+* Get the via description VIA
+***************************
+*
+     IF TRIM(POH1_SHIP_TRM_CD) # "" THEN 
+        PARAM          =  ""
+        PARAM<1>       =  "VIA"
+        PARAM<2>       =  POH1_SHIP_TRM_CD
+        PARAM<3>       =  L_VENDOR_LANGUAGE
+*        CALL  SB.PROCESS("SYSS9005.1")
+        CALL  SYSS9005.1
+
+        IF RTN.FLAG THEN
+           L_FILENAME = "SYSTBL"
+           L_ERROR_KEY = PARAM<1>:"*": PARAM<2>
+           L_PARAGRAPH = "A029_GET_SYSTBL_INFO:"
+           L_ERROR_CODE = "IP1012"
+           L_PARAM_VALUE = L_ERROR_KEY
+           L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+           L_ERROR_FLAG = 1
+           GOSUB A021_PROCESS_SYS0061
+           GO A029_EXIT
+        END
+        L_CARRIER = PARAM<4>
+     END
+*
+***************************
+*    Get the fob description FOB
+***************************
+*
+     IF TRIM(POH1_FOB_CD) # "" THEN 
+        PARAM          =  ""
+        PARAM<1>       =  "FOB"
+        PARAM<2>       =  POH1_FOB_CD
+        PARAM<3>       =  L_VENDOR_LANGUAGE
+*        CALL  SB.PROCESS("SYSS9005.1W")
+        CALL  SYSS9005.1
+        IF RTN.FLAG THEN
+           L_FILENAME = "SYSTBL"
+           L_ERROR_KEY = PARAM<1>:"*": PARAM<2>
+           L_PARAGRAPH = "A029_GET_SYSTBL_INFO:"
+           L_ERROR_CODE = "IP2340"
+           L_PARAM_VALUE = L_ERROR_KEY
+           L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+           L_ERROR_FLAG = 1
+           GOSUB A021_PROCESS_SYS0061
+           GO A029_EXIT
+        END
+        L_FOB =  PARAM<4>
+     END
+*
+***************************
+* Get the buyer name BYR
+***************************
+*
+     IF TRIM(POH1_BUYER) # "" THEN 
+        L_SYSTBL_KEY = "BYR*":POH1_BUYER
+        READ SYSTBL_REC FROM SYSTBL,L_SYSTBL_KEY ELSE SYSTBL_REC = ""
+        IF RTN.FLAG THEN
+           L_FILENAME = "SYSTBL"
+           L_ERROR_KEY = L_SYSTBL_KEY
+           L_PARAGRAPH = "A029_GET_SYSTBL_INFO:"
+           L_ERROR_CODE = "IP2341"
+           L_PARAM_VALUE = L_ERROR_KEY
+           L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+           L_ERROR_FLAG = 1
+           GOSUB A021_PROCESS_SYS0061
+           GO A029_EXIT
+        END
+        L_BUYER_PRT_CODE = SYS2_FIELD1
+        L_BUYER_NAME     = SYS2_FIELD4
+        IF TRIM(SYS2_ALT_USER_CODE) = "" THEN
+           L_ALT_USER_CODE = TRIM(POH1_BUYER)
+        END ELSE 
+           L_ALT_USER_CODE = TRIM(SYS2_ALT_USER_CODE)
+        END
+     END
+*
+***************************
+* Get the requestor name REQ
+***************************
+*
+     IF TRIM(POH1_REQ_NAME) # "" THEN 
+        L_SYSTBL_KEY = "REQ*":POH1_REQ_NAME
+        READV L_REQUESTOR_NAME FROM SYSTBL,L_SYSTBL_KEY,4 ELSE L_REQUESTOR_NAME = ""
+     END
+*
+     PARAM          =  ""
+     PARAM          =  L_SAVE_PARAM
+     RTN.FLAG       =  L_SAVE_RTN_FLAG
+*
+***************************
+* Get the domain name of the Company & the division code
+***************************
+*
+     L_SYSTBL_KEY = "I79*":L_COMPANY_CODE:"-":L_DIVISION_CODE
+
+     L_DOMAIN_NAME  = ""
+     SYSTBL_REC     = ""
+     READ SYSTBL_REC FROM SYSTBL, L_SYSTBL_KEY THEN
+        IF L_VENDOR_LANGUAGE = "FRN" THEN
+           L_DOMAIN_NAME = TRIM(SYSTBL_REC<2>)
+        END ELSE
+           L_DOMAIN_NAME = TRIM(SYSTBL_REC<1>)
+        END
+     END ELSE
+        L_FILENAME    = "SYSTBL"
+        L_ERROR_KEY   = L_SYSTBL_KEY
+        L_PARAGRAPH   = "A029_GET_SYSTBL_INFO:"
+        L_ERROR_CODE  = "IP1026"
+        L_PARAM_VALUE = L_COMPANY_CODE:@VM:L_DIVISION_CODE:@VM:L_ERROR_KEY
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_ERROR_FLAG  = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO A029_EXIT
+     END
+**** lucthe /\ 2010-06-10 SPC044D
+*
+***************************
+* Get the Terms & Conditions Purchase link of the Company & the division code
+***************************
+*
+     L_TCP_FLAG = 0
+     L_SYSTBL_KEY = "I233*":L_COMPANY_CODE:"-":L_DIVISION_CODE:"TCP"
+     READ SYSTBL_REC FROM SYSTBL, L_SYSTBL_KEY THEN
+        IF SYSTBL_REC<3> = 1000 THEN
+           L_TCP_FLAG    = 1
+           IF L_VENDOR_LANGUAGE = "ENG" THEN
+              IF TRIM(SYSTBL_REC<1>) # "" THEN
+                 L_WEB_TCP_LINK = TRIM(SYSTBL_REC<1>)
+                 L_TCP_FLAG     = 0
+              END
+           END ELSE
+              IF L_VENDOR_LANGUAGE = "FRN" THEN 
+                 IF TRIM(SYSTBL_REC<2>) # "" THEN
+                    L_WEB_TCP_LINK = TRIM(SYSTBL_REC<2>)
+                    L_TCP_FLAG = 0
+                 END
+              END
+           END
+        END
+     END ELSE
+        L_TCP_FLAG = 1
+     END
+
+     IF L_TCP_FLAG THEN
+        L_FILENAME    = "SYSTBL"
+        L_ERROR_KEY   = L_SYSTBL_KEY
+        L_PARAGRAPH   = "A029_GET_SYSTBL_INFO:"
+        L_ERROR_CODE  = "IP2383"
+        L_PARAM_VALUE = L_COMPANY_CODE:@VM:L_DIVISION_CODE:@VM:L_ERROR_KEY
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_ERROR_FLAG  = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO A029_EXIT
+     END 
+*
+*** alital on 05/28/2012-PUR077D\/Determine if the User should receive a copy of the PO or not.
+     L_USER_COPY_FLAG = ""
+     L_SYSTBL_KEY     = "BYR*":POH1_BUYER
+     READ SYSTBL_REC FROM SYSTBL, L_SYSTBL_KEY ELSE SYSTBL_REC = ""
+     IF SYSTBL_REC<3>    = 1000 THEN
+        L_USER_COPY_FLAG = "1"     ;* Send a Copy of PO to the User
+     END 
+*** alital on 05/28/2012 - PUR077D/\.
+*
+A029_EXIT: 
+     RETURN
+*
+A030_MAIN_PROCESS: 
+*************************************************************************
+**  Process to generate the Purchase Order document
+*************************************************************************
+*
+     GOSUB A038_SETUP_DETAIL
+     IF RTN.FLAG THEN
+       GO A030_EXIT
+     END
+*
+     GOSUB A034_SETUP_HEADER_FORM
+*
+     GOSUB A039_SETUP_TOTALS
+*
+     GOSUB A210_PRINT_EMAIL_FAX
+     IF RTN.FLAG THEN
+       GO A030_EXIT
+     END
+*
+A030_EXIT: 
+     RETURN
+*
+A034_SETUP_HEADER_FORM: 
+**************************************************
+*    T_H01  TO  T_H35
+*************************************************
+*
+* JM AWFORMS - begin
+*
+     T_H01 = L_PO_NBR'L#15'
+     T_H02 = L_VENDOR_NBR'L#6' 
+
+     T_H03 = L_SUPPLIER_ADDRESS<1>'L#35'
+     T_H04 = L_SUPPLIER_ADDRESS<2>'L#35'
+     T_H05 = L_SUPPLIER_ADDRESS<3>'L#35'
+     T_H06 = L_SUPPLIER_ADDRESS<4>'L#35'
+     T_H07 = L_SUPPLIER_ADDRESS<5>'L#35'
+     T_H08 = L_SUPPLIER_ADDRESS<6>'L#35'
+     T_H09 = L_SHIPTO_ADDRESS<1>'L#35'
+     T_H10 = L_SHIPTO_ADDRESS<2>'L#35'
+     T_H11 = L_SHIPTO_ADDRESS<3>'L#35'
+     T_H12 = L_SHIPTO_ADDRESS<4>'L#35'
+     T_H13 = L_SHIPTO_ADDRESS<5>'L#35'
+     T_H14 = L_SHIPTO_ADDRESS<6>'L#35'
+     T_H15 = L_SHIPTO_ADDRESS<7>'L#35'
+
+     L_DATE = ""
+     IF TRIM(L_PO_DATE) # "" THEN
+        L_DATE = OCONV(L_PO_DATE,"D4-")
+        T_H16 = L_DATE[7,4]:"-":L_DATE[1,5]'L#10'
+     END
+
+     T_H17 = L_TERMS_PAYMENT'L#24' 
+     T_H18 = L_PROV_TAX'L#22'
+     T_H19 = L_FREIGHT_TYPE'L#21'
+     T_H20 = L_FOB'L#22'
+     T_H21 = L_CARRIER'L#35'
+     T_H22 = L_BUYER_NAME'L#30'
+     T_H23 = L_REQUESTOR_NAME'L#30'
+     T_H24 = L_COPY_MESSAGE'L#15'
+     T_H25 = L_PO_STATUS'L#20'
+     T_H26 = L_HDR_MESSAGE_1'L#85'
+
+     T_H27 = L_DIVISION_NAME'L#40'
+     T_H28 = L_BUYER_ADDRESS<1>'L#40'
+     T_H29 = L_BUYER_ADDRESS<2>'L#40'
+     T_H30 = L_BUYER_ADDRESS<3>'L#40'
+     T_H31 = L_BUYER_ADDRESS<4>'L#40'
+     T_H32 = L_BUYER_ADDRESS<5>'L#40'
+     T_H33 = L_BUYER_ADDRESS<6>'L#40'
+     T_H34 = L_BUYER_ADDRESS<7>'L#40'
+
+     T_H35 = L_WATERMARK'C#26'
+*
+* JM AWFORMS - end
+*
+A034_EXIT: 
+     RETURN
+*
+A038_SETUP_DETAIL: 
+***********************************************************
+*  T_D01   Detail section process
+*          Read the PODET file to print the Item Inforation
+*          of the PO
+***********************************************************
+*
+     T_D01 = "" ;*
+
+     L_MAX_ITEM = DCOUNT(POH1_REF,@VM) 
+*
+*    Count if all items are cancelled or completed.
+*    In the affirmative, dont process the detail section
+*
+     IF DCOUNT(POH1_REF,@VM) = COUNT(POH1_ITEM_COMPL,"X") THEN 
+        L_PO_STATUS = L_H_PO_STATUS<1> ;* Cancelled
+        L_MAX_ITEM  = 0
+     END ELSE
+        IF DCOUNT(POH1_REF,@VM) = COUNT(POH1_ITEM_COMPL,"C") THEN 
+           L_PO_STATUS = L_H_PO_STATUS<2> ;* Completed
+        END ELSE
+           IF DCOUNT(POH1_REF,@VM) = (COUNT(POH1_ITEM_COMPL,"X") + COUNT(POH1_ITEM_COMPL,"C")) THEN 
+              L_PO_STATUS = L_H_PO_STATUS<2> ;* Completed
+           END
+        END
+     END
+     FOR L_IND_ITEM = 1 TO L_MAX_ITEM
+         GOSUB A012_INITIALIZATION
+         L_ITEM_STATUS    = POH1_ITEM_COMPL<1,L_IND_ITEM>
+         *** juntan \/ JUNTAN.59 - 2013/08/14 ;* also bypass for the closed line(s)
+*         IF L_ITEM_STATUS = "X" THEN CONTINUE
+         IF L_ITEM_STATUS = "X" OR L_ITEM_STATUS = "C" THEN CONTINUE
+         *** juntan /\ JUNTAN.59 - 2013/08/14
+         L_PODET_KEY      = POH1_REF<1,L_IND_ITEM>:L_PO_KEY
+         READ PODET_REC FROM PODET, L_PODET_KEY ELSE PODET_REC = ""
+         IF PODET_REC     = "" THEN
+            CONTINUE
+         END ELSE
+            IF POH1_ITEM_NBR<1,L_IND_ITEM> # POD1_LINE_NBR THEN 
+               L_FILENAME    = "PODET"
+               L_ERROR_KEY   = L_PODET_KEY
+               L_PARAGRAPH   = "A038_SETUP_DETAIL:"
+               L_ERROR_CODE  = "IP2342"
+               L_PARAM_VALUE = POH1_ITEM_NBR<1,L_IND_ITEM>:VM:L_PO_KEY:VM:L_FILENAME
+               L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+               L_ERROR_FLAG  = 1
+               GOSUB A021_PROCESS_SYS0061
+               GO A038_EXIT
+            END
+         END
+
+         IF NOT(L_PAGE_BREAK_FLG) THEN L_T_D01_COUNT_LINES_NEEDED += 1
+         L_ITEM_NBR  = POD1_LINE_NBR
+         L_ITEM_CODE = POD1_PART_GL_WO
+         L_ITEM_SUPP_PART_NBR = POD1_SUPPLIER_PART_NBR
+*
+**************************
+* Get the bin of the Item
+**************************
+
+         GOSUB A1100_GET_ITEM_BIN
+
+*********************
+* Init Item Description & Comments
+*********************
+*
+        GOSUB A1200_INIT_ITEM_DESC_COMMENTS
+*
+*********************
+* Init L_ITEM_ISO_MESS - Item ISO information
+*********************
+*
+        GOSUB A1000_ISO_ITEM_INFO
+*
+*********************
+* Count the number of lines to print an item in the detail section
+*********************
+*
+        L_MAX_DESC = DCOUNT(L_ITEM_DESC,@VM) + 1
+        L_MAX_QTY  = DCOUNT(POD1_PCH_QTY,@VM)
+
+        L_MAX_ITEM_DEL_LINE = MAXIMUM(L_MAX_DESC:@VM:L_MAX_QTY)
+
+        L_T_D01_COUNT_LINES_NEEDED += L_MAX_ITEM_DEL_LINE
+        L_T_D01_COUNT_LINES_NEEDED += DCOUNT(L_ITEM_ISO_MESS,@VM)
+        IF L_COPY_TYPE = "I" THEN L_T_D01_COUNT_LINES_NEEDED += DCOUNT(L_ITEM_INT_COMMENTS,@VM)
+        L_T_D01_COUNT_LINES_NEEDED += DCOUNT(L_ITEM_EXT_COMMENTS,@VM)
+*
+***********************************************************************
+* Initialize the variable T_D01
+* Each line has 8 tabs
+* The detail Section contains 46 lines.
+***********************************************************************
+*
+*    Page Break is added if there is not enough lines to begin the
+*    printing of a new item.
+*
+        IF (L_T_D01_COUNT_LINES + L_T_D01_COUNT_LINES_NEEDED) > L_T_D01_MAX_LINES THEN
+           T_D01 := 'AW.PAGE.BREAK'
+           L_T_D01_COUNT_LINES = 0
+           L_PAGE_BREAK_FLG = 1
+        END ELSE
+           IF NOT(L_PAGE_BREAK_FLG) THEN 
+              T_D01 := @SM
+              L_T_D01_COUNT_LINES += 1
+           END
+        END
+
+        FOR L_IND_DEL_LINE = 1 TO L_MAX_ITEM_DEL_LINE
+           IF L_ORIGINAL_VALUE THEN 
+              L_QTY_ORDERED = POD1_PCH_QTY<1,L_IND_DEL_LINE>
+           END ELSE
+              L_QTY_ORDERED = POD1_PCH_BAL_QTY<1,L_IND_DEL_LINE>
+           END
+           L_UOM         = POD1_PCH_UM<1,L_IND_DEL_LINE>
+*** alital on 05/29/2012-PUR077D\/Hide the Price for the PO Plant Copy. 
+*           L_UNIT_PRICE  = OCONV(POD1_FOREIGN_UN_PR<1,L_IND_DEL_LINE>,"MR5,$#18")
+*           L_EXT_PRICE   = (L_QTY_ORDERED * POD1_FOREIGN_UN_PR<1,L_IND_DEL_LINE>)/1000
+*           L_PO_TOTAL   += L_EXT_PRICE
+*           L_EXT_PRICE   = OCONV(((L_QTY_ORDERED * POD1_FOREIGN_UN_PR<1,L_IND_DEL_LINE>)/1000),"MR2,$#18")
+*
+            L_UNIT_PRICE  = ""
+            L_EXT_PRICE   = ""
+            IF L_COPY_TYPE # "W" THEN   ;* Not a Copy of PO to send to the Plant
+               L_UNIT_PRICE  = OCONV(POD1_FOREIGN_UN_PR<1,L_IND_DEL_LINE>,"MR5,$#18")
+               L_EXT_PRICE   = (L_QTY_ORDERED * POD1_FOREIGN_UN_PR<1,L_IND_DEL_LINE>)/1000
+               L_PO_TOTAL   += L_EXT_PRICE
+               L_EXT_PRICE   = OCONV(((L_QTY_ORDERED * POD1_FOREIGN_UN_PR<1,L_IND_DEL_LINE>)/1000),"MR2,$#18")
+           END
+*** alital on 05/29/2012-PUR077D/\.
+*
+           L_QTY_ORDERED = OCONV(ICONV(L_QTY_ORDERED,"MD3"),"MR3,#15")
+
+           L_DOCK_DATE   = ""
+           IF TRIM(POD1_DOCK_DATE<1,L_IND_DEL_LINE>) # "" THEN
+              L_DATE = OCONV(POD1_DOCK_DATE<1,L_IND_DEL_LINE>,"D4-")
+              L_DOCK_DATE = L_DATE[7,4]:"-":L_DATE[1,5]'L#10'
+           END
+
+           BEGIN CASE
+              CASE L_IND_DEL_LINE = 1
+                 T_D01 := L_AW_BLACK8
+                 T_D01 := L_TAB : L_AW_BLACK_BOLD8:L_ITEM_NBR"L#3":L_AW_BLACK8
+                 T_D01 := L_TAB : L_ITEM_CODE'L#26'
+                 T_D01 := L_TAB : L_ITEM_SUPP_PART_NBR'L#20'
+              CASE 1
+                 L_IND_ITEM_DESC = L_IND_DEL_LINE - 1
+                 IF L_IND_ITEM_DESC <= L_MAX_DESC AND L_ITEM_DESC<1,L_IND_ITEM_DESC> # "" THEN 
+                    T_D01 := L_TAB :L_TAB: L_ITEM_DESC<1,L_IND_ITEM_DESC>'L#26': L_TAB
+                 END ELSE
+                    T_D01 := L_TAB : L_TAB : L_TAB
+                 END
+           END CASE
+
+           IF L_IND_DEL_LINE <= L_MAX_QTY THEN 
+              T_D01 := L_TAB : L_QTY_ORDERED
+              T_D01 := L_TAB : L_UOM'R#3'
+              T_D01 := L_TAB : L_UNIT_PRICE
+              T_D01 := L_TAB : L_EXT_PRICE
+              T_D01 := L_TAB : L_DOCK_DATE 
+              T_D01 := @SM
+           END ELSE
+              T_D01 := L_TAB : L_TAB : L_TAB : L_TAB : L_TAB : @SM
+           END
+
+           L_T_D01_COUNT_LINES += 1
+           L_PAGE_BREAK_FLG = 0
+
+        NEXT L_IND_DEL_LINE
+*
+*********************
+* Print Item Internal Comments
+*********************
+*
+        IF L_COPY_TYPE = "I" THEN
+           L_MAX_VM = DCOUNT(L_ITEM_INT_COMMENTS,@VM)
+           FOR L_IND = 1 TO L_MAX_VM
+               T_D01 := L_TAB:L_TAB:L_ITEM_INT_COMMENTS<1,L_IND>'L#95' :@SM
+               L_T_D01_COUNT_LINES += 1
+           NEXT L_IND
+        END
+*********************
+* Print Item External Comments
+*********************
+*
+        L_MAX_VM = DCOUNT(L_ITEM_EXT_COMMENTS,@VM)
+        FOR L_IND = 1 TO L_MAX_VM
+           T_D01 := L_TAB:L_TAB:L_ITEM_EXT_COMMENTS<1,L_IND>'L#95' :@SM
+           L_T_D01_COUNT_LINES += 1
+        NEXT L_IND
+*
+*********************
+* Print Item ISO information
+*********************
+*
+        IF L_ITEM_ISO_MESS # "" THEN
+           T_D01 := L_TAB:L_TAB:L_ITEM_ISO_MESS<1,1>'L#95' :@SM
+           T_D01 := L_TAB:L_TAB:L_ITEM_ISO_MESS<1,2>'L#95' :@SM
+           T_D01 := L_TAB:L_TAB:L_ITEM_ISO_MESS<1,3>'L#95' :@SM
+           L_T_D01_COUNT_LINES += 3
+        END
+
+     NEXT L_IND_ITEM
+*
+*********************
+* Header Internal Comments.
+*********************
+*
+     IF L_COPY_TYPE = "I" THEN
+        L_MAX_VM = DCOUNT(POH1_INTERNAL_COMMENTS,@VM)
+        FOR L_IND = 1 TO L_MAX_VM
+            IF TRIM(POH1_INTERNAL_COMMENTS<1,L_IND>) # "" THEN
+               IF L_IND = 1 THEN
+                 T_D01 := @SM
+                 L_T_D01_COUNT_LINES += 1
+               END
+               T_D01 := L_TAB:L_TAB:TRIM(POH1_INTERNAL_COMMENTS<1,L_IND>,' ','B')'L#95' :@SM
+               L_T_D01_COUNT_LINES += 1
+            END
+        NEXT L_IND
+     END
+*
+*********************
+* Header External Comments.
+*********************
+*
+     L_MAX_VM = DCOUNT(POH1_INSTRUCTIONS,@VM)
+     FOR L_IND = 1 TO L_MAX_VM
+         IF TRIM(POH1_INSTRUCTIONS<1,L_IND>) # "" THEN
+            IF L_IND = 1 THEN
+               T_D01 := @SM
+               L_T_D01_COUNT_LINES += 1
+            END
+            T_D01 := L_TAB:L_TAB:TRIM(POH1_INSTRUCTIONS<1,L_IND>,' ','B')'L#95' :@SM
+            L_T_D01_COUNT_LINES += 1
+        END
+     NEXT L_IND
+*
+*********************
+* Header Change Order Comments.
+*********************
+*
+     IF L_COPY_TYPE = "I" THEN
+        READ L_SYSCON_REC FROM SYSCON,"PUR.CONSTANTS" ELSE L_SYSCON_REC = ""
+        IF L_SYSCON_REC<9> # '' THEN
+           L_MAX_VM = DCOUNT(POH1_CO_DESC,@VM)
+           FOR L_IND = 1 TO L_MAX_VM
+               IF L_IND = 1 THEN
+                 T_D01 := @SM
+                 L_T_D01_COUNT_LINES += 1
+               END
+               IF TRIM(POH1_CO_DESC<1,L_IND>) # "" THEN
+                  T_D01 := L_TAB:L_TAB:TRIM(POH1_CO_DESC<1,L_IND>,' ','B')'L#95' :@SM
+                  L_T_D01_COUNT_LINES += 1
+               END
+           NEXT L_IND
+        END
+     END
+*
+A038_EXIT: 
+     RETURN
+*
+A039_SETUP_TOTALS: 
+************************************************************************
+* Footer section T_F01 to T_F10
+************************************************************************
+*
+     T_F01 = L_CUR_FUND'L#3'
+     T_F02 = OCONV(L_PO_TOTAL,"MR2,$#15")
+     T_F03 = L_MAIL_ADDRESS<1>'L#35'
+     T_F04 = L_MAIL_ADDRESS<2>'L#35'
+     T_F05 = L_MAIL_ADDRESS<3>'L#35'
+     T_F06 = L_MAIL_ADDRESS<4>'L#35'
+     T_F07 = L_MAIL_ADDRESS<5>'L#35'
+     T_F08 = L_FOOTER_MESSAGE_1'L#110'
+     T_F09 = L_FOOTER_MESSAGE_2'L#110'
+*** juntan \/ PUR062D.1 - 2008/09/08
+     T_F10 = L_SIGNATURE'L#9'
+*** juntan /\ PUR062D.1 - 2008/09/08
+     L_DATE = OCONV(DATE(),'D4-')
+     T_F99 = L_DATE[7,4]:"-":L_DATE[1,5]:" ":OCONV(TIME(),'MTS')
+*
+* JM AWFORMS - end
+*
+A039_EXIT: 
+     RETURN
+*
+**********************************
+A100_ELIMINATE_BLANK_LINE: 
+*
+************************************************************
+*** Eliminate the blank line of the L_ADDRESS_SECTION variable
+************************************************************
+*
+     L_DCOUNT = DCOUNT(L_ADDRESS_SECTION, @FM)
+     SWAP @FM WITH "^" IN L_ADDRESS_SECTION
+     FOR L_IND = 1 TO L_DCOUNT
+         SWAP "^^" WITH "^" IN L_ADDRESS_SECTION
+     NEXT L_IND
+     SWAP "^" WITH @FM IN L_ADDRESS_SECTION
+*
+A100_EXIT: 
+     RETURN
+*
+**************************************************************************
+*** Retrieve the rtf template for the Purchase Order document
+**************************************************************************
+A110_TEMPLATE.RTF: 
+*
+     L_TEMPLATE_KEY := "T_PUR"               ;* Suffix & template type
+     L_TEMPLATE_KEY := L_COMPANY_CODE        ;* Company Code
+     L_TEMPLATE_KEY := L_DIVISION_CODE       ;* Division Code
+     L_TEMPLATE_KEY := L_VENDOR_LANGUAGE[1,1] ;* Language code
+
+     READ SYSTEMPLATE_REC FROM SYSTEMPLATE, L_TEMPLATE_KEY ELSE SYSTEMPLATE_REC = ""
+     IF SYSTEMPLATE_REC = "" THEN
+        L_FILENAME = "SYSTEMPLATE"
+        L_ERROR_KEY = L_TEMPLATE_KEY
+        L_PARAGRAPH = "A110_TEMPLATE.RTF:"
+        L_ERROR_CODE = "IP1003"
+        L_PARAM_VALUE = L_ERROR_KEY
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE  ;* Template Code not found
+        L_ERROR_FLAG = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO A110_EXIT
+     END
+
+     AW.TEMPLATE.ID   = SYS5_TEMPLATE_NAME ; *Template Name .RTF
+     AW.DOCUMENT.TYPE = SYS5_DOCUMENT_TYPE
+*
+*    Verify if the template .rtf is existing in the directory
+*    \\ADVWARE\AWFORMS\AWFORMSTEMPLATES
+*
+     L_STMT = 'SELECT AWFORMSTEMPLATES WITH @ID = "' : AW.TEMPLATE.ID :'"'
+     EXECUTE "CLEARSELECT"
+     EXECUTE L_STMT CAPTURING L_JUNK
+     IF @SYSTEM.RETURN.CODE # 1 THEN
+        L_FILENAME = "AWFORMSTEMPLATES"
+        L_ERROR_KEY = AW.TEMPLATE.ID
+        L_PARAGRAPH = "A110_TEMPLATE.RTF:"
+        L_ERROR_CODE = "IP1008"
+        L_PARAM_VALUE = L_ERROR_KEY
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE  ;* RTF name not found
+        L_ERROR_FLAG = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO A110_EXIT
+     END
+*
+A110_EXIT:
+     RETURN
+*
+************************************************************************
+*   Retrieve the printer name of the PRTCONTROL file
+*   according the "PO" + Buyer Report Code
+************************************************************************
+A120_PRTCONTROL: 
+*
+     L_PRTCONTROL_KEY = "PO":L_BUYER_PRT_CODE
+     READV L_PRINTER_ID FROM PRTCONTROL, L_PRTCONTROL_KEY,2 ELSE L_PRINTER_ID = ""
+     IF TRIM(L_PRINTER_ID) = "" THEN
+        L_FILENAME = "PRTCONTROL"
+        L_ERROR_KEY = L_PRTCONTROL_KEY
+        L_PARAGRAPH = "A120_PRTCONTROL:"
+        L_ERROR_CODE = "IP1013"
+        L_PARAM_VALUE = L_ERROR_KEY
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE  ;* Printer control code not found
+        L_ERROR_FLAG = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO A120_EXIT
+     END
+*
+************************************************************************
+*   Validate the Window printer name and get the Printer Server Name
+************************************************************************
+*
+     L_NTPRTNAME_KEY = L_PRINTER_ID
+*     READ NTPRTNAME_REC FROM NTPRTNAME, L_NTPRTNAME_KEY ELSE NTPRTNAME_REC = ""
+*     IF TRIM(L_NT_PRINTER_SERVER) = "" THEN
+     READ NTPRTNAME_REC FROM NTPRTNAME, L_NTPRTNAME_KEY ELSE 
+        L_FILENAME = "NTPRTNAME"
+        L_ERROR_KEY = L_NTPRTNAME_KEY
+        L_PARAGRAPH = "A120_PRTCONTROL:"
+        L_ERROR_CODE = "IP1014"
+        L_PARAM_VALUE = L_ERROR_KEY
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE ;* Printer control code not found
+        L_ERROR_FLAG = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO A120_EXIT
+     END
+*
+A120_EXIT:
+     RETURN
+*
+A121_SETUP_NTPRTNAME:
+************************************************************************
+*   Setup the user's default printer & validate the NT Printer Name
+*   in the NTPRTNAME file.
+************************************************************************
+* Print with NT server
+
+     L_SAVE_WORK1  = WORK
+     L_SAVE_PARAM1 = PARAM
+     WORK = ''
+     IF TRIM(L_PRINTER_ID) = "" THEN 
+        WORK<2> = TRIM(PRINT.DEFN<15>)
+     END ELSE
+        WORK<2> = L_PRINTER_ID
+     END
+
+     DATA WORK<2>
+     CALL SB.PROCESS ("SYS9090")
+     IF RTN.FLAG THEN ;* Esc from SYS9090 screen
+        RTN.FLAG = 1
+        GOTO A121_EXIT
+     END
+     L_PRINTER_ID = TRIM(PARAM<2>)
+     L_NBR_COPIES = PARAM<3>
+
+     WORK  = L_SAVE_WORK1
+     PARAM = L_SAVE_PARAM1
+*
+A121_EXIT:
+     RETURN
+*
+************************************************************************
+*
+* Retrieve the email address of the user that is printing the form.
+* The reading is done with the LOGNAME in uppercase and
+* if not found, is done in lowercase.
+*
+************************************************************************
+A130_USER_EMAIL_ADDRESS: 
+*
+
+   L_FROM_EMAIL = "do-not-reply-internal-control@itinfonet.com"
+*   RETURN
+*   L_ADDRESSBOOK_KEY = TRIM(@LOGNAME)
+*   READV L_FROM_EMAIL FROM ADDRESSBOOK, L_ADDRESSBOOK_KEY,13 ELSE L_FROM_EMAIL = ""
+
+*   IF L_FROM_EMAIL = "" THEN
+*     L_ADDRESSBOOK_KEY = DOWNCASE(TRIM(@LOGNAME))
+*     READV L_FROM_EMAIL FROM ADDRESSBOOK, L_ADDRESSBOOK_KEY,13 ELSE L_FROM_EMAIL = ""
+*     IF L_FROM_EMAIL = "" THEN
+*        L_FILENAME = "ADDRESSBOOK"
+*        L_ERROR_KEY = L_ADDRESSBOOK_KEY
+*        L_PARAGRAPH = "A130_USER_EMAIL_ADDRESS:"
+*        L_ERROR_CODE = "IP1027"
+*        L_PARAM_VALUE = L_ERROR_KEY
+*        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+*        L_ERROR_FLAG = 1
+*        GOSUB A021_PROCESS_SYS0061
+*        GO A130_EXIT
+*     END
+*   END
+   L_ADDRESSBOOK_KEY = TRIM(WORK<108>)
+   L_APPROVER        = TRIM(WORK<108>)
+
+   READV L_TO_EMAIL FROM ADDRESSBOOK, L_ADDRESSBOOK_KEY,13 ELSE L_TO_EMAIL = ""
+   READV L_TO_NAME  FROM ADDRESSBOOK, L_ADDRESSBOOK_KEY,1  ELSE L_TO_NAME  = ""
+ 
+   IF L_TO_EMAIL = "" THEN
+      L_FILENAME = "ADDRESSBOOK"
+      L_ERROR_KEY = L_ADDRESSBOOK_KEY
+      L_PARAGRAPH = "A130_USER_EMAIL_ADDRESS:"
+      L_ERROR_CODE = "IP1027"
+      L_PARAM_VALUE = L_ERROR_KEY
+      L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+      L_ERROR_FLAG = 1
+      GOSUB A021_PROCESS_SYS0061
+      GO A130_EXIT
+   END
+*
+A130_EXIT:
+
+     RETURN
+*
+*****************************************************
+* Get Font Properties of the RFT file.
+*****************************************************
+A205_GET_FONT: 
+*
+     AW.FORMS.ACTION = "GET.FONT"
+     AW.FONT.NAME = "Arial"
+     AW.FONT.SIZE = "8"
+* DEBUG
+     CALL AWFORMS(MAT AW.ARGS)
+     L_AW_BLACK_BOLD8 = AW.BLACK.BOLD
+     L_AW_BLACK8      = AW.BLACK
+*
+* Include the account directory name to the AWFORMS PATH
+*
+     SWAP ":":L_BS WITH L_ACCOUNT_DIR IN AW.FORMSFILE.NTPATH
+*
+* Verify if any awforms Error messages *
+*
+     IF TRIM(AW.ERROR.TEXT) NE '' THEN
+        L_PARAGRAPH = "A205_GET_FONT:"
+        GOSUB A230_DISPLAY_AWFORMS_ERROR: 
+        IF RTN.FLAG THEN
+           GO A205_EXIT
+        END
+     END
+*
+A205_EXIT: 
+     RETURN
+*
+********************************************
+*
+*   A -> Auto Preference Option ( For future use)
+*   E -> Email Option
+*   F -> Fax Option       Use Goldfax machine
+*   P -> Print Option
+*   V -> View Option      View the document with Word sotware
+*
+*
+A210_PRINT_EMAIL_FAX: 
+********************************************
+* JM AWFORMS
+* Load AWFORMS parameters
+*
+********************************************
+*
+     AW.VIEW.IT=''
+     AW.FAX.IT=''
+     AW.PRINT.IT=''
+     AW.EMAIL.IT=''
+*
+     L_AW_RECORD_KEY = L_PO_NBR
+     AW.RECORD.KEY = L_AW_RECORD_KEY
+     SWAP "\" WITH "" IN AW.RECORD.KEY
+     SWAP "/" WITH "" IN AW.RECORD.KEY
+     SWAP "." WITH "" IN AW.RECORD.KEY
+     SWAP "*" WITH "" IN AW.RECORD.KEY
+*
+     AW.EMAIL.IT='Y'
+*
+***********************************************************
+*    The auto preference option is not active
+*    For future use   ( Luc Theroux )
+***********************************************************
+*
+**     FAX.NO = ""
+**     EMAIL.ADDR = ""
+**     PREFERENCE = ""
+**     IF L_AWFORM_OPTION = "A" THEN
+**       IF PREFERENCE = 'F' THEN
+**         IF FAX.NO THEN AW.FAX.IT = "Y" ELSE AW.PRINT.IT='Y'
+**       END
+**       IF PREFERENCE = 'E' THEN
+**         IF EMAIL.ADDR THEN EMAIL.IT = "Y" ELSE AW.PRINT.IT='Y'
+**       END
+**       IF PREFERENCE = '' OR PREFERENCE ='P' THEN AW.PRINT.IT = "Y";* Print Hard Copy
+**     END ELSE
+**       IF L_AWFORM_OPTION = 'V' THEN AW.VIEW.IT='Y'
+**       IF L_AWFORM_OPTION = 'P' THEN AW.PRINT.IT='Y'
+**       IF L_AWFORM_OPTION = 'F' THEN AW.FAX.IT='Y'
+**       IF L_AWFORM_OPTION = 'E' THEN AW.EMAIL.IT='Y'
+**     END                                                             
+*
+***********************************************************
+*     Viewing logic
+***********************************************************
+*
+     IF AW.VIEW.IT = 'Y' THEN
+        AW.VIEW.PROTECT = 'Y'
+        GOSUB A220_MAP_VARIABLES
+        IF RTN.FLAG THEN
+           GO A210_EXIT
+        END
+     END
+*
+***********************************************************
+*     Printing logic
+***********************************************************
+*
+     IF AW.PRINT.IT = 'Y' THEN
+        IF L_FIRST_PASS THEN
+           GOSUB A120_PRTCONTROL
+           IF RTN.FLAG THEN
+              GO A210_EXIT
+           END
+           GOSUB A121_SETUP_NTPRTNAME
+           IF RTN.FLAG THEN
+            GO A210_EXIT
+           END
+        END
+
+        AW.PRINTER.NAME = TRIM(L_PRINTER_ID)
+        AW.NUM.COPIES = L_NBR_COPIES
+        AW.SERVER.PRINT = "Y"
+
+        CALL SB.PROCESS("SYS0036")
+        GOSUB A220_MAP_VARIABLES
+        IF RTN.FLAG THEN
+           GO A210_EXIT
+        END
+     END
+*
+***********************************************************
+*     Faxing logic - Goldfax
+*     Ipex uses Goldfax for faxing
+*
+***********************************************************
+*
+     IF AW.FAX.IT ='Y' THEN
+        AW.FAX.IT = ""
+
+        GOSUB A220_MAP_VARIABLES
+        IF RTN.FLAG THEN
+           GO A210_EXIT
+        END
+*
+     WORK<605> = L_SUBJECT :L_AW_RECORD_KEY ; * Subject of the fax or Email
+*
+**************************************************************
+*      I use the "/" in the path because the @PARAM
+*      variable used in the paragraph SYSP9165.1 changes the "\" in @FM
+*      and this is cause a problem.
+*      The "/" will be replaced by "\" in the program SYSS9050.2
+*      AW.FORMSFILE.NTPATH is a variable name of the item
+*      AWFORMS.TABLE of the AWFORMSTEMPLATES directory.
+*      AWFORMS program inits this variable according the configuration
+*      of the pointer AWFORMSTEMPLATES
+*      
+        L_FAX_PATH = AW.FORMSFILE.NTPATH:AW.FORMS.KEYS
+        SWAP "\" WITH "/" IN L_FAX_PATH
+        WORK<608> = L_FAX_PATH
+
+        CALL SB.PROCESS("SYSP9160.1,SET")
+        IF RTN.FLAG THEN
+          CALL SB.PROCESS("SYS0036")
+          RTN.FLAG = 1  ;* DO NOT REMOVE Suppress msg "Print fax" from call process.
+          GO A210_EXIT
+        END
+        CALL SB.PROCESS("SYSP9160.1,RESET")
+
+     END
+*
+***********************************************************
+*    Not applicable with IPEX
+*    Ipex uses Goldfax for faxing
+*    This awform coding is not applicable for IPEX
+***********************************************************
+*
+*     IF AW.FAX.IT ='Y' AND FAX.NO THEN
+*         AW.FAX.RECORD = ""
+*         AW.FAX.RECORD<1> = "[OrderPacket]"
+*         AW.FAX.RECORD<2> = "To=":CONTACT
+*         AW.FAX.RECORD<3> = "From=":"AdvancedWare Corporation"
+*         AW.FAX.RECORD<4> = "FaxNumber=":FAX.NO
+*         AW.FAX.RECORD<5> = "File1=": AW.FORMSFILE.NTPATH
+*         AW.FAX.RECORD<6> = "CallID=":DATE():TIME():X
+*         AW.FAX.RECORD<7> = "UserName=":FROM.EMAIL
+*         AW.FAX.RECORD<8> = "Company=":BILL.CM.NAME
+*     END
+***********************************************************
+*     Email Logic
+***********************************************************
+*
+     RTN.FLAG = 0
+     IF AW.EMAIL.IT = "Y" THEN
+        AW.EMAIL.PROTECT = 'Y'
+        AW.CONVERT.PDF='Y' ; * Convert the .DOC in .PDF
+        AW.EMAIL.IT = "N"  ; * The .doc won't be sent by email
+
+        GOSUB A130_USER_EMAIL_ADDRESS
+        IF RTN.FLAG THEN
+           GO A210_EXIT
+        END
+*
+*    Only External Purchase Order Form copy is sent to the supplier.
+*    The Email Header Information screen will be prompted.
+*
+*** alital on 05/29/2012 - PUR077D\/Add a Plant Copty of the PO
+*        IF L_COPY_TYPE = "E" THEN 
+        IF L_COPY_TYPE = "E" OR L_COPY_TYPE = "W" THEN     ;* External Copy or Plant Copy
+*** alital on 05/29/2012 - PUR077D/\
+           L_SAVE_WORK = WORK
+           WORK = ""
+
+           WORK<8> = L_FROM_EMAIL           ;* User Email Address
+           WORK<9> = L_PUR_CONTACT_EMAIL    ;* Purchase Contact Email
+           WORK<10> = ""                    ;* Cc email
+*** alital on 05/29/2012 - PUR077D\/CC a copy of the PO to the User
+*           WORK<11> = ""                    ;* Bcc email
+           IF L_USER_COPY_FLAG = "1" THEN
+              WORK<11> = L_FROM_EMAIL       ;* Bcc email to the User
+           END
+*** alital on 05/29/2012 - PUR077D/\
+           WORK<12> = L_SUBJECT:L_AW_RECORD_KEY:" - ":L_DIVISION_NAME;* Subject Email
+           WORK<13> = ""                    ;* Message email
+           WORK<14> = L_SAVE_WORK<606>      ;* Customer Ship-To Name
+           WORK<15> = L_SAVE_WORK<607>      ;* Contact Name
+
+           IF L_FIRST_PASS THEN
+              CALL SB.PROCESS('SYS9150')
+           END ELSE
+              WORK = L_SAVE_WORK2
+           END
+           IF NOT(RTN.FLAG) THEN 
+              AW.FROM.EMAIL = WORK<8>
+*
+*    The emails addresses have to be separated with a comma
+*
+              AW.TO.EMAIL = WORK<9>
+              SWAP VM WITH "," IN AW.TO.EMAIL
+              AW.CC.EMAIL = WORK<10>
+              SWAP VM WITH "," IN AW.CC.EMAIL
+              AW.BCC.EMAIL = WORK<11>
+              SWAP VM WITH "," IN AW.BCC.EMAIL
+
+              AW.EMAIL.SUBJ = WORK<12> ; * Email Subject
+*
+*    Each line of the message has to end with a Carriage Return
+*
+              AW.EMAIL.MSG = WORK<13>
+           END
+        END ELSE
+*
+*    Internal Purchase Order Form copy is only sent to the Ipex user email.
+*    The Email Header Information screen won't be prompted.
+*
+           IF L_COPY_TYPE = "I" THEN 
+*** alital on 05/29/2012 - PUR077D\/CC a copy of the PO to the User
+*              IF L_USER_COPY_FLAG = "1" THEN
+*                 WORK<11> = L_FROM_EMAIL       ;* Bcc email to the User
+*              END
+*** alital on 05/29/2012 - PUR077D/\
+              WORK<12> = L_SUBJECT:L_AW_RECORD_KEY:" - ":L_DIVISION_NAME;* Subject Email
+              WORK<13> = ""                    ;* Message email
+              WORK<14> = L_SAVE_WORK<606>      ;* Customer Ship-To Name
+              WORK<15> = L_SAVE_WORK<607>      ;* Contact Name
+              AW.FROM.EMAIL = L_FROM_EMAIL     ;* User Email Address
+*
+*    The emails addresses have to be separated with a comma
+*
+              AW.TO.EMAIL = L_TO_EMAIL     ;* User Email Address
+              SWAP VM WITH "," IN AW.TO.EMAIL
+              AW.CC.EMAIL = ""
+              AW.BCC.EMAIL = ""
+              AW.EMAIL.SUBJ = L_SUBJECT
+*              :L_AW_RECORD_KEY:" - ":L_DIVISION_NAME:" - ":L_COPY_MESSAGE ;* Subject Email
+              AW.EMAIL.MSG = ""
+           END
+        END
+*
+*    Each line of the message has to end with a Carriage Return
+*
+        IF NOT(RTN.FLAG) THEN
+           SWAP VM WITH L_CR IN AW.EMAIL.MSG
+
+*           AW.EMAIL.MSG :=" -NOPATH"
+*           AW.EMAIL.MSG :=" -DELIVERY"
+
+            AW.EMAIL.MSG :=" -MESSAGE " : WORK<107>
+*   AW.EMAIL.MSG :=" -MESSAGE ":"/usr/users/nfs/dev/DOM/":WORK<107>;* PAR LUCTHEROUX
+
+
+           AW.EMAIL.MSG :=" -HTML "
+
+           L_SAVE_WORK2 = WORK
+           WORK = L_SAVE_WORK
+
+           GOSUB A220_MAP_VARIABLES
+           IF RTN.FLAG THEN
+              GO A210_EXIT
+           END
+           L_SAVE_RTN_FLAG = RTN.FLAG
+*           CALL SB.PROCESS("SYSS9200.1W") ; * pgm to changes the permissions to 777
+           CALL SYSS9200.1 ; * pgm to changes the permissions to 777
+
+           RTN.FLAG        =  L_SAVE_RTN_FLAG
+        END
+     END
+*
+     IF @LOGNAME # "webusr" THEN
+        IF NOT(RTN.FLAG) THEN
+           CALL SB.PROCESS('SYS0061,IP1548\':L_LEVEL:VM:L_TO_NAME)
+        END ELSE
+           CALL SB.PROCESS("SYS0061,IP1394") ;* Email unsuccessfully
+        END
+     END
+*
+A210_EXIT: 
+     RETURN
+*
+A220_MAP_VARIABLES: 
+************************************************************************
+*     Map Variables of Template to the variables of Print Program.
+************************************************************************
+*
+*   This variable is assigned by the AWFORMS program
+*   or by the programmer.
+*   If assigns by the programmer, follow this format;
+*   AW.DOCUMENT.NAME = DATE():"_":TIME():"_":AW.DOCUMENT.TYPE : L_PO_NBR
+*
+     AW.LABEL.DATA = ''
+     AW.LABEL.DATA<-1> = "T_H01":@VM:T_H01
+     AW.LABEL.DATA<-1> = "T_H02":@VM:T_H02
+     AW.LABEL.DATA<-1> = "T_H03":@VM:T_H03
+     AW.LABEL.DATA<-1> = "T_H04":@VM:T_H04
+     AW.LABEL.DATA<-1> = "T_H05":@VM:T_H05
+     AW.LABEL.DATA<-1> = "T_H06":@VM:T_H06
+     AW.LABEL.DATA<-1> = "T_H07":@VM:T_H07
+     AW.LABEL.DATA<-1> = "T_H08":@VM:T_H08
+     AW.LABEL.DATA<-1> = "T_H09":@VM:T_H09
+     AW.LABEL.DATA<-1> = "T_H10":@VM:T_H10
+     AW.LABEL.DATA<-1> = "T_H11":@VM:T_H11
+     AW.LABEL.DATA<-1> = "T_H12":@VM:T_H12
+     AW.LABEL.DATA<-1> = "T_H13":@VM:T_H13
+     AW.LABEL.DATA<-1> = "T_H14":@VM:T_H14
+     AW.LABEL.DATA<-1> = "T_H15":@VM:T_H15
+     AW.LABEL.DATA<-1> = "T_H16":@VM:T_H16
+     AW.LABEL.DATA<-1> = "T_H17":@VM:T_H17
+     AW.LABEL.DATA<-1> = "T_H18":@VM:T_H18
+     AW.LABEL.DATA<-1> = "T_H19":@VM:T_H19
+     AW.LABEL.DATA<-1> = "T_H20":@VM:T_H20
+     AW.LABEL.DATA<-1> = "T_H21":@VM:T_H21
+     AW.LABEL.DATA<-1> = "T_H22":@VM:T_H22
+     AW.LABEL.DATA<-1> = "T_H23":@VM:T_H23
+     AW.LABEL.DATA<-1> = "T_H24":@VM:T_H24
+     AW.LABEL.DATA<-1> = "T_H25":@VM:T_H25
+     AW.LABEL.DATA<-1> = "T_H26":@VM:T_H26
+     AW.LABEL.DATA<-1> = "T_H27":@VM:T_H27
+     AW.LABEL.DATA<-1> = "T_H28":@VM:T_H28
+     AW.LABEL.DATA<-1> = "T_H29":@VM:T_H29
+     AW.LABEL.DATA<-1> = "T_H30":@VM:T_H30
+     AW.LABEL.DATA<-1> = "T_H31":@VM:T_H31
+     AW.LABEL.DATA<-1> = "T_H32":@VM:T_H32
+     AW.LABEL.DATA<-1> = "T_H33":@VM:T_H33
+     AW.LABEL.DATA<-1> = "T_H34":@VM:T_H34
+
+     AW.LABEL.DATA<-1> = "T_H35":@VM:T_H35
+
+*
+     AW.LABEL.DATA<-1> = "T_D01":@VM:T_D01
+*
+     AW.LABEL.DATA<-1> = "T_F01":@VM:T_F01
+     AW.LABEL.DATA<-1> = "T_F02":@VM:T_F02
+     AW.LABEL.DATA<-1> = "T_F03":@VM:T_F03
+     AW.LABEL.DATA<-1> = "T_F04":@VM:T_F04
+     AW.LABEL.DATA<-1> = "T_F05":@VM:T_F05
+     AW.LABEL.DATA<-1> = "T_F06":@VM:T_F06
+     AW.LABEL.DATA<-1> = "T_F07":@VM:T_F07
+     AW.LABEL.DATA<-1> = "T_F08":@VM:T_F08
+     AW.LABEL.DATA<-1> = "T_F09":@VM:T_F09
+*** juntan \/ PUR062D.1 - 2008/09/08
+     AW.LABEL.DATA<-1> = "T_F10":@VM:T_F10
+*** juntan /\ PUR062D.1 - 2008/09/08
+     AW.LABEL.DATA<-1> = "T_F99":@VM:T_F99
+*    
+     GOSUB A250_SWAP_ASCII_TO_LATIN1_CODE
+*
+     IF @LOGNAME # "webusr" THEN
+        CALL SB.PROCESS ("SYS0061,959\\\7")
+     END
+     AW.FORMS.ACTION = ""
+
+     CALL AWFORMS(MAT AW.ARGS)
+*
+* Verify if any awforms Error messages *
+*
+     IF TRIM(AW.ERROR.TEXT) NE '' THEN
+        L_PARAGRAPH = "A220_MAP_VARIABLES:"
+        GOSUB A230_DISPLAY_AWFORMS_ERROR: 
+        IF RTN.FLAG THEN
+           GO A220_EXIT
+        END
+     END
+*
+**********************************************************************
+*    This action will setup the deletion of the eligible documents
+*    of the AWFORMSFILES directory.
+*    All documents older than the value of the parameter FORMSQUEUE.AGE
+*    will be deleted when AWFORMS.EXE (NTSERVER) is executed.
+*    This parameter is configured in the Item id AWFORMS.TABLE
+*    of the AWFORMSTEMPLATES directory.
+*      
+**********************************************************************
+*
+     AW.FORMS.ACTION = "DELETE"
+     CALL AWFORMS(MAT AW.ARGS)
+*
+* Verify if any awforms Error messages *
+*
+     IF TRIM(AW.ERROR.TEXT) NE '' THEN
+       L_PARAGRAPH = "A220_MAP_VARIABLES:"
+       GOSUB A230_DISPLAY_AWFORMS_ERROR: 
+       IF RTN.FLAG THEN
+          GO A220_EXIT
+       END
+     END
+*
+A220_EXIT: 
+     RETURN
+*
+*****************************************************
+* Display any awforms error messages
+*****************************************************
+A230_DISPLAY_AWFORMS_ERROR: 
+*
+* Print any awforms Error messages *
+*
+     L_MERROR     = ""
+     L_AW_ERROR   = ""
+     L_AW_ERRTEXT = ""
+
+     LOOP
+        REMOVE L_AW_ERROR FROM AW.ERROR.CODE SETTING L_MERROR
+        REMOVE L_AW_ERRTEXT FROM AW.ERROR.TEXT SETTING L_MERROR
+*       CALL SB.DISP(4,L_AW_ERROR:" - ":L_AW_ERRTEXT)
+        L_ERROR_CODE = "IP1015"
+        L_PARAM_VALUE = L_AW_ERROR:" - ":L_AW_ERRTEXT
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_INFORMATION   = "Program ":L_PROGRAM:" calls the subroutine AWFORMS(MAT AW.ARGS)":L_CR
+        L_INFORMATION  := SPACES(24) : "Action AW.FORMS.ACTION = ":"'":AW.FORMS.ACTION :"'": L_CR
+        L_INFORMATION  := SPACES(24) : L_AW_ERROR:" - ":L_AW_ERRTEXT
+        L_ERROR_FLAG = 1
+        GOSUB A021_PROCESS_SYS0061
+       WHILE L_MERROR
+     REPEAT
+*
+A230_EXIT: 
+     RETURN
+*
+************************************************************
+*** Conversion of ASCII characters codes to LATIN 1 characters codes
+************************************************************
+*
+* The Word software uses the LATIN 1 characters codes.
+* Some characters as french characters or specials symbols have
+* to be converted in LATIN 1 characters codes.
+*
+*       Example:
+*       CHAR(174) Æ of the ASCII table is CHAR(171) of the LATIN 1 table.
+*
+************************************************************
+*
+A250_SWAP_ASCII_TO_LATIN1_CODE: 
+*
+*    L_CODES_ASCII  ->  ASCII characters codes
+*    L_CODES_LATIN1 ->  Latin 1 characters codes used by Word Software
+
+     L_LEN = LEN(L_CODES_ASCII)
+     FOR L_IND = 1 TO L_LEN
+         SWAP L_CODES_ASCII[L_IND,1] WITH L_CODES_LATIN1[L_IND,1] IN AW.LABEL.DATA
+     NEXT L_IND
+*
+A250_EXIT: 
+     RETURN
+*
+**********************************************************************
+* Send an email if an error has been detected
+**********************************************************************
+*
+A999_ERROR_MESSAGE:
+*
+     L_SAVE_PARAM  = PARAM
+     L_SAVE_WORK   = WORK
+     L_SAVE_RECORD = RECORD
+     L_SAVE_ORIG_REC = ORIG.REC
+     IF L_ERROR_FLAG THEN
+*        IIPTEXT_KEY = L_ERROR_CODE
+*        READV L_ERROR_MESSAGE FROM IIPTEXT.FILE,IIPTEXT_KEY,1 ELSE L_ERROR_MESSAGE_DESC = ''
+*        L_COUNT_VALUE = DCOUNT(L_PARAM_VALUE,@VM)
+*        FOR L_IND1 = 1 TO L_COUNT_VALUE
+*            L_ERROR_MESSAGE = EREPLACE(L_ERROR_MESSAGE, L_BS, L_PARAM_VALUE<1,L_IND1>,1,1)
+*        NEXT L_IND1
+*        SWAP "'" WITH "" IN L_ERROR_MESSAGE
+*        RTN.FLAG  = 0
+*        PARAM = ''
+*        PARAM<1,-1> = "Error Code"           L_ERR_MSG_MASK20 : L_ERROR_CODE
+*        PARAM<1,-1> = "Error Message"        L_ERR_MSG_MASK20 : L_ERROR_MESSAGE
+*        PARAM<1,-1> = "Date"                 L_ERR_MSG_MASK20 : L_CURRENT_DATE
+*        PARAM<1,-1> = "Time"                 L_ERR_MSG_MASK20 :  L_CURRENT_TIME
+*        PARAM<1,-1> = "Executed by the user" L_ERR_MSG_MASK20 : @LOGNAME
+*** juntan \/ SYS085D - 2009/08/20
+*        PARAM<1,-1> = "Account"              L_ERR_MSG_MASK20 : @PATH
+*** juntan /\ SYS085D - 2009/08/20
+*        PARAM<1,-1> = "Program"              L_ERR_MSG_MASK20 : L_PROGRAM
+*        PARAM<1,-1> = "Paragraph"            L_ERR_MSG_MASK20 : L_PARAGRAPH
+*        PARAM<1,-1> = "File Name"            L_ERR_MSG_MASK20 : L_FILENAME
+*        PARAM<1,-1> = "Record key"           L_ERR_MSG_MASK20 : L_ERROR_KEY
+*        PARAM<1,-1> = "Other Information"    L_ERR_MSG_MASK20 : L_INFORMATION
+*** juntan \/ SYS085D - 2009/08/20
+*        PARAM<2>  = '** Error detected in the program ': L_PROGRAM : " Account ":@PATH
+*** juntan /\ SYS085D - 2009/08/20
+*        PARAM<3>  = L_ERROR_EMAIL_ADDRESS
+*        CALL SB.PROCESS ('SYSS9060.1') ; * Process sending an Email
+
+        PARAM = ""
+        SLA_ADMIN_ADDR = ""
+
+        READV SLA_ADMIN FROM SYSCON, "PIC.CONSTANT",3 ELSE SLA_ADMIN = ""
+        SLA_ADMIN = TRIM(FIELD(SLA_ADMIN, ";",1))
+
+        PARAM<3> = SLA_ADMIN
+        
+        READV INF_GRP FROM SYSCON, "PIC.CONSTANT",4 ELSE INF_GRP = "devteam@ipexna.com"
+
+        INF_GRP = TRIM(FIELD(INF_GRP, ";",1))
+
+        PARAM<8> = INF_GRP
+
+        READV L_EMAIL_ADDRESS FROM ADDRESSBOOK,@LOGNAME,13 ELSE L_EMAIL_ADDRESS = ""
+        IF L_EMAIL_ADDRESS = "" THEN  L_EMAIL_ADDRESS = "pierre.desjardins@ipexna.com"
+        PARAM<4> =  L_EMAIL_ADDRESS
+ 
+        PARAM<1> = ""
+        PARAM<1> = WORK<107>
+        PARAM<2> = "Approver ": WORK<108> : " not found in ADDRESSBOOK, please take an action!"
+        PARAM<5> = 1
+        PARAM<6> = 0
+        PARAM<7> = ""
+
+        CALL SYSS9060.4(PARAM)
+
+     END
+*
+A999_EXIT:
+     PARAM    = L_SAVE_PARAM
+     WORK     = L_SAVE_WORK
+     RECORD   = L_SAVE_RECORD
+     ORIG.REC = L_SAVE_ORIG_REC
+
+     RETURN
+*
+************************************************************
+*
+* Retrieve the Item ISO Information
+*
+************************************************************
+*
+A1000_ISO_ITEM_INFO:
+*
+**********************************************************
+* Check if the product is Certifie ISO
+* Check if Whse is an ISO Location
+**********************************************************
+*
+*** piedes \/ PUR075D - 2012/01/04
+* REMOVE THE WHS ISO LOGIC
+*     L_ISO_FLAG = "" ;* ISO Whse flag
+*     READV L_ISO_FLAG FROM SYSTBL, "I47*":POH1_WHS,1 ELSE L_ISO_FLAG = ""
+*     IF L_ISO_FLAG = "ISO"  THEN
+*** piedes /\ PUR075D - 2012/01/04
+        READ ITMMST_REC FROM ITMMST, L_CPN THEN 
+           L_PROD_TYPE  = ITM1_INV_CD[1,1] ;* Product Type
+           L_ISO_FLAG = "" ;* ISO Product flag
+           READV L_ISO_FLAG FROM SYSTBL, "ITP*":L_PROD_TYPE,2 ELSE L_ISO_FLAG = ""
+*
+* If The Product is Certified ISO ***
+* Check if the Product Matches the Part# in ITMSUPPACT File
+* Locate the supplier part# of the PODET file in the ITMSUPPACT file.
+*
+           IF L_ISO_FLAG = "ISO"  THEN
+              L_ITMSUPPACT_KEY = L_CPN:"*":POH1_COMPANY:"*":POH1_VENDOR_NBR
+              READ ITMSUPPACT_REC FROM ITMSUPPACT, L_ITMSUPPACT_KEY THEN 
+                 LOCATE L_ITEM_SUPP_PART_NBR IN ITMSUPPACT_REC<11> SETTING L_POS THEN
+                    L_DATE = ""
+                    IF TRIM(ITMSUPPACT_REC<48,L_POS>) # "" THEN 
+                       L_DATE = OCONV(ITMSUPPACT_REC<48,L_POS>,"D4-")
+                       L_ISO_DATE = L_DATE[7,4]:"-":L_DATE[1,5]'L#10'
+                    END
+                    L_ISO_CERTIF_NBR = ITMSUPPACT_REC<49,L_POS>
+                    L_ISO_MSG_TYPE   = ITMSUPPACT_REC<50,L_POS>
+                    BEGIN CASE
+                       CASE L_ISO_MSG_TYPE = 1
+                          L_ITEM_ISO_MESS<1,-1> = " ";* Add blank line
+                          IF L_VENDOR_LANGUAGE = "FRN" THEN
+                             L_ITEM_ISO_MESS<1,-1> = "LE FOURNISSEUR CERTIFIE QUE LE MATERIEL FIGURANT SUR CE BON DE COMMANDE"
+                             L_ITEM_ISO_MESS<1,-1> = "REPOND AUX SPECIFICATIONS " : L_ISO_DATE : L_ISO_CERTIF_NBR 
+                          END ELSE
+                             L_ITEM_ISO_MESS<1,-1> = "SUPPLIER WARRANTS THE MATERIAL SHIPPED HEREUNDER COMPLIES WITH THE ACKNOWLEDGED"
+                             L_ITEM_ISO_MESS<1,-1> = "SPECIFICATIONS FOR " : L_ISO_DATE : " " : L_ISO_CERTIF_NBR
+                          END
+                       CASE L_ISO_MSG_TYPE = 2
+                          L_ITEM_ISO_MESS<1,-1> = " ";* Add blank line
+                          IF L_VENDOR_LANGUAGE = "FRN" THEN
+*** piedes \/ PUR075D - 2012/01/04
+*                             L_ITEM_ISO_MESS<1,-1> = "LE CERTIFICAT DE QUALITE DOIT ETRE ENVOYE AU LIEU D'EXPEDITION CHEZ IPEX PAR"
+*                             L_ITEM_ISO_MESS<1,-1> = "COURRIEL OU AVEC LA MARCHANDISE"
+
+                             L_ITEM_ISO_MESS<1,-1> = "LE CERTIFICAT DE QUALITE DOIT ETRE ENVOYE AU LIEU D'EXPEDITION AVEC LA MARCHANDISE ET"
+                             L_ITEM_ISO_MESS<1,-1> = "PAR COURRIEL A L'ACHETEUR: ":ADDRESSBOOK_REC<13>
+*** piedes /\ PUR075D - 2012/01/04
+                          END ELSE
+*** piedes \/ PUR075D - 2012/01/04
+*                             L_ITEM_ISO_MESS<1,-1> = "CERTIFICATE OF QUALITY MUST BE SENT TO IPEX RECEIVING LOCATION VIA EMAIL OR"
+*                             L_ITEM_ISO_MESS<1,-1> = "ACCOMPANY THE SHIPMENT"
+
+                             L_ITEM_ISO_MESS<1,-1> = "CERTIFICATE OF QUALITY MUST ACCOMPANY THE SHIPMENT AND"
+                             L_ITEM_ISO_MESS<1,-1> = "ALSO BE SENT BY EMAIL TO THE BUYER: " : ADDRESSBOOK_REC<13>
+*** piedes /\ PUR075D - 2012/01/04
+                          END
+                    END CASE
+                 END
+              END
+           END
+        END
+*** piedes \/ PUR075D - 2012/01/04
+* REMOVE THE WHS ISO LOGIC
+*     END
+*** piedes /\ PUR075D - 2012/01/04
+*
+A1000_EXIT: 
+     RETURN
+*
+**************************
+* Get the bin of the Item
+**************************
+*
+A1100_GET_ITEM_BIN:
+
+     L_CPN = ""
+     READV L_CPN FROM ITMXRF,L_ITEM_CODE,1 THEN 
+        IF L_COPY_TYPE = "I" THEN 
+           INVWHS_REC = ''
+           L_INVWHS_KEY = L_CPN : "*" : POH1_WHS
+           READ INVWHS_REC FROM INVWHS,L_INVWHS_KEY THEN
+              IF INVWHS_REC<3,1> # '' THEN
+                 L_ITEM_CODE := " -Bin " : INVWHS_REC<3,1>
+              END
+           END
+        END
+     END
+
+A1100_EXIT: 
+     RETURN
+*
+*********************
+* Init Item Description, Internal & External Comments
+*********************
+A1200_INIT_ITEM_DESC_COMMENTS:
+*
+**************************
+* Init L_ITEM_DESC - Item Description.
+**************************
+*
+     L_MAX_VM = DCOUNT(POD1_DESC,@VM)
+     FOR L_IND = 1 TO L_MAX_VM
+        IF TRIM(POD1_DESC<1,L_IND>) # "" THEN
+           L_ITEM_DESC<1,-1> = POD1_DESC<1,L_IND>
+        END
+     NEXT L_IND
+*
+**************************
+* Init L_ITEM_INT_COMMENTS - Item Internal Comments
+**************************
+*
+     IF L_COPY_TYPE = "I" THEN
+        L_MAX_VM = DCOUNT(POD1_COMMENTS,@VM)
+        FOR L_IND = 1 TO L_MAX_VM
+            IF TRIM(POD1_COMMENTS<1,L_IND>) # "" THEN
+               IF L_IND = 1 THEN L_ITEM_INT_COMMENTS<1,-1> = " " ;* Add blank line
+               L_ITEM_INT_COMMENTS<1,-1> = POD1_COMMENTS<1,L_IND>
+            END
+        NEXT L_IND
+     END
+*
+**************************
+* Init L_ITEM_EXT_COMMENTS - Item External Comments
+**************************
+*
+     L_MAX_VM = DCOUNT(POD1_EXT_COMMENTS,@VM)
+     FOR L_IND = 1 TO L_MAX_VM
+         IF TRIM(POD1_EXT_COMMENTS<1,L_IND>) # "" THEN
+            IF L_IND = 1 THEN L_ITEM_EXT_COMMENTS<1,-1> = " " ;* Add blank line
+            L_ITEM_EXT_COMMENTS<1,-1> = POD1_EXT_COMMENTS<1,L_IND>
+        END
+     NEXT L_IND
+*
+A1200_EXIT: 
+     RETURN
+*
+********************************************************************
+*    Get the buyer address using the buyer code or the alt t already read
+*    in the SYSTBL BYR
+*    IF tHE 
+
+********************************************************************
+A1300_BUYER_ADDRESS:
+**** Init the Variables T_H27 TO T_H35
+*
+*    Read the buyer address with the alt user code
+*
+     L_ADDRESSBOOK_KEY = L_ALT_USER_CODE
+
+     READ ADDRESSBOOK_REC FROM ADDRESSBOOK,L_ADDRESSBOOK_KEY ELSE ADDRESSBOOK_REC = ""
+
+     IF ADDRESSBOOK_REC = "" THEN
+*
+*    Read the buyer address with login' user code
+*
+*        L_ADDRESSBOOK_KEY = @LOGNAME
+        L_ADDRESSBOOK_KEY = POH1_USER_ID
+
+        READ ADDRESSBOOK_REC FROM ADDRESSBOOK,L_ADDRESSBOOK_KEY ELSE ADDRESSBOOK_REC = ""
+     END
+
+     IF ADDRESSBOOK_REC = "" AND @LOGNAME # "webusr" THEN
+        L_FILENAME = "ADDRESSBOOK"
+        L_ERROR_KEY = L_ADDRESSBOOK_KEY
+        L_PARAGRAPH = "A1300_BUYER_ADDRESS:"
+        L_ERROR_CODE = "IP2350"
+        L_PARAM_VALUE = L_ERROR_KEY 
+        L_PARAM_SYS0061 := L_ERROR_CODE:L_BS:L_PARAM_VALUE
+        L_ERROR_FLAG = 1
+        GOSUB A021_PROCESS_SYS0061
+        GO A1300_EXIT
+     END
+
+     IF ADDRESSBOOK_REC = "" AND @LOGNAME = "webusr" THEN
+        GO A1300_EXIT
+     END
+
+     L_ADDRESS_SECTION = ""
+     L_ADDRESS_SECTION<-1> = TRIM(ADD1_ADDRESS,' ','B')
+     L_ADDRESS_SECTION<-1> = TRIM(ADD1_ADDRESS_2,' ','B')
+     L_ADDRESS_SECTION<-1> = TRIM(ADD1_ADDRESS_3,' ','B')
+
+     L_COMMA = ""
+     IF TRIM(ADD1_CITY) # "" AND TRIM(ADD1_PROVINCE) # "" THEN
+        L_COMMA = ", "
+     END
+     L_ADDRESS_SECTION<-1> = TRIM((ADD1_CITY : L_COMMA : ADD1_PROVINCE),' ','B')
+
+     L_COMMA = ""
+     IF TRIM(ADD1_COUNTRY) # "" AND TRIM(ADD1_POSTAL_CODE) # "" THEN 
+        L_COMMA = ", "
+     END
+     L_ADDRESS_SECTION<-1> = TRIM((ADD1_COUNTRY : L_COMMA : ADD1_POSTAL_CODE),' ','B')
+     L_ADDRESS_SECTION<-1> = L_H_TEXT1:ADD1_TELEPHONE:'  Fax: ':ADD1_FAX
+     L_ADDRESS_SECTION<-1> = L_DOMAIN_NAME            ;* web address
+*
+*** Eliminate the blank line of the L_ADDRESS_SECTION variable
+*
+     GOSUB A100_ELIMINATE_BLANK_LINE
+     L_BUYER_ADDRESS = L_ADDRESS_SECTION
+
+*
+A1300_EXIT: 
+     RETURN
+*
+*********************
+*   Init EDI message if the PO is EDI flagged
+*********************
+A1400_EDI_MESSAGE:
+     IF POH1_EDI_PO_FLAG THEN 
+        IF POH1_EDI_TRANS_KEY # "" THEN ;* External Copy
+           GOSUB A1410_DATE_USER
+           IF L_VENDOR_LANGUAGE = 'FRN' THEN
+              L_HDR_MESSAGE_1 = 'DOCUMENT EDI TRANSMIS'
+           END ELSE
+              L_HDR_MESSAGE_1 = 'EDI DOCUMENT TRANSMITTED'
+           END
+           L_HDR_MESSAGE_1 := " " :L_EDI_SENT_DATE_USER
+        END ELSE
+           IF L_VENDOR_LANGUAGE = 'FRN' THEN
+              L_HDR_MESSAGE_1 = 'DOCUMENT EDI PAS êTê TRANSMIS'
+           END ELSE
+              L_HDR_MESSAGE_1 = 'EDI DOCUMENT NOT TRANSMITTED'
+           END
+        END
+     END
+A1400_EXIT:
+     RETURN
+*********************
+* According the EDI status, init the right message
+*********************
+A1410_DATE_USER:
+*
+*   Read Historic Ooubound file to print the Date , Time and the user
+*   who has created the 850 transaction
+*
+     IECHISTOUT_REC = ""
+
+     READ IECHISTOUT_REC FROM IECHISTOUT,POH1_EDI_TRANS_KEY THEN 
+
+        READV L_EDI_BUYER_NAME FROM SYSTBL,"BYR*":IEC9_USER_ID,4 ELSE L_EDI_BUYER_NAME = IEC9_USER_ID
+        L_DATE = ""
+        IF TRIM(IEC9_CREATED_DATE) # "" THEN
+           L_DATE = OCONV(IEC9_CREATED_DATE,"D4-")
+           L_EDI_CREATED_DATE = L_DATE[7,4]:"-":L_DATE[1,5]'L#10'
+        END
+
+        IF L_VENDOR_LANGUAGE = 'FRN' THEN
+           L_EDI_SENT_DATE_USER = 'LE '
+           L_EDI_SENT_DATE_USER := L_EDI_CREATED_DATE
+           L_EDI_SENT_DATE_USER := ' ' : OCONV(IEC9_CREATED_TIME,'MTS')
+           L_EDI_SENT_DATE_USER := ' PAR ':L_EDI_BUYER_NAME
+        END ELSE
+           L_EDI_SENT_DATE_USER = 'ON '
+           L_EDI_SENT_DATE_USER := L_EDI_CREATED_DATE
+           L_EDI_SENT_DATE_USER := ' ' : OCONV(IEC9_CREATED_TIME,'MTS')
+           L_EDI_SENT_DATE_USER := ' BY ':L_EDI_BUYER_NAME
+        END
+           L_EDI_SENT_DATE_USER = TRIM(L_EDI_SENT_DATE_USER)
+     END
+*
+A1410_EXIT:
+     RETURN
+*
+****************************************
+* Exit
+****************************************
+     $INCLUDE IIPLUS.BOTTOM
+*
+     END
+*
+*
+*
+*
+*
+*
+* 16 JAN 08 8.2.3 lucthe PRJ*PUR062D-AWForms print/fax/email capability for purchase orders.
+* 04 SEP 08 8.2.3 juntan PRJ*PUR062D.1-Add signature line to P.O. form.
+* 09 JUN 09 8.2.3 lucthe PRJ*SPC016D.4-FINIT Phase 1 changes related to Co 01 vs 16 in DRP,APM
+*
+* 17 JUL 09 8.2.3 juntan PRJ*SPC014D.8-Retrieve email address from addressbook instead of hard
+*
+*
+*

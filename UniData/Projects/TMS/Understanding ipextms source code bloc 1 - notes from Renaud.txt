@@ -1,0 +1,66 @@
+ 
+ client citrix module (IPEXTMS.EXE)
+ - login scren
+	- read the INI file to get database configs infos
+	- access sql database
+	- user enters credentials
+
+ - main screen (launching)
+	- access sql user rights 
+	- show menu according to user rights
+	- each time a user chooses a sub-module (item from the menu), the sub-menu screen is loaded if not already... and it is showed.
+		- global declaration of the screen
+		- initialization for each field on the screen
+		- initialization of the screen
+ 
+ - OSession - user infos
+ - CLog - logging
+ - K - constants
+ - MENU - dynamic menus
+ - OCache**** - cache classes to help for better performance
+ - ODemande*** - communicate with the services on the server
+ - OTache*** or O****Tache - processing the demands from citrix client
+ - OHFBlocage****, OAccesExclusif - manage records locking level.
+ - OHFRefresh**** - special processes for dynamically refresh the screen of the workbench
+ - OVersion*** - special processes for auto-refresh citrix client screens 
+ - OAlerte, OGestionAlerte - to show infos/warnings/errors to the citrix client users
+ - ORateAuSelection - managing the customer and dc rules (in order to auto-select the best rates for an order or consolidation)
+
+
+ - screens
+	- fiDCTransport  - workbench, rate shopping screen and order search, consolidation search
+	- fiViewOrder - order details, consolidation details
+	- fiCSRRateShopping - manual rate shop
+	- FEN_Fenetre1 - main windows... that contains the dynamic menu and the sub-menu
+	- popMenu - manage the menu popups (contextual menu)
+ 
+ - Standards
+	- Commande_nType_CommandeClient (1-file name, 2-field name, 3-data-type)
+
+ - database tables
+	- Param  - contains system parameters (all system variables...)
+	- Compteur - different counters 
+	- Commande
+	- Consolidation
+	- Transporteur
+	- Entrepot
+	- Client
+	- Consignataire
+	- MatriceAdresse, MatriceDistanceEtTemps -- the matrix
+	- ??Demande -- used for communication with the server
+	
+	
+	
+ infoflo communication module (FARELTMSIFF.EXE)
+ 
+ rating module (FARELTMSRATING.EXE)
+ 
+ audit module (FARELTMSOPTIM.EXE)
+ 
+ 
+ 
+ 
+ NOTES ABOUT WINDEV
+ - WL - special collection of procedures that contains all WDLanguage functions
+ - all WDLanguage functions are overide-able... just declare the same name... (same parameters)
+ 

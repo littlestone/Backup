@@ -1,0 +1,15 @@
+This directory may be populated with ".htm" documents
+for the purpose of adding local online help to the 
+Avanté product.
+
+When "Local Help" is invoked in the Avante product 
+this directory will be checked for the appropriate
+user-created ".htm" document and will be displayed
+via the help viewer (typically Internet Explorer) as
+specified by the user in the Avanté "Default Paths 
+Setup" screen.
+
+See Avanté documentation on additional use and 
+naming conventions.
+
+This file may be deleted.

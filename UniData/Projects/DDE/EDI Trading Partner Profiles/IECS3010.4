@@ -1,0 +1,483 @@
+   SUBROUTINE IECS3010.4
+* EDI Trading Partner Setup Auto Upload Process
+* VERSION 8.2.3
+*
+* 21 OCT 15 8.2.3 juntan PRJ*IEC130D-EDI BATCH AUTOMATION
+*
+*
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+
+   PROGRAM = 'IECS3010.4'
+
+   $INCLUDE IIPLUS.TOP
+   $INCLUDE IIPLUS.TEXTLOAD
+   $INCLUDE IIPLUS.DEBUG
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*              This program is used to auto-upload new EDI trading partner
+*              information from the desinated Excel spreadsheet by calling
+*              Infoflo API program SYSS0404.1.
+*
+* MODIFICATIONS:
+* ==============
+*              2015/10/21 juntan IEC130D - Initial creation.
+*
+**************************************************************************
+
+
+A100_MAIN:
+
+   CALL SB.DISP(9, "Initializing data, please wait...":@AM:1:@AM:3)
+   GOSUB A200_INITIALIZATION
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   CALL SB.DISP(9, "Opening files, please wait...":@AM:2:@AM:3)
+   GOSUB A300_OPEN_FILES
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   CALL SB.DISP(9, "Processing, please wait...":@AM:3:@AM:3)
+   GOSUB A400_MAIN_PROCESS
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+   GO A500_CONCLUSION
+
+
+****************************************
+* Define & initialize variables.
+****************************************
+A200_INITIALIZATION:
+
+   RTN.FLAG             = 0
+   
+   ARGS_IN              = ""
+   ARGS_OUT             = ""
+   STATUS               = ""
+
+   L_PROGRAM            = ""
+   L_ERR_CODE           = ""
+   L_ERR_MSG            = ""
+
+   L_STEPS_M            = 6
+   L_STEPS_H            = 2
+   L_STEPS_D            = 4
+   L_CNT                = 0
+   L_TTL                = 0
+   L_INC                = 0
+   L_TTL_INC            = 0
+   L_ROW_S              = 0  ;* # of rows skipped
+   L_ROW_U              = 0  ;* # of rows to upload
+   L_ROW_B              = 0  ;* first detail record row #
+
+   L_SAVE_PARAM         = ""
+   L_SAVE_WORK          = ""
+   L_DATA_H             = ""  ;* Header Data
+   L_DATA_D             = ""  ;* Detail Data
+   L_PARTNER_ID         = ""
+   L_TEST_MSG           = ""
+
+   L_KEY                = ""
+   L_REC                = ""
+
+   L_TRANS_CODE         = ""
+   L_TRANS_ST           = ""
+   L_PHONE_PRT_1        = ""
+   L_PHONE_PRT_2        = ""
+   L_PHONE_PRT_3        = ""
+   L_FAX_PRT_1          = ""
+   L_FAX_PRT_2          = ""
+   L_FAX_PRT_3          = ""
+
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open any data files requried.
+****************************************
+A300_OPEN_FILES:
+
+   FILE.ERR = 0
+
+   CALL SB.OPEN.FILE("IECTPP",IECTPP,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-1"
+      L_ERR_MSG = "Unable to open file IECPP."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("CUSTMST",CUSTMST,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-2"
+      L_ERR_MSG = "Unable to open file CUSTMST."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("COMPMST",COMPMST,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-3"
+      L_ERR_MSG = "Unable to open file COMPMST."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("SYSTBL",SYSTBL,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-4"
+      L_ERR_MSG = "Unable to open file SYSTBL."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("PRTCONTROL",PRTCONTROL,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-4"
+      L_ERR_MSG = "Unable to open file PRTCONTROL."
+      GO A300_EXIT
+   END
+
+A300_EXIT:
+   RETURN
+
+
+****************************************
+* Main process logic structure.
+****************************************
+A400_MAIN_PROCESS:
+
+   CALL SB.DISP(9, "Reading data, please wait...":@AM:1:@AM:3)
+   GOSUB B100_READ_DATA
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+   CALL SB.DISP(9, "Validating data, please wait...":@AM:2:@AM:3)
+   GOSUB B200_VALIDATE_DATA
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+   CALL SB.DISP(9, "Uploading data, please wait...":@AM:3:@AM:3)
+   GOSUB B300_UPLOAD_DATA
+   IF L_ERR_CODE # "" THEN
+      GO A300_EXIT
+   END
+
+A400_EXIT:
+   RETURN
+
+
+************************************
+* Internal subroutine to read data *
+************************************
+   
+B100_READ_DATA:
+
+   *** { Step #1 } ***
+   CALL SB.DISP(9, "Please specify header data range to read from your Excel spreadsheet...":@AM:1:@AM:L_STEPS_M)
+   L_SAVE_PARAM = PARAM; PARAM = ""; L_SAVE_WORK = WORK; WORK = ""
+   WORK<383> = "2"; WORK<384> = "2"; WORK<385> = "1"; WORK<386> = L_STEPS_H
+   CALL SB.PROCESS("SYS0404")
+   IF PARAM<8> # 32 THEN
+      L_ERR_CODE = "Q"
+      CALL SB.DISP(9, "Exit") ;* user had cancelled the process
+      GO B100_EXIT
+   END
+   ARGS_IN = PARAM; PARAM = L_SAVE_PARAM; WORK = L_SAVE_WORK; L_PARTNER_ID = ARGS_IN<1>
+
+   *** { Step #2 } ***
+   CALL SB.DISP(9, "Reading EDI trading partner header info from your Excel spreadsheet, please wait...":@AM:2:@AM:L_STEPS_M)
+   CALL SYSS0404.1(ARGS_IN, ARGS_OUT, STATUS)
+   IF STATUS # "" THEN
+      L_PROGRAM = STATUS<1>; L_ERR_CODE = STATUS<2>; L_ERR_MSG = STATUS<3>
+      GO B100_EXIT
+   END
+   IF ARGS_OUT = "" THEN
+      L_PROGRAM = PROGRAM; L_ERR_CODE = "B100-READ-DATA-ERROR-1"; L_ERR_MSG = "Missing EDI trading partner header info."
+      GO B100_EXIT
+   END
+   L_DATA_H = ARGS_OUT
+
+   *** { Step #3 } ***
+   CALL SB.DISP(9, "Please specify detail data range to read from your Excel spreadsheet...":@AM:3:@AM:L_STEPS_M)
+   L_SAVE_PARAM = PARAM; PARAM = ""; L_SAVE_WORK = WORK; WORK = ""
+   DATA ARGS_IN<1>, ARGS_IN<2>, ARGS_IN<3>, "4" , "4", "@3"; WORK<385> = "1"; WORK<386> = L_STEPS_D
+   CALL SB.PROCESS("SYS0404")
+   IF PARAM<8> # 32 THEN
+      L_ERR_CODE = "Q"
+      CALL SB.DISP(9, "Exit") ;* user had cancelled the process
+      GO B100_EXIT
+   END
+   ARGS_IN = PARAM; PARAM = L_SAVE_PARAM; WORK = L_SAVE_WORK; L_ROW_B = ARGS_IN<4>
+    
+   *** { Step #4 } ***
+   CALL SB.DISP(9, "Reading EDI trading partner detail info from your Excel spreadsheet, please wait...":@AM:4:@AM:L_STEPS_M)
+   CALL SYSS0404.1(ARGS_IN, ARGS_OUT, STATUS)
+   IF STATUS # "" THEN
+      L_PROGRAM = STATUS<1> ; L_ERR_CODE = STATUS<2> ; L_ERR_MSG = STATUS<3>
+      GO B100_EXIT
+   END
+   IF ARGS_OUT = "" THEN
+      L_PROGRAM = PROGRAM ; L_ERR_CODE = "B100-READ-DATA-ERROR-1" ; L_ERR_MSG = "Missing EDI trading partner detail info."
+      GO B100_EXIT
+   END
+   L_DATA_D = ARGS_OUT
+
+B100_EXIT:
+   RETURN
+
+
+***************************************************
+* Internal subroutine for data validation rule(s) *
+***************************************************
+
+B200_VALIDATE_DATA:
+
+   *** { Step #5 } ***
+   CALL SB.DISP(9, "Validating EDI trading partner header info from your Excel spreadsheet, please wait...":@AM:5:@AM:L_STEPS_M)
+   L_TTL = DCOUNT(L_DATA_H, @VM)
+   FOR L_CNT = 1 TO L_TTL
+      L_DATA_H<1,L_CNT> = TRIM(L_DATA_H<1,L_CNT>)
+   NEXT L_CNT
+
+   CALL SB.DISP(9, "Validating {Company}, please wait...":@AM:1:@AM:L_STEPS_H)
+   IF L_DATA_H<1,1> = "" THEN
+      L_ERR_CODE = "B200-ERROR-H-1-1"
+      L_ERR_MSG = "Missing Company."
+      GO B200_EXIT
+   END ELSE
+      READ L_REC FROM COMPMST, L_DATA_H<1,1> ELSE L_REC = ""
+      IF L_REC = "" THEN
+         L_ERR_CODE = "B200-ERROR-H-1-2"
+         L_ERR_MSG = "Invalid Company Number {":L_DATA_H<1,1>:"}."
+         GO B200_EXIT
+      END
+   END
+   
+
+   CALL SB.DISP(9, "Validating {Sls Prt Code}, please wait...":@AM:2:@AM:L_STEPS_H)
+   IF L_DATA_H<1,2> = "" THEN
+      L_ERR_CODE = "B200-ERROR-H-2-1"
+      L_ERR_MSG = "Missing Sls Prt Code."
+      GO B200_EXIT
+   END ELSE
+      IF L_DATA_H<1,2>[1,5] # "EDISO" THEN
+         L_ERR_CODE = "B200-ERROR-H-2-2"
+         L_ERR_MSG = "Invalid Sls Prt Code {":L_DATA_H<1,2>:"}, should start with EDISO."
+         GO B200_EXIT
+      END
+      READ L_REC FROM PRTCONTROL, L_DATA_H<1,2> ELSE L_REC = ""
+      IF L_REC = "" THEN
+         L_ERR_CODE = "B200-ERROR-H-2-3"
+         L_ERR_MSG = "Invalid Sls Prt Code {":L_DATA_H<2,1>:"}, not found in PRTCONTROL file."
+         GO B200_EXIT
+      END
+   END
+
+   *** { Step #6 } ***
+   CALL SB.DISP(9, "Validating EDI trading partner detail info from your Excel spreadsheet, please wait...":@AM:6:@AM:L_STEPS_M)
+   L_TTL = DCOUNT(L_DATA_D, @FM)
+   FOR L_CNT = 1 TO L_TTL
+      L_TTL_INC = DCOUNT(L_DATA_D<L_CNT>, @FM)
+      FOR L_INC = 1 TO L_TTL_INC
+         L_DATA_D<L_CNT,L_INC> = TRIM(L_DATA_D<L_CNT,L_INC>)
+      NEXT L_INC
+   NEXT L_CNT
+
+   FOR L_CNT = 1 TO L_TTL
+      CALL SB.DISP(9, "Validating {Partner Location}, please wait...":@AM:1:@AM:L_STEPS_D)
+      IF L_DATA_D<L_CNT,1> = "" OR UPCASE(L_DATA_D<L_CNT,1>) = "#N/A" THEN
+         L_ROW_S += 1
+         L_TEST_MSG<L_CNT> = "Skipped"
+         CONTINUE ;* skip the row with unknown partner location
+      END ELSE
+         IF INDEX(L_DATA_D<L_CNT,1>, " ", 1) THEN
+            L_ERR_CODE = "Q"
+            L_ERR_MSG = "Invalid Partner Location Code {":L_DATA_D<L_CNT,1>:"}."
+            L_TEST_MSG<L_CNT> = L_ERR_MSG
+            CONTINUE
+         END
+         L_KEY = "E*":L_PARTNER_ID:"*":L_DATA_D<L_CNT,1>
+         READ L_REC FROM IECTPP, L_KEY ELSE L_REC = ""
+         IF L_REC # "" THEN
+            L_ERR_CODE = "Q"
+            L_ERR_MSG = "Record {":L_KEY:"} already exists in IECTPP file."
+            L_TEST_MSG<L_CNT> = L_ERR_MSG
+            CONTINUE
+         END
+      END
+   
+      CALL SB.DISP(9, "Validating {Customer Number}, please wait...":@AM:2:@AM:L_STEPS_D)
+      L_KEY = L_DATA_H<1,1>:"*":L_DATA_D<L_CNT,2>
+      READ L_REC FROM CUSTMST, L_KEY ELSE L_REC = ""
+      IF L_REC = "" THEN
+         L_ERR_CODE = "B200-ERROR-D-2"
+         L_ERR_MSG = "Invalid Custmer Number {":L_DATA_D<L_CNT,2>:"}."
+         L_TEST_MSG<L_CNT> = L_ERR_MSG
+         CONTINUE
+      END
+
+      CALL SB.DISP(9, "Validating {Default Warehouse}, please wait...":@AM:3:@AM:L_STEPS_D)
+      IF L_DATA_D<L_CNT,3> = "" THEN
+         L_ERR_CODE = "Q"
+         L_ERR_MSG = "Missing Warehouse."
+         L_TEST_MSG<L_CNT> = L_ERR_MSG
+         CONTINUE
+      END ELSE
+         READ L_REC FROM SYSTBL, "WHS*":L_DATA_D<L_CNT,3> ELSE L_REC = ""
+         IF L_REC = "" THEN
+            L_ERR_CODE = "Q"
+            L_ERR_MSG = "Invalid Warehouse Code {":L_DATA_D<L_CNT,3>:"}, not found in SYSTBL file."
+            L_TEST_MSG<L_CNT> = L_ERR_MSG
+            CONTINUE
+         END
+      END
+
+      CALL SB.DISP(9, "Validating {Shipment Type (A/F)}, Please wait...":@AM:4:@AM:L_STEPS_D)
+      IF L_DATA_D<L_CNT,4> = "" THEN
+         L_ERR_CODE = "Q"
+         L_ERR_MSG = "Missing Shipment Type."
+         L_TEST_MSG<L_CNT> = L_ERR_MSG
+         CONTINUE
+      END ELSE
+         IF UPCASE(L_DATA_D<L_CNT,4>) # "A" AND UPCASE(L_DATA_D<L_CNT,4>) # "F" THEN
+            L_ERR_CODE = "Q"
+            L_ERR_MSG = "Invalid Shipment Type Code {":L_DATA_D<L_CNT,4>:"}."
+            L_TEST_MSG<L_CNT> = L_ERR_MSG
+            CONTINUE
+         END
+      END
+
+      L_TEST_MSG<L_CNT> = "OK"
+      L_ROW_U += 1
+   NEXT L_CNT
+
+   CALL SB.DISP(9, "Writing validation message on your Excel spreadsheet, please wait......":@AM:7:@AM:L_STEPS_M)
+   L_SAVE_PARAM = PARAM; PARAM = ""; L_SAVE_WORK = WORK; WORK = ""
+   DATA ARGS_IN<1>, "W", ARGS_IN<3>, ARGS_IN<4>, ARGS_IN<5>, "5", "5", "@32"
+   CALL SB.PROCESS("SYS0404")
+   IF PARAM<8> # 32 THEN
+      GO B200_EXIT ;* user had cancelled the process
+   END
+   ARGS_IN = PARAM; PARAM = L_SAVE_PARAM; WORK = L_SAVE_WORK; ARGS_OUT = L_TEST_MSG
+   CALL SYSS0404.1(ARGS_IN, ARGS_OUT, STATUS)
+   IF STATUS # "" THEN
+      L_PROGRAM = STATUS<1>; L_ERR_CODE = STATUS<2>; L_ERR_MSG = STATUS<3>
+      GO B100_EXIT
+   END
+
+   IF L_ERR_MSG # "" THEN
+      L_ERR_MSG = "Error detected on your Excel spreadsheet, please verify it and try again."
+      CALL SB.PROCESS("SYS0061,IP3050\":OCONV(TIME(),"MTS"):@VM:L_ERR_MSG)
+   END ELSE
+      IF L_ROW_U > 0 THEN
+         CALL SB.DISP(4,"IECD3010.4")
+         IF RTN.FLAG = 0 THEN
+            L_ERR_CODE = "Q"
+         END
+      END ELSE
+         L_ERR_CODE = "Q"
+         CALL SB.PROCESS("SYS0061,IP3050\":OCONV(TIME(),"MTS"):@VM:"Nothing to upload.")
+      END
+   END
+
+B200_EXIT:
+   RETURN
+
+
+******************************************************************************************
+* Internal subroutine to auto-upload data onto SB client screen through input DATA stack *
+******************************************************************************************
+   
+B300_UPLOAD_DATA:
+
+   CALL SB.DISP(9, "Uploading data to Infoflo, please wait...":@AM:8:@AM:L_STEPS_M)
+
+   FOR L_CNT = 1 TO L_TTL
+
+      CALL SB.DISP(9, "Uploading row # ":L_ROW_B+L_INC:@AM:L_INC:@AM:L_TTL)
+
+      *** Skip all partner location = "#N/A" ***
+      IF L_TEST_MSG<L_CNT> = "Skipped" THEN
+         CALL SB.DISP(9, "Row #":L_ROW_B+L_INC:" skipped.":@AM:L_INC:@AM:L_TTL)
+         CONTINUE
+      END
+
+      *** Generate per EDI trading partner profile by coping from its customer bill-to's profile ***
+      DATA L_PARTNER_ID, "@22", "@35", "@22", L_DATA_D<L_CNT,1>, "@32"
+
+      * Customer Number *
+      IF LEN(L_DATA_D<L_CNT,2>) = 10 THEN
+         DATA L_DATA_D<L_CNT,2>[1,7], L_DATA_D<L_CNT,2>[8,10]
+      END ELSE
+         DATA L_DATA_D<L_CNT,2>, '@22'
+      END
+
+      * Cursor will stop at field {Fax} after the input DATA stack *
+      DATA "@22", "@22", "@22", "@22", "@22", "@22", "@22", "@22", "@22"
+      
+      * Cursor will stop at field {Sls Prt Code} after the input DATA stack *
+      DATA "@22", "@22", "@22", "@22", "@22", "@22", "@22", "@22", "@22"
+
+      * Sls Prt Code, Warehouse *
+      DATA L_DATA_H<1,2>, L_DATA_D<L_CNT,3>, "@22", "@22", "@22"
+
+      * Shipment Type *
+      DATA L_DATA_D<L_CNT,4>
+
+      * F2-Save -> BINGO *
+      DATA "@32"
+   NEXT L_CNT
+
+   CALL SB.DISP(9, "Data uploaded successfully!":@AM:9:@AM:L_STEPS_M)
+
+B300_EXIT:
+   RETURN
+
+
+**********************
+* Exception handling *
+**********************
+   
+A500_CONCLUSION:
+
+   IF L_ERR_CODE # "" AND L_ERR_CODE # "Q" THEN
+      CALL SB.PROCESS("SYS0061,IP3000\":OCONV(TIME(),"MTS"):@VM:L_PROGRAM:@VM:L_ERR_CODE:@VM:L_ERR_MSG)
+      CALL SB.DISP(8,L_ERR_CODE:": ":L_ERR_MSG)
+   END
+
+   RTN.FLAG = 0
+   REFRESH = -2
+
+A500_EXIT:
+   GO 9999
+
+
+****************************************
+* Exit
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END
+*

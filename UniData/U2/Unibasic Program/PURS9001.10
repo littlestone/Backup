@@ -1,0 +1,179 @@
+SUBROUTINE PURS9001.10
+* Extract and format an EXCEL spreadsheet *
+* VERSION 8.2.3
+*
+* 21 JAN 10 8.2.3 robski PRJ*SYS087D-Replace all direct calls to mailxx with common subrouti
+* 29 APR 09 8.2.3 juntan PRJ*SPC014D.4-Retrieve email address from addressbook instead of hard
+* 03 JAN 06 8.2.3 robski PRJ*PUR060D-Purchased Mfg items in Excel.
+*
+*
+*
+*
+****************************************
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+$INCLUDE IIPLUS.TOP
+PROGRAM='PURS9001.10'
+$INCLUDE IIPLUS.TEXTLOAD
+$INCLUDE IIPLUS.DEBUG
+*************************************************************************
+*
+* Description:
+*
+* Modifications:
+*
+*              2010/01/21 robski SYS087D replaced call PURS9001.2 with SYSS9060.2
+*              2009/04/20 juntan SPC014D.4
+*                                - Retrieve email address from addresbook
+*                                  instead of hard-coding.
+*
+*************************************************************************
+ERR = 0 ; CALL SB.OPEN.FILE("ITMMST",ITMMST,FILE.ERR)
+IF FILE.ERR THEN RTN.FLAG=1 ; GO 9999
+ERR = 0 ; CALL SB.OPEN.FILE("INVWHS",INVWHS,FILE.ERR)
+IF FILE.ERR THEN RTN.FLAG=1 ; GO 9999
+ERR = 0 ; CALL SB.OPEN.FILE("INVWHS.LF4",INVWHS.LF4,FILE.ERR)
+IF FILE.ERR THEN RTN.FLAG=1 ; GO 9999
+FILE.ERR = 0 ; CALL SB.OPEN.FILE("DATA.ERR",FILE.DATA.ERR,FILE.ERR)
+IF FILE.ERR THEN RTN.FLAG=1 ; GO 9999
+L_COUNT_LINE     = 0
+L_DATE           = DATE()
+L_TIME           = TIME()
+L_CONV_DATE      = OCONV(L_DATE, "D2/")
+SWAP "/" WITH "" IN L_CONV_DATE
+
+L_CONV_TIME = OCONV(L_TIME, "MTS")
+SWAP ":" WITH "" IN L_CONV_TIME
+
+*L_REPORT_NAME = "PURS9001.XLS"
+L_REPORT_NAME = "PURS9001":USER.ID:".XLS" ;* RBS 10/03
+
+L_OPENSEQ_ERR = 0
+
+OPENSEQ "MTH_REPORTS", L_REPORT_NAME TO L_PURS9001_FILE
+ON ERROR
+  L_OPENSEQ_ERR = 1
+END LOCKED
+  L_OPENSEQ_ERR = 1
+END ELSE
+  L_OPENSEQ_ERR = STATUS()
+END
+
+IF L_OPENSEQ_ERR # 0 THEN
+  RTN.FLAG = 1
+  GO 9100
+END ELSE
+  WEOFSEQ L_PURS9001_FILE
+END
+
+L_SEQ_FILE_OPENED = 1
+GOSUB A305_PRINT_EXCEL_HEADER
+
+GOSUB A400_MAIN_PROCESS
+
+GOSUB A500_CONCLUSION
+
+A310_MAIN_EXIT: 
+RETURN ;* RBS 04/03
+RTN.FLAG = 'X'
+GO 9999
+
+*******************************************
+* Write out the header line for excel.
+*******************************************
+A305_PRINT_EXCEL_HEADER: 
+
+READ DATA.ERR FROM FILE.DATA.ERR,"PURS9001.":USER.ID ELSE DATA.ERR = ""
+*
+A305_WRITE_EXCEL_HEADER_EXIT: 
+RETURN
+
+**********************************************************************
+A400_MAIN_PROCESS: 
+
+OK = 1
+IF OK THEN
+  GOSUB A420_WRITE_DETAIL_LINE
+END
+
+RETURN
+
+****************************************
+* Extract & Write Detail Product Lines *
+****************************************
+A420_WRITE_DETAIL_LINE: 
+*
+FOR VAL = 1 TO DCOUNT(DATA.ERR,@AM)
+  L_DETAIL_LINE     = ""
+  FOR SUBVAL = 1 TO DCOUNT(DATA.ERR<VAL>,@VM)
+*    IF VAL = 1 OR SUBVAL = 1 THEN
+*      L_DETAIL_LINE<SUBVAL> = "'":DATA.ERR<VAL,SUBVAL>
+*    END ELSE
+    L_DETAIL_LINE<SUBVAL> = DATA.ERR<VAL,SUBVAL>
+*    END
+  NEXT SUBVAL
+  SWAP AM WITH CHAR(009) IN L_DETAIL_LINE
+  WRITESEQ L_DETAIL_LINE APPEND ON L_PURS9001_FILE THEN END
+  L_COUNT_LINE += 1
+NEXT VAL
+
+RETURN
+
+
+****************************************
+
+* Final processing.
+****************************************
+A500_CONCLUSION: 
+
+CLEARSELECT
+
+IF L_SEQ_FILE_OPENED THEN
+  CLOSESEQ L_PURS9001_FILE
+  L_SEQ_FILE_OPENED = 0
+  IF  L_COUNT_LINE <= 20000 THEN        ;* Email has a Limit of 5Megabytes & Excel a Limit of 66000 Lines
+    GOSUB A600_EMAIL_THE_FILE
+  END ELSE
+    CALL SB.PROCESS("SYS0061,IP2074\":L_REPORT_NAME)
+  END
+END
+
+RETURN
+
+****************************************
+* Send the Excel File Via email.
+****************************************
+A600_EMAIL_THE_FILE: 
+
+PARAM    =  ""
+PARAM<1> =  ""      ;* Email Message - Leave null for now
+PARAM<2> =  "Manufactured Items Purchased"
+*** juntan \/ SPC014D.4 - 2009/04/20
+*USER = USER.ID
+*PARAM<3> =  USER:"@ipexinc.com"            ;* Email Address
+ARG_EMAIL   = ''
+ARG_USER_ID = USER.ID
+CALL SYSS9300.1(ARG_EMAIL,ARG_USER_ID)
+PARAM<3> = ARG_EMAIL
+*** juntan /\ SPC014D.4 - 2009/04/20
+PARAM<4> =  "MTH_REPORTS"              ;* Directory of File to send
+PARAM<5> =  L_REPORT_NAME              ;* Name of file to Send
+RTN.FLAG = 0
+CALL  SB.PROCESS("SYSS9060.2")         ;* Send the File via Email ;* robski SYS087D - 2010/01/21
+CALL SB.DISP(7,"Emailing ":L_COUNT_LINE+2:" detail lines...  ")
+
+A600_EMAIL_THE_FILE_EXIT: 
+RETURN
+
+****************************************
+* Exit  
+****************************************
+$INCLUDE IIPLUS.BOTTOM
+
+END
+*

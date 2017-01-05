@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="CoreDeploy">
+  <PropertyGroup>
+    <Forms_Process_DeploymentTask>True</Forms_Process_DeploymentTask>
+    <Deploy_Processes>True</Deploy_Processes>
+    <Create_Notifications>True</Create_Notifications>
+    <Create_Workflow_SmartObjects>True</Create_Workflow_SmartObjects>
+    <Create_Workflow_Reporting_SmartObjects>True</Create_Workflow_Reporting_SmartObjects>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TestOnly Condition="$(TestOnly) == ''">False</TestOnly>
+    <Environment Condition="$(Environment) == ''">Development</Environment>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(Environment) == 'Development'">
+    <EnvironmentFields>
+      <Root Name="Development" xmlns="">
+        <Field Name="SmartObject Server" Value="Integrated=True;IsPrimaryLogin=True;Authenticate=True;EncryptedPassword=False;Host=K2Dev.intranet.local;Port=5555" />
+        <Field Name="!!! Production !!!" Value="Integrated=True;IsPrimaryLogin=True;Authenticate=True;EncryptedPassword=False;Host=srv33k2;Port=5555;UserID=;Password=;SecurityLabelName=" />
+        <Field Name="SmartForms Runtime 1" Value="http://K2DevForms.intranet.local/Runtime/Runtime" />
+        <Field Name="Workspace Url" Value="http://K2DevServices.intranet.local" />
+        <Field Name="SmartForms Server" Value="Integrated=True;IsPrimaryLogin=True;Authenticate=True;EncryptedPassword=False;Host=K2Dev.intranet.local;Port=5555" />
+        <Field Name="ServiceObject Server" Value="Integrated=True;IsPrimaryLogin=True;Authenticate=True;EncryptedPassword=False;Host=K2Dev.intranet.local;Port=5555" />
+        <Field Name="SmartFormsRuntime" Value="http://k2devForms.intranet.local/Runtime/Runtime/Form" />
+        <Field Name="Workflow Management Server" Value="Integrated=True;IsPrimaryLogin=True;Authenticate=True;EncryptedPassword=False;Host=K2Dev.intranet.local;Port=5555" />
+        <Field Name="Web Service URL" Value="http://K2DevServices.intranet.local" />
+        <Field Name="From Address" Value="svc-k2@corp.local" />
+        <Field Name="Mail Server" Value="mail11.corp.local" />
+        <Field Name="Workflow Server" Value="Integrated=True;IsPrimaryLogin=True;Authenticate=True;EncryptedPassword=False;Host=K2Dev.intranet.local;Port=5252" />
+        <Field Name="SmartForms Designer" Value="http://K2DevForms.intranet.local/Designer" />
+        <Field Name="SmartForms Designer 1" Value="http://K2DevForms.intranet.local/Designer/Runtime" />
+        <Field Name="Category Server" Value="Integrated=True;IsPrimaryLogin=True;Authenticate=True;EncryptedPassword=False;Host=K2Dev.intranet.local;Port=5555" />
+      </Root>
+    </EnvironmentFields>
+  </PropertyGroup>
+  <PropertyGroup>
+    <WorkflowManagementConnectionStringProperty>$Field=Workflow Management Server</WorkflowManagementConnectionStringProperty>
+    <SmartObjectConnectionStringProperty>$Field=SmartObject Server</SmartObjectConnectionStringProperty>
+    <DeploymentLabelName>CORP\juntan - 2015-09-09 11:24:28 AM</DeploymentLabelName>
+    <DeploymentLabelDescription />
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageResource Include="Resources\Infoflo_RFTeamMaintenance-RFTeamMaintenanceProcess.Processes.res">
+      <Name>Infoflo_RFTeamMaintenance-RFTeamMaintenanceProcess</Name>
+      <Group>Processes</Group>
+    </PackageResource>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageResource Include="Resources\NotificationServiceDetails 567e047c84a84c1fb46eb25d231abd31.Notifications.res">
+      <Name>NotificationServiceDetails 567e047c84a84c1fb46eb25d231abd31</Name>
+      <Group>Notifications</Group>
+    </PackageResource>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageResource Include="Resources\Infoflo_RFTeamMaintenance-RFTeamMaintenanceProcess-ProcessView.Views.res">
+      <Name>Infoflo_RFTeamMaintenance-RFTeamMaintenanceProcess-ProcessView</Name>
+      <Group>Views</Group>
+    </PackageResource>
+  </ItemGroup>
+  <Target Name="Deploy" DependsOnTargets="Forms Process DeploymentTask;Deploy Processes;Create Notifications;Create Workflow SmartObjects;Create Workflow Reporting SmartObjects" />
+  <Import Project="ProjectDeployment.targets" />
+  <Target Name="Forms Process DeploymentTask" Condition="$(Forms_Process_DeploymentTask) == 'true'">
+    <SourceCode.Forms.Deployment.DeployTask TaskGuid="1758a14e74ee49699d2a018c6b230275" />
+  </Target>
+  <UsingTask TaskName="SourceCode.Forms.Deployment.DeployTask" AssemblyFile="Bin\SourceCode.Forms.Deployment.dll" />
+  <Target Name="Deploy Processes" Condition="$(Deploy_Processes) == 'true'">
+    <SourceCode.DeploymentTasks.ExportProcessTask TaskGuid="8795f971db2d444a8e1cdfb2827e70bb" />
+  </Target>
+  <UsingTask TaskName="SourceCode.DeploymentTasks.ExportProcessTask" AssemblyFile="Bin\SourceCode.DeploymentTasks.dll" />
+  <Target Name="Create Notifications" Condition="$(Create_Notifications) == 'true'">
+    <SourceCode.DeploymentTasks.NotificationService.NotificationTask TaskGuid="5dd25f7044d44922a25ddcc173b274b0" />
+  </Target>
+  <UsingTask TaskName="SourceCode.DeploymentTasks.NotificationService.NotificationTask" AssemblyFile="Bin\SourceCode.DeploymentTasks.dll" />
+  <Target Name="Create Workflow SmartObjects" Condition="$(Create_Workflow_SmartObjects) == 'true'" />
+  <Target Name="Create Workflow Reporting SmartObjects" Condition="$(Create_Workflow_Reporting_SmartObjects) == 'true'" />
+</Project>

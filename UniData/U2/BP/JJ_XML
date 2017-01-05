@@ -1,0 +1,659 @@
+     SUBROUTINE JJ_XML
+* XML for BASIC API Programmatic Interfaces
+* VERSION 8.2.3
+*
+* 13 NOV 12 8.2.3 juntan PRJ*APM106D-DEVELOP AN AUTOMATE MECHANISM TO UPLOAD CHEQUE IMAGES R
+*
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+     $INCLUDE IIPLUS.TOP
+     PROGRAM='JJ_XML'
+     $INCLUDE IIPLUS.TEXTLOAD
+     $INCLUDE IIPLUS.DEBUG
+     $INCLUDE /usr/igi/ud/sys/INCLUDE XML.H
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*              This program is used to parse and extract data from a XML
+*              document based on the rules built in U2 XML extraction file.
+*
+* MODIFICATIONS:
+* ==============
+*              2012/11/09 juntan APM106D - Initial creation.
+*
+**************************************************************************
+
+A100_MAIN:
+
+   GOSUB A200_INITIALIZATION
+   CRT RTN.FLAG
+   IF RTN.FLAG THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF RTN.FLAG THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF RTN.FLAG THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+   GO A500_CONCLUSION
+
+
+****************************************
+* Definition of local variables & initialization of other variables.
+****************************************
+A200_INITIALIZATION:
+
+   RTN.FLAG = 0
+
+   XML_CONTROL_FNAME = "/usr/igi/flodata/dev/DEV.DATA/_XML_/XML_CONTROL_FILE.xml"
+   XML_CONTROL_FILE_EXT = "/usr/igi/flodata/dev/DEV.DATA/_XML_/XML_CONTROL_FILE_EXT.ext"
+   XML_INDEX_FNAME = "/usr/igi/flodata/dev/DEV.DATA/_XML_/XML_INDEX_FILE.xml"
+   XML_INDEX_FILE_HEADER_EXT = "/usr/igi/flodata/dev/DEV.DATA/_XML_/XML_INDEX_HEADER_EXT.ext"
+   XML_INDEX_FILE_BODY_EXT = "/usr/igi/flodata/dev/DEV.DATA/_XML_/XML_INDEX_BODY_EXT.ext"
+   XML_INDEX_FILE_TRAILER_EXT = "/usr/igi/flodata/dev/DEV.DATA/_XML_/XML_INDEX_TRAILER_EXT.ext"
+ 
+   H_XML = ''
+   H_XML_DATA = ''
+
+   L_STATUS = ''
+   L_TMP = ''
+   L_KEY = ''
+   L_REC = ''
+   L_REC_CTR = ''
+   L_REC_IDX_H = ''
+   L_REC_IDX_B = ''
+   L_REC_IDX_T = ''
+   L_ERR_CHK_NUM = ''
+   L_ERR_CHK_REC = ''
+   L_ERR_CHK_NUM_LIST = ''
+   L_SAVE_PARAM = ''
+   L_QUERY = ''
+   L_JUNK = ''
+   L_EOF = 0
+   L_CNT = 0
+   L_CHECK_TOT = 0
+
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open the files needed in this subroutine.
+****************************************
+A300_OPEN_FILES:
+
+   FILE.ERR = 0
+
+   CALL SB.OPEN.FILE("APCHK",APCHK,FILE.ERR)
+   IF FILE.ERR THEN
+      CALL SB.PROCESS("SYS0061,IP2564\":"APCHK")
+      RTN.FLAG = 1
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("SYSTBL",SYSTBL,FILE.ERR)
+   IF FILE.ERR THEN
+      CALL SB.PROCESS("SYS0061,IP2564\":"SYSTBL")
+      RTN.FLAG = 1
+      GO A300_EXIT
+   END
+
+A300_EXIT:
+   RETURN
+
+
+****************************************
+* Main process workflow.
+****************************************
+A400_MAIN_PROCESS:
+
+   PRINT "============================================"
+   PRINT "[Start Parsing XML Control File Contents...]"
+
+   GOSUB B100_PARSE_XML_CONTROL_FILE
+   IF RTN.FLAG <> 0 THEN
+      GO A400_EXIT
+   END
+
+   PRINT "[Parsing XML Control File Contents Completed.]"
+   PRINT "============================================"
+
+   PRINT
+   PRINT "============================================"
+   PRINT "[Start Parsing XML Index File Header Contents...]"
+
+   GOSUB B200_PARSE_XML_INDEX_FILE_HEADER
+   IF RTN.FLAG <> 0 THEN
+      GO A400_EXIT
+   END
+
+   PRINT "[Parsing XML Index File Header Contents Completed.]"
+   PRINT "============================================"
+
+   PRINT
+   PRINT "============================================"
+   PRINT "[Start Parsing XML Index File Body Contents...]"
+
+   GOSUB B300_PARSE_XML_INDEX_FILE_BODY
+   IF RTN.FLAG <> 0 THEN
+      GO A400_EXIT
+   END
+
+   PRINT "[Parsing XML Index File Body Contents Completed.]"
+   PRINT "============================================"
+
+   PRINT
+   PRINT "============================================"
+   PRINT "[Start Parsing XML Index File Tralier Contents...]"
+
+   GOSUB B400_PARSE_XML_INDEX_FILE_TRALIER
+   IF RTN.FLAG <> 0 THEN
+      GO A400_EXIT
+   END
+
+   PRINT "[Parsing XML Index File Tralier Contents Completed.]"
+   PRINT "============================================"
+
+   GOSUB E100_EMAIL_SUMMARY
+   IF RTN.FLAG <> 0 THEN
+      GO A400_EXIT
+   END
+
+A400_EXIT:
+   RETURN
+
+
+****************************************
+* Parse XML Control File Contents.
+****************************************
+B100_PARSE_XML_CONTROL_FILE:
+
+   *** Preparing the XML Document ***
+   L_STATUS = PREPAREXML(XML_CONTROL_FNAME,H_XML)
+   IF L_STATUS <> XML.SUCCESS THEN
+      PRINT "Error with PrepareXML()"
+      GOSUB D100_DISP_XML_ERR_MSG
+      RTN.FLAG = 1
+   END
+
+   *** Use XML Extraction File to Map Data ***
+   L_STATUS = OPENXMLDATA(H_XML,XML_CONTROL_FILE_EXT,H_XML_DATA)
+   IF L_STATUS <> XML.SUCCESS THEN
+      PRINT "Error with OpenXMLData()"
+      GOSUB D100_DISP_XML_ERR_MSG
+      RTN.FLAG = 1
+   END
+
+   L_STATUS = READXMLDATA(H_XML_DATA,L_REC_CTR)
+   IF L_STATUS <> XML.SUCCESS THEN
+      PRINT "Error with ReadXMLData()"
+      GOSUB D100_DISP_XML_ERR_MSG
+      RTN.FLAG = 1
+   END ELSE
+      PRINT "---------------------------------------"
+      PRINT "[Start Validating XML Control File Contents...]"
+      PRINT "---------------------------------------"
+      GOSUB C100_VALIDATE_XML_CONTROL_FILE
+      PRINT "[Validating XML Control File Contents Completed.]"
+      PRINT "---------------------------------------"
+   END
+
+   *** Closing the XML Document ***
+   L_STATUS = CLOSEXMLDATA(H_XML_DATA)
+   IF L_STATUS <> XML.SUCCESS THEN
+      PRINT "Error with CloseXMLData()"
+      GOSUB D100_DISP_XML_ERR_MSG
+      RTN.FLAG = 1
+   END
+
+   *** Releasing the XML Document ***
+   L_STATUS = RELEASEXML(H_XML)
+   IF L_STATUS <> XML.SUCCESS THEN
+      PRINT "Error with ReleaseXML()"
+      GOSUB D100_DISP_XML_ERR_MSG
+      RTN.FLAG = 1
+   END
+
+B100_EXIT:
+   RETURN
+
+
+****************************************
+* Parse XML Index File Header Contents.
+****************************************
+B200_PARSE_XML_INDEX_FILE_HEADER:
+
+   *** Preparing the XML Document ***
+   L_STATUS = PREPAREXML(XML_INDEX_FNAME,H_XML)
+   IF L_STATUS <> XML.SUCCESS THEN
+      PRINT "Error with PrepareXML()"
+      GOSUB D100_DISP_XML_ERR_MSG
+      RTN.FLAG = 1
+   END
+
+   *** Use XML Extraction File to Map Data ***
+   L_STATUS = OPENXMLDATA(H_XML,XML_INDEX_FILE_HEADER_EXT,H_XML_DATA)
+   IF L_STATUS <> XML.SUCCESS THEN
+      PRINT "Error with OpenXMLData()"
+      GOSUB D100_DISP_XML_ERR_MSG
+      RTN.FLAG = 1
+   END
+
+   L_STATUS = READXMLDATA(H_XML_DATA,L_REC_IDX_H)
+   IF L_STATUS <> XML.SUCCESS THEN
+      PRINT "Error with ReadXMLData()"
+      GOSUB D100_DISP_XML_ERR_MSG
+      RTN.FLAG = 1
+   END ELSE
+      PRINT "---------------------------------------"
+      PRINT "[Start Validating XML Index File Header Contents...]"
+      PRINT "---------------------------------------"
+      GOSUB C200_VALIDATE_XML_INDEX_FILE_HEADER
+      PRINT "[Validating XML Index File Header Contents Completed.]"
+      PRINT "---------------------------------------"
+   END
+
+   *** Closing the XML Document ***
+   L_STATUS = CLOSEXMLDATA(H_XML_DATA)
+   IF L_STATUS <> XML.SUCCESS THEN
+      PRINT "Error with CloseXMLData()"
+      GOSUB D100_DISP_XML_ERR_MSG
+      RTN.FLAG = 1
+   END
+
+   *** Releasing the XML Document ***
+   L_STATUS = RELEASEXML(H_XML)
+   IF L_STATUS <> XML.SUCCESS THEN
+      PRINT "Error with ReleaseXML()"
+      GOSUB D100_DISP_XML_ERR_MSG
+      RTN.FLAG = 1
+   END
+
+B200_EXIT:
+   RETURN
+
+
+****************************************
+* Parse XML Index File Body Contents.
+****************************************
+B300_PARSE_XML_INDEX_FILE_BODY:
+
+   *** Preparing the XML Document ***
+   L_STATUS = PREPAREXML(XML_INDEX_FNAME,H_XML)
+   IF L_STATUS <> XML.SUCCESS THEN
+      PRINT "Error with PrepareXML()"
+      GOSUB D100_DISP_XML_ERR_MSG
+      RTN.FLAG = 1
+   END
+
+   *** Use XML Extraction File to Map Data ***
+   L_STATUS = OPENXMLDATA(H_XML,XML_INDEX_FILE_BODY_EXT,H_XML_DATA)
+   IF L_STATUS <> XML.SUCCESS THEN
+      PRINT "Error with OpenXMLData()"
+      GOSUB D100_DISP_XML_ERR_MSG
+   END
+
+   L_STATUS = READXMLDATA(H_XML_DATA,L_REC_IDX_B)
+   IF L_STATUS <> XML.SUCCESS THEN
+      PRINT "Error with ReadXMLData()"
+      GOSUB D100_DISP_XML_ERR_MSG
+      RTN.FLAG = 1
+   END ELSE
+      L_REC_ITEM_LIST = FIELD(L_REC_IDX_B,@FM,1)
+      L_REC_OFFSET_LIST = FIELD(L_REC_IDX_B,@FM,2)
+      L_REC_DATALENGTH_LIST = FIELD(L_REC_IDX_B,@FM,3)
+      PRINT "---------------------------------------"
+      PRINT "[Start Validating XML Index File Body Contents...]"
+      PRINT "---------------------------------------"
+      GOSUB C300_VALIDATE_XML_INDEX_FILE_BODY
+      PRINT "[Validating XML Index File Body Contents Completed.]"
+      PRINT "---------------------------------------"
+   END
+
+   *** Closing the XML Document ***
+   L_STATUS = CLOSEXMLDATA(H_XML_DATA)
+   IF L_STATUS <> XML.SUCCESS THEN
+      PRINT "Error with CloseXMLData()"
+      GOSUB D100_DISP_XML_ERR_MSG
+      RTN.FLAG = 1
+   END
+
+   *** Releasing the XML Document ***
+   L_STATUS = RELEASEXML(H_XML)
+   IF L_STATUS <> XML.SUCCESS THEN
+      PRINT "Error with ReleaseXML()"
+      GOSUB D100_DISP_XML_ERR_MSG
+      RTN.FLAG = 1
+   END
+
+B300_EXIT:
+   RETURN
+
+
+****************************************
+* Parse XML Index File Tralier Contents.
+****************************************
+B400_PARSE_XML_INDEX_FILE_TRALIER:
+
+   *** Preparing the XML Document ***
+   L_STATUS = PREPAREXML(XML_INDEX_FNAME,H_XML)
+   IF L_STATUS <> XML.SUCCESS THEN
+      PRINT "Error with PrepareXML()"
+      GOSUB D100_DISP_XML_ERR_MSG
+      RTN.FLAG = 1
+   END
+
+   *** Use XML Extraction File to Map Data ***
+   L_STATUS = OPENXMLDATA(H_XML,XML_INDEX_FILE_TRAILER_EXT,H_XML_DATA)
+   IF L_STATUS <> XML.SUCCESS THEN
+      PRINT "Error with OpenXMLData()"
+      GOSUB D100_DISP_XML_ERR_MSG
+      RTN.FLAG = 1
+   END
+
+   L_STATUS = READXMLDATA(H_XML_DATA,L_REC_IDX_T)
+   IF L_STATUS <> XML.SUCCESS THEN
+      PRINT "Error with ReadXMLData()"
+      GOSUB D100_DISP_XML_ERR_MSG
+      RTN.FLAG = 1
+   END ELSE
+      PRINT "---------------------------------------"
+      PRINT "[Start Validating XML Index File Tralier Contents...]"
+      PRINT "---------------------------------------"
+      GOSUB C400_VALIDATE_XML_INDEX_FILE_TRALIER
+      PRINT "[Validating XML Index File Tralier Contents Completed.]"
+      PRINT "---------------------------------------"
+   END
+
+   *** Closing the XML Document ***
+   L_STATUS = CLOSEXMLDATA(H_XML_DATA)
+   IF L_STATUS <> XML.SUCCESS THEN
+      PRINT "Error with CloseXMLData()"
+      GOSUB D100_DISP_XML_ERR_MSG
+      RTN.FLAG = 1
+   END
+
+   *** Releasing the XML Document ***
+   L_STATUS = RELEASEXML(H_XML)
+   IF L_STATUS <> XML.SUCCESS THEN
+      PRINT "Error with ReleaseXML()"
+      GOSUB D100_DISP_XML_ERR_MSG
+      RTN.FLAG = 1
+   END
+
+B400_EXIT:
+   RETURN
+
+****************************************
+* Validate XML Control File Contents.
+****************************************
+C100_VALIDATE_XML_CONTROL_FILE:
+
+   CLEARSELECT
+   L_QUERY = 'SELECT SYSTBL WITH @ID = "I275*C]" BY @ID'
+   EXECUTE L_QUERY CAPTURING L_JUNK
+   IF @SYSTEM.RETURN.CODE = 0 THEN
+      CALL SB.PROCESS("SYS0061,IP0142")  ;* No records retrieved
+      RTN.FLAG = 1
+   END
+
+   L_EOF = 0
+   L_CNT = 0
+   LOOP
+      READNEXT L_KEY ELSE L_EOF = 1
+   UNTIL L_EOF
+      L_CNT += 1
+      READU L_REC FROM SYSTBL,L_KEY
+      ON ERROR
+         CALL SB.DISP(3,STATUS())
+         CALL SB.PROCESS('SYS0061,4864')
+      END LOCKED
+         CALL SB.PROCESS('SYS0061,IP1208\':L_KEY:@VM:GETUSERNAME(STATUS()):'\\4')
+      END THEN
+         CRT L_REC<4>:" = ":TRIM(FIELD(L_REC_CTR,@FM,L_CNT))
+      END ELSE
+         CALL SB.PROCESS('SYS0061,IP1347\':L_KEY:@VM:'SYSTBL':'\\4')
+      END
+      RELEASE SYSTBL,L_KEY
+   REPEAT
+
+   PRINT "---------------------------------------"
+  
+C100_EXIT:
+   RETURN
+
+****************************************
+* Validate XML Index File Header Contents.
+****************************************
+C200_VALIDATE_XML_INDEX_FILE_HEADER:
+
+   CLEARSELECT
+   L_QUERY = 'SELECT SYSTBL WITH @ID = "I275*H]" BY @ID'
+   EXECUTE L_QUERY CAPTURING L_JUNK
+   IF @SYSTEM.RETURN.CODE = 0 THEN
+      CALL SB.PROCESS("SYS0061,IP0142")  ;* No records retrieved
+      RTN.FLAG = 1
+   END
+
+   L_EOF = 0
+   L_CNT = 0
+   LOOP
+      READNEXT L_KEY ELSE L_EOF = 1
+   UNTIL L_EOF
+      L_CNT += 1
+      READU L_REC FROM SYSTBL,L_KEY
+      ON ERROR
+         CALL SB.DISP(3,STATUS())
+         CALL SB.PROCESS('SYS0061,4864')
+      END LOCKED
+         CALL SB.PROCESS('SYS0061,IP1208\':L_KEY:@VM:GETUSERNAME(STATUS()):'\\4')
+      END THEN
+         CRT L_REC<4>:" = ":TRIM(FIELD(L_REC_IDX_H,@FM,L_CNT))
+      END ELSE
+         CALL SB.PROCESS('SYS0061,IP1347\':L_KEY:@VM:'SYSTBL':'\\4')
+      END
+      RELEASE SYSTBL,L_KEY
+   REPEAT
+
+   PRINT "---------------------------------------"
+  
+C200_EXIT:
+   RETURN
+
+****************************************
+* Validate XML Index File Body Contents.
+****************************************
+C300_VALIDATE_XML_INDEX_FILE_BODY:
+
+   L_CHECK_TOT = DCOUNT(L_REC_ITEM_LIST,@VM)
+   FOR L_IDX = 1 TO L_CHECK_TOT
+      PRINT "<<<Check #":L_IDX:">>>"
+      L_REC_CHECK = FIELD(L_REC_ITEM_LIST,@VM,L_IDX):@SVM:FIELD(L_REC_OFFSET_LIST,@VM,L_IDX):@SVM:FIELD(L_REC_DATALENGTH_LIST,@VM,L_IDX)
+
+      CLEARSELECT
+      L_QUERY = 'SELECT SYSTBL WITH @ID = "I275*B]" BY @ID'
+      EXECUTE L_QUERY CAPTURING L_JUNK
+      IF @SYSTEM.RETURN.CODE = 0 THEN
+         CALL SB.PROCESS("SYS0061,IP0142")  ;* No records retrieved
+         RTN.FLAG = 1
+      END
+
+      L_EOF = 0
+      L_CNT = 0
+      LOOP
+         READNEXT L_KEY ELSE L_EOF = 1
+      UNTIL L_EOF
+         L_CNT += 1
+         READU L_REC FROM SYSTBL,L_KEY
+         ON ERROR
+            CALL SB.DISP(3,STATUS())
+            CALL SB.PROCESS('SYS0061,4864')
+         END LOCKED
+            CALL SB.PROCESS('SYS0061,IP1208\':L_KEY:@VM:GETUSERNAME(STATUS()):'\\4')
+         END THEN
+            IF L_CNT = 1 THEN
+               L_ERR_CHK_NUM = TRIM(FIELD(L_REC_CHECK,@SVM,L_CNT))
+               READ L_ERR_CHK_REC FROM APCHK,L_ERR_CHK_NUM ELSE L_ERR_CHK_REC = ""
+               IF L_ERR_CHK_REC = "" THEN
+                  L_ERR_CHK_NUM_LIST<L_CNT> = L_ERR_CHK_NUM
+               END
+            END
+            CRT L_REC<4>:" = ":TRIM(FIELD(L_REC_CHECK,@SVM,L_CNT))
+         END ELSE
+            CALL SB.PROCESS('SYS0061,IP1347\':L_KEY:@VM:'SYSTBL':'\\4')
+         END
+         RELEASE SYSTBL,L_KEY
+      REPEAT
+   NEXT L_IDX
+
+   PRINT "---------------------------------------"
+  
+C300_EXIT:
+   RETURN
+
+****************************************
+* Validate XML Index File Tralier Contents.
+****************************************
+C400_VALIDATE_XML_INDEX_FILE_TRALIER:
+
+   CLEARSELECT
+   L_QUERY = 'SELECT SYSTBL WITH @ID = "I275*T]" BY @ID'
+   EXECUTE L_QUERY CAPTURING L_JUNK
+   IF @SYSTEM.RETURN.CODE = 0 THEN
+      CALL SB.PROCESS("SYS0061,IP0142")  ;* No records retrieved
+      RTN.FLAG = 1
+   END
+
+   L_EOF = 0
+   L_CNT = 0
+   LOOP
+      READNEXT L_KEY ELSE L_EOF = 1
+   UNTIL L_EOF
+      L_CNT += 1
+      READU L_REC FROM SYSTBL,L_KEY
+      ON ERROR
+         CALL SB.DISP(3,STATUS())
+         CALL SB.PROCESS('SYS0061,4864')
+      END LOCKED
+         CALL SB.PROCESS('SYS0061,IP1208\':L_KEY:@VM:GETUSERNAME(STATUS()):'\\4')
+      END THEN
+         CRT L_REC<4>:" = ":TRIM(FIELD(L_REC_IDX_T,@FM,L_CNT))
+      END ELSE
+         CALL SB.PROCESS('SYS0061,IP1347\':L_KEY:@VM:'SYSTBL':'\\4')
+      END
+      RELEASE SYSTBL,L_KEY
+   REPEAT
+
+   PRINT "---------------------------------------"
+  
+C400_EXIT:
+   RETURN
+
+****************************************
+* Display Various XML Error Messages.
+****************************************
+D100_DISP_XML_ERR_MSG:
+
+   * Using XMLGetError() we can find out the very last error code and
+   * its corresponding message. This allows us to display a descriptive
+   * reason for the problem.
+
+   *** Getting Error Messages ***
+   IF L_STATUS <> XML.SUCCESS THEN
+      L_TMP = XMLGetError(L_CODE,L_MSG)
+      PRINT
+      PRINT 'The error description and code:'
+      PRINT '------------------------------------------'
+      PRINT 'Error desc: ':L_MSG
+      PRINT 'Error code: ':L_CODE
+      PRINT '------------------------------------------'
+   END
+
+D100_EXIT:
+   RETURN
+
+****************************************
+* Email the summary.
+****************************************
+E100_EMAIL_SUMMARY: 
+
+     ARG_EMAIL = ''
+     CALL SYSS9300.1(ARG_EMAIL,USER.ID)
+
+     L_SAVE_PARAM = PARAM
+     PARAM    =  ""
+     PARAM<1> := CHAR(13)
+     IF L_ERR_CHK_NUM_LIST # '' THEN
+        SWAP @AM WITH "," IN L_ERR_CHK_NUM_LIST
+        PARAM<1> :=  "List of invalid cheque numbers:" : CHAR(13)
+        PARAM<1> :=  L_ERR_CHK_NUM_LIST : CHAR(13) : CHAR(13) : CHAR(13)
+     END ELSE
+        PARAM<1> :=  "All cheques are ok!" : CHAR(13)
+     END
+     PARAM<2> =  "AP Cheque Image Transfer Summary"
+     PARAM<3> =  ARG_EMAIL
+
+     CALL SB.PROCESS("SYSS9060.1")
+
+     IF RTN.FLAG THEN
+        CALL SB.PROCESS("SYS0061,IP2563\":"SYSS9060.1")
+        GO E100_EXIT
+     END
+
+     IF PARAM<6> > 0 THEN   ;* This means there was an error sending the email...
+        CALL SB.PROCESS("SYS0061,IP2563\":"SYSS9060.1")
+        RTN.FLAG = 1
+        GO E100_EXIT
+     END
+
+     IF NOT(RTN.FLAG) THEN
+        CALL SB.PROCESS('SYS0061,IP2665\':ARG_EMAIL)
+     END ELSE
+        RTN.FLAG = 0
+     END
+     PARAM = L_SAVE_PARAM
+
+E100_EXIT: 
+     RETURN
+
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+A500_EXIT:
+   REFRESH = -2
+   GO 9999
+
+
+****************************************
+* Exit  
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END
+*
+*

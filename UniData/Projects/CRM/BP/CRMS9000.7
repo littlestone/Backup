@@ -1,0 +1,294 @@
+   SUBROUTINE CRMS9000.7
+* Infoflo to CRM Build Sales Rep Matrix based on Sales Reps
+* VERSION 8.2.3
+*
+* 12 DEC 16 8.2.3 piedes PRJ*PIEDES.112-Fix somes bugs related to CRM
+* 14 OCT 16 8.2.3 piedes PRJ*SLS086D.1-(Sub #1) ICONNECT - CRM PROJECT - One shot Customer Ini
+* 19 SEP 16 8.2.3 piedes PRJ*SLS086D-ICONNECT - CRM PROJECT - SALES MANAGER AND SALES AGENT 
+* 29 JUL 16 8.2.3 piedes PRJ*QUO064D-CRM INTEGRATION WITH INFOFLO
+*  
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+
+   PROGRAM = 'CRMS9000.7'
+
+   $INCLUDE IIPLUS.TOP
+   $INCLUDE IIPLUS.TEXTLOAD
+   $INCLUDE IIPLUS.DEBUG
+
+   $INCLUDE TUBP TU.API.H
+   $INCLUDE TUBP ROC.H
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*
+* MODIFICATIONS:
+* ==============
+*              2016/07/16 piedes - Initial creation.
+*
+**************************************************************************
+
+
+A100_MAIN:
+
+   GOSUB A200_INITIALIZATION
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+
+   GO A500_CONCLUSION
+
+
+****************************************
+* Define & initialize variables.
+****************************************
+A200_INITIALIZATION:
+
+   RTN.FLAG = 0
+   STATUS = ""
+   L_ERR_CODE = ""
+   L_ERR_MSG = ""
+   L_DELETED = 0
+
+   L_CUST_ACCT_TYPE = PARAM<4>
+   L_CRM_GUID_LIST  = PARAM<9>
+   L_COMPANY_CODE   = FIELD(KEY,"*",1)
+   L_MATRIX_GUID    = ""
+   PARAM<10>        = ""
+   PARAM<11>        = ""
+   PARAM<12>        = ""
+   L_RESEND_FLAG    = PARAM<14>
+   L_TO_DELETE      = 0
+
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open any data files requried.
+****************************************
+A300_OPEN_FILES:
+
+   FILE.ERR = 0
+
+   CALL SB.OPEN.FILE("SYSCON",SYSCON,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-1"
+      L_ERR_MSG = "Open SYSCON file error."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("CUSTMSTCRM",CUSTMSTCRM,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-2"
+      L_ERR_MSG = "Unable to open file CUSTMSTCRM."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("SLSREPMST",SLSREPMST,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-3"
+      L_ERR_MSG = "Unable to open file SLSREPMST."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("CRMMATRIXGUID",CRMMATRIXGUID,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-4"
+      L_ERR_MSG = "Unable to open file CRMMATRIXGUID."
+      GO A300_EXIT
+   END
+
+A300_EXIT:
+   RETURN
+
+****************************************
+* Main process.
+****************************************
+A400_MAIN_PROCESS:
+
+   GOSUB B100_BUILD_DATA
+
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+A400_EXIT:
+   RETURN
+
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+   IF L_ERR_CODE # "" THEN
+      STATUS<1> = L_ERR_CODE
+      STATUS<2> = L_ERR_MSG
+   END
+
+   RTN.FLAG = 0
+   REFRESH = -2
+
+A500_EXIT:
+   GO 9999
+
+
+****************************************
+* Validate CRM integration request data.
+****************************************
+B100_BUILD_DATA:
+
+   L_AGENT_CODE      = ""
+
+   L_NB_BEFORE = DCOUNT(ORIG.REC<106>, VM)
+   L_NB_AFTER  = DCOUNT(RECORD<106>, VM)
+
+********************************
+*  COMPARE RECORD WITH ORIG.REC
+********************************
+   L_NEW_SLS_REP_CODES       =  ""
+   L_NEW_SLS_REP_CODES<1>    =  RECORD<10>:"*0" ;* we start with the default sales rep
+   FOR L_IND = 1 TO L_NB_AFTER
+      L_SEARCH_KEY = RECORD<107,L_IND> :"*": RECORD<106,L_IND>
+      LOCATE L_SEARCH_KEY IN L_NEW_SLS_REP_CODES<1> SETTING POS ELSE
+        L_NEW_SLS_REP_CODES<1,-1>  =  L_SEARCH_KEY
+      END
+   NEXT L_IND
+
+   L_ORIG_SLS_REP_CODES     =  ""
+   L_ORIG_SLS_REP_CODES<1>  =  ORIG.REC<10>:"*0" ;* we start with the default sales rep
+   FOR L_IND = 1 TO L_NB_BEFORE
+      L_SEARCH_KEY = ORIG.REC<107,L_IND> :"*": ORIG.REC<106,L_IND>
+      LOCATE L_SEARCH_KEY IN L_ORIG_SLS_REP_CODES<1> SETTING POS ELSE
+        L_ORIG_SLS_REP_CODES<1,-1>  =  L_SEARCH_KEY
+      END
+   NEXT L_IND
+
+   L_SLS_REP_COUNT =  DCOUNT(L_NEW_SLS_REP_CODES<1>,VM)
+
+   FOR L_IND = 1 TO L_SLS_REP_COUNT
+
+        LOCATE L_NEW_SLS_REP_CODES<1,L_IND> IN L_ORIG_SLS_REP_CODES<1> SETTING POS THEN
+           L_SLS_REP_CODE   =  L_NEW_SLS_REP_CODES<1,L_IND>
+           GOSUB B200_LOOKUP_GUID
+           IF L_MATRIX_SLS_REP # "" THEN
+              PARAM<10,-1> = L_MATRIX_SLS_REP
+           END
+        END ELSE
+           L_SLS_REP_CODE   =  L_NEW_SLS_REP_CODES<1,L_IND>
+           GOSUB B200_LOOKUP_GUID
+           IF L_MATRIX_SLS_REP # "" THEN
+              PARAM<10,-1> = L_MATRIX_SLS_REP
+           END
+        END
+
+   NEXT L_IND
+
+   L_SLS_REP_COUNT =  DCOUNT(L_ORIG_SLS_REP_CODES<1>,VM)
+   FOR L_IND = 1 TO L_SLS_REP_COUNT
+
+        LOCATE L_ORIG_SLS_REP_CODES<1,L_IND> IN L_NEW_SLS_REP_CODES<1> SETTING POS ELSE
+           L_SLS_REP_CODE   =  L_ORIG_SLS_REP_CODES<1,L_IND>
+           GOSUB B220_CHECK_IF_NEED_TO_DELETE_FROM_MATRIX
+           IF L_MATRIX_SLS_REP # "" THEN
+              PARAM<12,-1> =  L_MATRIX_SLS_REP_GUID
+           END
+        END
+        IF L_MATRIX_SLS_REP_GUID  # "" THEN
+           GOSUB B300_DELETE_CRMMATRIXGUID
+        END
+
+   NEXT L_IND
+
+B100_EXIT:
+   RETURN
+
+*************************************
+B200_LOOKUP_GUID:
+*************************************
+
+   L_MATRIX_SLS_REP = ""
+   L_MATRIX_SLS_REP_GUID = ""
+
+* Let's look for the GUID for the market segment + sales rep combination
+   L_CRMMATRIXGUID_KEY  = ACNT.NAME:"*":KEY:"*":L_SLS_REP_CODE
+   READV L_GUID FROM CRMMATRIXGUID, L_CRMMATRIXGUID_KEY, 2 ELSE L_GUID = ""
+   IF L_GUID = "" THEN
+     L_MATRIX_SLS_REP<1,-1> = FIELD(L_SLS_REP_CODE,"*",2):SVM:FIELD(L_SLS_REP_CODE,"*",1)
+   END ELSE
+     IF L_RESEND_FLAG = 1 THEN
+        PARAM<11,-1> = FIELD(L_SLS_REP_CODE,"*",2):SVM:FIELD(L_SLS_REP_CODE,"*",1):SVM:L_GUID
+     END
+   END
+
+B200_LOOKUP_GUID_EXIT:
+   RETURN
+
+*************************************
+B220_CHECK_IF_NEED_TO_DELETE_FROM_MATRIX:
+*************************************
+
+   L_MATRIX_SLS_REP         = ""
+   L_MATRIX_SLS_REP_GUID    = ""
+   L_MATRIX_SLS_REP_ERP_KEY = ""
+
+* Let's look for the GUID of the market segment + sales rep combination.
+   L_CRMMATRIXGUID_KEY  = ACNT.NAME:"*":KEY:"*":L_SLS_REP_CODE
+   READV L_GUID FROM CRMMATRIXGUID, L_CRMMATRIXGUID_KEY, 2 ELSE L_GUID = ""
+   IF L_GUID # "" THEN
+     L_MATRIX_SLS_REP_GUID<1,-1>      = L_GUID
+     L_MATRIX_SLS_REP_ERP_KEY<1,-1>   = L_CRMMATRIXGUID_KEY
+     L_MATRIX_SLS_REP<1,-1>           = FIELD(L_SLS_REP_CODE,"*",2) :SVM:FIELD(L_SLS_REP_CODE,"*",1)
+   END
+
+B220_CHECK_IF_NEED_TO_DELETE_FROM_MATRIX_EXIT:
+   RETURN
+
+**************************
+B300_DELETE_CRMMATRIXGUID:
+**************************
+
+   L_NB_DEL = DCOUNT(L_MATRIX_SLS_REP_ERP_KEY,VM)
+
+   FOR L_DEL_IND = 1 TO L_NB_DEL
+*** \/ PIEDES.112
+*      DELETE CRMMATRIXGUID, L_MATRIX_SLS_REP_ERP_KEY<1,L_DEL_IND>
+      PARAM<16,-1> = L_MATRIX_SLS_REP_ERP_KEY<1,L_DEL_IND>
+*** /\ PIEDES.112
+   NEXT L_DEL_IND
+
+B300_DELETE_CRMMATRIXGUID_EXIT:
+   RETURN
+****************************************
+* Exit
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END
+*
+*

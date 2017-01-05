@@ -1,0 +1,230 @@
+     SUBROUTINE SYSS9220.4(ARGS_IN,ARGS_OUT)
+* Generic Program to Purge Internal Control Approval Request/Response HTML Email Files
+* VERSION 8.2.3
+*
+* 24 FEB 14 8.2.3 juntan PRJ*SOP381D.10-(Sub #10) SHIP AND DEBIT - PHASE 2
+*
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+
+    PROGRAM='SYSS9220.4'
+
+    $INCLUDE IIPLUS.TOP
+    $INCLUDE IIPLUS.TEXTLOAD
+    $INCLUDE IIPLUS.DEBUG
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*              This program is used to purge HTML Email files generated as
+*              per internal control approval request, the email files are
+*              located in DOM_HTML directory based on the setup in SYSCON
+*              table.
+*
+*              <<<NOTE>>>
+*              Input Parameter:
+*                 ARGS_IN<1>    -> SYSCON Key
+*                 ARGS_IN<2,1>  -> Attribute # for HTML email directory (DOM_HTML)
+*                 ARGS_IN<2,2>  -> Attribute # for most recent HTML email file purging date
+*                 ARGS_IN<2,3>  -> Attribute # for HTML email file reserved days
+*              Output Parameter:
+*                 ARGS_OUT<1.M> -> Program Name / Error Code / Error Message if applicable
+*
+* MODIFICATIONS:
+* ==============
+*              2013/04/09 juntan SOP381D.10 - Initial creation.
+*
+**************************************************************************
+
+
+A100_MAIN:
+
+   GOSUB A200_INITIALIZATION
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+   GO A500_CONCLUSION
+
+
+****************************************
+* Definition of local variables & initialization of other variables.
+****************************************
+A200_INITIALIZATION:
+
+   RTN.FLAG             = 0
+   L_CNT                = 0
+
+   ARGS_OUT             = ""
+   L_ERR_CODE           = ""
+   L_ERR_MSG            = ""
+   L_PREFIX             = ""
+   L_SYSCON_KEY         = ""
+   L_SYSCON_REC         = ""
+   L_DIR_EMAIL          = ""
+   L_LAST_PURGE_DT      = ""
+   L_LAST_PURGE_DT_DESC = ""
+   L_RESERVE_DAYS       = ""
+   L_PURGE_DATE         = ""
+   L_CMD                = ""
+   L_JUNK               = ""
+
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open the files needed in this subroutine.
+****************************************
+A300_OPEN_FILES:
+
+   OPEN "SYSCON" TO SYSCON ELSE
+      L_ERR_CODE = "A300-OPEN-FILES-1"
+      L_ERR_MSG = "Cannot open file SYSCON."
+      GO A300_EXIT
+   END
+
+A300_EXIT:
+   RETURN
+
+
+****************************************
+* Main process logic structure.
+****************************************
+A400_MAIN_PROCESS:
+
+   GOSUB B100_READ_SYSCON_TABLE_SETUP
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B200_PURGE_SDC_HTML_EMAIL_FILES
+   IF L_ERR_MSG # "" THEN
+      GO A400_EXIT
+   END
+
+A400_EXIT:
+   RETURN
+
+
+****************************************
+* Read SYSCON table setup for SDC html email template setup
+****************************************
+B100_READ_SYSCON_TABLE_SETUP:
+
+   BEGIN CASE
+      CASE NOT(NUM(ARGS_IN<2,1>))
+         L_ERR_CODE = "B100-READ-SYSCON-TABLE-SETUP-1"
+         L_ERR_MSG = "Wrong attribute # ":ARGS_IN<2,1>:" detected for HTML email directory."
+         GOSUB B100_EXIT
+      CASE NOT(NUM(ARGS_IN<2,2>))
+         L_ERR_CODE = "B100-READ-SYSCON-TABLE-SETUP-2"
+         L_ERR_MSG = "Wrong attribute # ":ARGS_IN<2,2>:" detected for most recent HTML email file purging date."
+         GOSUB B100_EXIT
+      CASE NOT(NUM(ARGS_IN<2,3>))
+         L_ERR_CODE = "B100-READ-SYSCON-TABLE-SETUP-3"
+         L_ERR_MSG = "Wrong attribute # ":ARGS_IN<2,3>:" detected for HTML email file reserved days."
+         GOSUB B100_EXIT
+   END CASE
+
+   L_SYSCON_KEY = ARGS_IN<1>
+   L_PREFIX = FIELD(L_SYSCON_KEY,".",1)
+   READ L_SYSCON_REC FROM SYSCON,L_SYSCON_KEY ELSE L_SYSCON_REC = ""
+   IF L_SYSCON_REC # "" THEN
+      L_DIR_EMAIL = TRIM(FIELD(L_SYSCON_REC<ARGS_IN<2,1>>,';',1))<1,2>
+      L_LAST_PURGE_DT = TRIM(FIELD(L_SYSCON_REC<ARGS_IN<2,2>>,';',1))
+      L_LAST_PURGE_DT_DESC = TRIM(FIELD(L_SYSCON_REC<ARGS_IN<2,2>>,'*',2))
+      L_RESERVE_DAYS = TRIM(FIELD(L_SYSCON_REC<ARGS_IN<2,3>>,';',1))
+   END ELSE
+      L_ERR_CODE = "B100-READ-SYSCON-TABLE-SETUP-4"
+      L_ERR_MSG = "SYSCON record ":L_SYSCON_KEY:" does not exist."
+   END
+
+B100_EXIT:
+   RETURN
+
+
+****************************************
+* Purge SDC html email files
+****************************************
+B200_PURGE_SDC_HTML_EMAIL_FILES:
+
+   *** Purge SDC Emails Older Than The Reserved Days ***
+   IF DATE() > ICONV(L_LAST_PURGE_DT,"D2/") + L_RESERVE_DAYS THEN
+      CLEARSELECT
+      L_PURGE_DATE = DATE() - L_RESERVE_DAYS
+      L_PURGE_DATE = OCONV(L_PURGE_DATE,"D2/")
+      SWAP "/" WITH "" IN L_PURGE_DATE
+      L_CMD = 'SELECT ':L_DIR_EMAIL:' WITH @ID = "':L_PREFIX:']" AND WITH DF_CREATION_DATE < "':L_PURGE_DATE:'"'
+      EXECUTE L_CMD CAPTURING L_JUNK
+
+      IF @SYSTEM.RETURN.CODE > 0 THEN
+         L_CMD = 'DELETE ':L_DIR_EMAIL
+         DATA "Y"
+         EXECUTE L_CMD CAPTURING L_JUNK
+
+         *** Update Most Recent Purging Date ***
+         WRITEV OCONV(DATE(),"D2/") ON SYSCON, L_SYSCON_KEY, ARGS_IN<2,2> ON ERROR
+            L_ERR_CODE = "B200-PURGE-SDC-HTML-EMAIL-FILES-2"
+            L_ERR_MSG = "Unable to read SYSCON record ":L_SYSCON_KEY:", status code returned is ":STATUS():"."
+         END
+      END ELSE
+         IF @SYSTEM.RETURN.CODE < 0 THEN
+            L_ERR_CODE = "B200-PURGE-SDC-HTML-EMAIL-FILES-1"
+            L_ERR_MSG = L_JUNK
+         END
+      END
+   END
+
+B200_EXIT:
+   RETURN
+
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+   IF L_ERR_CODE # "" THEN
+      ARGS_OUT<1> = PROGRAM:@VM:L_ERR_CODE:@VM:L_ERR_MSG
+   END
+
+   RTN.FLAG = 0
+   REFRESH  = -2
+
+A500_EXIT:
+   GO 9999
+
+
+****************************************
+* Exit
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END
+*

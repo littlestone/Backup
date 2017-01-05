@@ -1,0 +1,193 @@
+     SUBROUTINE JJ_ZIPREQ1
+* Example of Sending a SOAP request from BASIC
+* VERSION 8.2.3
+*
+* 17 OCT 12 8.2.3 juntan PRJ*JUNTAN.2-JUNTAN TEST
+*
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+     $INCLUDE IIPLUS.TOP
+     PROGRAM='JJ_ZIPREQ1'
+     $INCLUDE IIPLUS.TEXTLOAD
+     $INCLUDE IIPLUS.DEBUG
+     $INCLUDE /usr/igi/ud/sys/INCLUDE XML.H
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*              This program is used to retrieve a zip code using SOAP API
+*              (UniData 6.1.3-Umode or later)
+*
+* MODIFICATIONS:
+* ==============
+*              2012/xx/xx juntan xxx - Initial creation.
+*
+**************************************************************************
+
+
+A100_MAIN:
+
+   GOSUB A200_INITIALIZATION
+   IF RTN.FLAG THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF RTN.FLAG THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF RTN.FLAG THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+   GO A500_CONCLUSION
+
+
+****************************************
+* Definition of local variables & initialization of other variables.
+****************************************
+A200_INITIALIZATION:
+
+
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open the files needed in this subroutine.
+****************************************
+A300_OPEN_FILES:
+
+   FILE.ERR = 0
+
+   CALL SB.OPEN.FILE("JUNTAN_TEST_FILE",TEST_FILE,FILE.ERR)
+   IF FILE.ERR THEN
+      CALL SB.PROCESS("SYS0061,IP2564\":"JUNTAN_TEST_FILE")
+      RTN.FLAG = 1
+      GO A300_EXIT
+   END
+
+A300_EXIT:
+   RETURN
+
+
+****************************************
+* Example of Sending a SOAP request from BASIC
+****************************************
+A400_MAIN_PROCESS:
+
+   ****
+   *
+   * Turn on logging
+   *
+   * RESULT=protocolLogging("ZIPCODE.log","ON",10)
+   * CRT "Logging started = ":RESULT
+   *
+   ****
+   *
+   * You may be required to connect via a Proxy. If so insure you
+   * uncomment the lines below. If you are unsure that you need a
+   * proxy, verify you web browser proxy settings.
+   * Tools>Internet Options…>Connections>Lan Settings…>Proxy server
+   * and populate the variables below:
+   *
+   *Ret = setHTTPDefault("PROXY_NAME", "Name or IP")
+   *IF Ret <> 0 THEN
+   *  STOP "Error in setHTTPDefault PROXY_NAME: " : Ret
+   *END
+   *Ret = setHTTPDefault("PROXY_PORT", "port number")
+   *IF Ret <> 0 THEN
+   *  STOP "Error in setHTTPDefault PROXY_PORT: " : Ret
+   *END
+   ****
+
+   PROMPT ""
+   CRT
+   DISPLAY "U2 SOAP/XML DOM/XMAP EXAMPLE"
+   CRT
+   Xfile=""
+   xmlString=""
+   XMLMap="&XML&/ZIPCODES.map"
+   *
+   * For UniData use
+   * XMLMap="_XML_/ZIPCODES.map"
+   *
+   PRINT "Enter Zipcode : ":
+   INPUT ZIPCODE
+   *
+   ZIPX = ""
+   ZIPX :='<?xml version="1.0" encoding="UTF-8"?>'
+   ZIPX :='<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">'
+   ZIPX :="  <soap:Body>"
+   ZIPX :='<GetInfoByZIP xmlns="http://www.webserviceX.NET">'
+   ZIPX :="<USZip>":ZIPCODE:"</USZip>"
+   ZIPX :="    </GetInfoByZIP>"
+   ZIPX :="  </soap:Body>"
+   ZIPX :="</soap:Envelope>"
+   *
+   URL = "http://www.webservicex.net/uszip.asmx?WSDL"
+   SoapAction = "http://www.webserviceX.NET/GetInfoByZIP"
+   Timeout = 30000
+   * Create the Request
+   Ret = SOAPCreateRequest(URL, SoapAction, SoapReq)
+   CRT Ret
+   IF Ret <> 0 THEN
+      STOP "Error in SOAPCreateRequest: " : Ret
+   END
+   * Submit the Request
+   SETREQUEST.STATUS = SOAPSetRequestContent(SoapReq, ZIPX,1)
+   PRINT "Request Content Status = ":SETREQUEST.STATUS
+   Ret = SOAPSubmitRequest(SoapReq, Timeout, RespHeaders, RespData, SoapStatus)
+   CRT Ret
+   IF Ret <> 0 THEN
+      CRT "Error in SOAPSubmitRequest: " : Ret
+      STATUS=getSocketErrorMessage(Ret, errMsg)
+      CRT errMsg
+      STOP
+   END
+   *
+   PRINT "Response status : " : SoapStatus
+   * PRINT "Response headers: " : RespHeaders
+   * PRINT "Response data : " : RespData
+   *
+   *********************************************************
+
+A400_EXIT:
+   RETURN
+
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+
+A500_EXIT:
+   REFRESH = -2
+   GO 9999
+
+
+****************************************
+* Exit  
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END
+*

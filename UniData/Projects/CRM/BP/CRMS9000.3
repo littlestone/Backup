@@ -1,0 +1,418 @@
+   SUBROUTINE CRMS9000.3
+* Infoflo to CRM Build Market Segment Sls Rep Matrix
+* VERSION 8.2.3
+*
+* 19 SEP 16 8.2.3 piedes PRJ*SLS086D-ICONNECT - CRM PROJECT - SALES MANAGER AND SALES AGENT 
+* 29 JUL 16 8.2.3 piedes PRJ*QUO064D-CRM INTEGRATION WITH INFOFLO
+*  
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+
+   PROGRAM = 'CRMS9000.3'
+
+   $INCLUDE IIPLUS.TOP
+   $INCLUDE IIPLUS.TEXTLOAD
+   $INCLUDE IIPLUS.DEBUG
+
+   $INCLUDE TUBP TU.API.H
+   $INCLUDE TUBP ROC.H
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*
+* MODIFICATIONS:
+* ==============
+*              2016/07/16 piedes - Initial creation.
+*
+**************************************************************************
+
+
+A100_MAIN:
+
+   GOSUB A200_INITIALIZATION
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+
+   GO A500_CONCLUSION
+
+
+****************************************
+* Define & initialize variables.
+****************************************
+A200_INITIALIZATION:
+
+   RTN.FLAG = 0
+   STATUS = ""
+   L_AGENTT_FLAG = 0
+
+   L_ERR_CODE = ""
+   L_ERR_MSG = ""
+   L_DELETED = 0
+
+   L_CUST_ACCT_TYPE = PARAM<4>
+   L_CRM_GUID_LIST  = PARAM<9>
+   L_COMPANY_CODE   = FIELD(KEY, "*",1)
+   L_MATRIX_GUID    = ""
+   PARAM<10>        = ""
+   PARAM<11>        = ""
+   PARAM<12>        = ""
+   L_RESEND_FLAG    = PARAM<14>
+   L_TO_DELETE      = 0
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open any data files requried.
+****************************************
+A300_OPEN_FILES:
+
+   FILE.ERR = 0
+
+   CALL SB.OPEN.FILE("SYSCON",SYSCON,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-1"
+      L_ERR_MSG = "Open SYSCON file error."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("CUSTMSTCRM",CUSTMSTCRM,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-2"
+      L_ERR_MSG = "Unable to open file CUSTMSTCRM."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("AGENTMST",AGENTMST,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-3"
+      L_ERR_MSG = "Unable to open file AGENTMST."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("CRMMATRIXGUID",CRMMATRIXGUID,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-4"
+      L_ERR_MSG = "Unable to open file CRMMATRIXGUID."
+      GO A300_EXIT
+   END
+
+A300_EXIT:
+   RETURN
+
+****************************************
+* Main process.
+****************************************
+A400_MAIN_PROCESS:
+
+   GOSUB B100_BUILD_DATA
+
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+A400_EXIT:
+   RETURN
+
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+   IF L_ERR_CODE # "" THEN
+      STATUS<1> = L_ERR_CODE
+      STATUS<2> = L_ERR_MSG
+   END
+
+   RTN.FLAG = 0
+   REFRESH = -2
+
+A500_EXIT:
+   GO 9999
+
+
+****************************************
+* Validate CRM integration request data.
+****************************************
+B100_BUILD_DATA:
+
+   L_NB_BEFORE = DCOUNT(ORIG.REC<106>, VM)
+   L_NB_AFTER  = DCOUNT(RECORD<106>, VM)
+
+   READ L_REC FROM SYSCON, "QUO_SALESREP_COMPANY" THEN
+      L_USD_CIE = TRIM(FIELD(L_REC<2>, ";",1))
+      LOCATE L_COMPANY_CODE:"01" IN L_USD_CIE<1> SETTING POS THEN
+         L_REP_CODE      = RECORD<108>
+         L_ORIG_REP_CODE = ORIG.REC<108>
+         L_AGENT_FLAG    = 1
+      END ELSE
+         L_REP_CODE      = RECORD<107>
+         L_ORIG_REP_CODE = ORIG.REC<107>
+         L_AGENT_FLAG    = 0
+      END
+   END
+
+   L_NB_BEFORE = DCOUNT(ORIG.REC<106>, VM)
+   L_NB_AFTER  = DCOUNT(RECORD<106>, VM)
+
+********************************
+*  COMPARE RECORD WITH ORIG.REC
+********************************
+
+   FOR L_IND = 1 TO L_NB_AFTER
+
+      L_MATRIX_KEY = ACNT.NAME:"*":KEY:"*":L_REP_CODE<1,L_IND>:"*0"
+      * :RECORD<106,L_IND>
+
+      LOCATE RECORD<106,L_IND> IN ORIG.REC<106> SETTING POS THEN
+
+* FOUND
+         READV L_MATRIX_GUID FROM CRMMATRIXGUID, L_MATRIX_KEY, 2  ELSE L_MATRIX_GUID = ""
+         IF L_MATRIX_GUID = "" THEN
+            LOCATE RECORD<106,L_IND>:SVM:L_REP_CODE<1,L_IND> IN PARAM<10> SETTING DUMMY THEN
+            END ELSE
+               IF TRIM(RECORD<106,L_IND>) # "" THEN
+                  IF L_AGENT_FLAG = 0 THEN
+                     PARAM<10,-1> = RECORD<106,L_IND>:SVM:L_REP_CODE<1,L_IND>
+                  END ELSE
+*                     PARAM<10,-1> = RECORD<106,L_IND>:SVM:L_REP_CODE<1,L_IND>
+                     PARAM<10,-1> = "0":SVM:L_REP_CODE<1,L_IND>
+                     GOSUB B200_INSERT_CHILD
+                     IF L_MATRIX_AGENT # "" THEN
+                        PARAM<10,-1> = L_MATRIX_AGENT
+                     END
+                  END
+               END
+            END
+         END ELSE
+            IF (L_REP_CODE<1,L_IND> # L_ORIG_REP_CODE<1,POS>) OR RECORD<106,L_IND> # ORIG.REC<106,POS> THEN
+               LOCATE RECORD<106,L_IND>:SVM:L_REP_CODE<1,L_IND> IN PARAM<11> SETTING DUMMY THEN
+               END ELSE
+                  IF TRIM(RECORD<106,L_IND>) # "" THEN
+                     IF L_AGENT_FLAG = 0 THEN
+                        PARAM<11,-1> = RECORD<106,L_IND>:SVM:L_REP_CODE<1,L_IND>
+                     END ELSE
+                        PARAM<11,-1> = RECORD<106,L_IND>:SVM:L_REP_CODE<1,L_IND>
+                        GOSUB B200_INSERT_CHILD
+                        IF L_MATRIX_AGENT # "" THEN
+                           PARAM<11,-1> = L_MATRIX_AGENT
+                        END
+                     END
+                  END
+               END
+            END
+         END
+      END ELSE
+         IF TRIM(RECORD<106,L_IND>) # "" THEN
+            IF L_AGENT_FLAG = 0 THEN
+               PARAM<10,-1> = RECORD<106,L_IND>:SVM:L_REP_CODE<1,L_IND>
+            END ELSE
+*               PARAM<10,-1> = RECORD<106,L_IND>:SVM:L_REP_CODE<1,L_IND>
+               PARAM<10,-1> = "0":SVM:L_REP_CODE<1,L_IND>
+
+               GOSUB B200_INSERT_CHILD
+               IF L_MATRIX_AGENT # "" THEN
+                  PARAM<10,-1> = L_MATRIX_AGENT
+               END
+            END
+         END
+      END
+
+   NEXT L_IND
+
+*********************************
+*  COMPARE ORIG.REC WITH RECORD
+*********************************
+
+   FOR L_IND = 1 TO L_NB_BEFORE
+
+      L_MATRIX_KEY = ACNT.NAME:"*":KEY:"*":L_ORIG_REP_CODE<1,L_IND>:"*0"
+      
+
+      LOCATE ORIG.REC<106,L_IND> IN RECORD<106> SETTING POS THEN
+         * FOUND
+         READV L_MATRIX_GUID FROM CRMMATRIXGUID, L_MATRIX_KEY, 2  ELSE L_MATRIX_GUID = ""
+         IF L_MATRIX_GUID = "" THEN
+            LOCATE RECORD<106,L_IND>:SVM:L_REP_CODE<1,L_IND> IN PARAM<10> SETTING DUMMY THEN
+               **** NOTHING FOR NOW
+            END ELSE
+               IF TRIM(RECORD<106,L_IND>) # "" THEN
+                  IF L_AGENT_FLAG = 0 THEN
+                     LOCATE RECORD<106,L_IND>:SVM:L_REP_CODE<1,L_IND> IN PARAM<10> SETTING POS THEN
+                     END ELSE
+                        PARAM<10,-1> = RECORD<106,L_IND>:SVM:L_REP_CODE<1,L_IND>
+                     END
+                  END ELSE
+                     LOCATE "0":SVM:L_REP_CODE<1,L_IND> IN PARAM<10> SETTING POS THEN
+                     END ELSE
+                        PARAM<10,-1> = "0":SVM:L_REP_CODE<1,L_IND>
+
+                        GOSUB B250_INSERT_CHILD
+                        IF L_MATRIX_AGENT # "" THEN
+                           PARAM<10,-1> = L_MATRIX_AGENT
+                        END
+                     END
+                  END
+               END
+            END
+         END ELSE
+*******
+            IF L_ORIG_REP_CODE<1,L_IND> # L_REP_CODE<1,POS> OR ORIG.REC<106,L_IND> # RECORD<106,POS> THEN
+*******
+               LOCATE RECORD<106,L_IND>:SVM:L_REP_CODE<1,L_IND> IN PARAM<11> SETTING DUMMY THEN
+                  **** NOTHING FOR NOW
+               END ELSE
+                  IF TRIM(RECORD<106,L_IND>) # "" THEN
+                     IF L_AGENT_FLAG = 0 THEN
+                        PARAM<11,-1> = RECORD<106,L_IND>:SVM:L_REP_CODE<1,L_IND>
+                     END ELSE
+                        PARAM<11,-1> = RECORD<106,L_IND>:SVM:L_REP_CODE<1,L_IND>
+                        GOSUB B250_INSERT_CHILD
+                        IF L_MATRIX_AGENT # "" THEN
+                           PARAM<11,-1> = L_MATRIX_AGENT
+                        END
+                     END
+                  END
+               END
+            END
+         END
+      END ELSE
+         * NOT FOUND
+         IF L_MATRIX_KEY # "" THEN
+            LOCATE ORIG.REC<106,L_IND>:SVM:L_ORIG_REP_CODE<1,L_IND> IN PARAM<12> SETTING DUMMY THEN
+               **** NOTHING FOR NOW
+            END ELSE
+               L_MATRIX_TMP_KEY = ACNT.NAME:"*":KEY:"*":L_ORIG_REP_CODE<1,L_IND>:"*0"
+               READV L_MATRIX_TMP FROM CRMMATRIXGUID, L_MATRIX_TMP_KEY, 2 ELSE L_MATRIX_TMP = ""
+               IF L_MATRIX_TMP # "" THEN
+                  PARAM<12,-1> = L_MATRIX_TMP  
+                  DELETE CRMMATRIXGUID, L_MATRIX_KEY
+                  IF L_AGENT_FLAG = 1 THEN
+                     L_TO_DELETE = 1
+                     GOSUB B250_INSERT_CHILD
+                     IF L_MATRIX_AGENT # "" THEN
+                        PARAM<12,-1> = L_MATRIX_AGENT_GUID
+                     END
+                     L_TO_DELETE = 0
+                  END
+               END
+            END
+         END
+      END
+
+   NEXT L_IND
+
+B100_EXIT:
+
+   RETURN
+
+*************************************
+B200_INSERT_CHILD:
+*************************************
+
+   L_MATRIX_AGENT = ""
+   L_MATRIX_AGENT_GUID = ""
+
+   L_AGENTMST_KEY = L_REP_CODE<1,L_IND>
+   READ L_AGENTMST_REC FROM AGENTMST, L_AGENTMST_KEY THEN
+*       IF RECORD<106,L_IND> # 0 THEN
+*          PARAM<10,-1> = "0":SVM:L_REP_CODE<1,L_IND>
+*       END 
+       L_NB_AGENT = DCOUNT(L_AGENTMST_REC<3>, VM)
+       FOR L_AGENT_IND = 1 TO L_NB_AGENT
+          L_MATRIX_AGENT<1,-1> = L_AGENTMST_REC<2,L_AGENT_IND>:SVM:L_AGENTMST_KEY
+          L_CRMMATRIXGUID_KEY = ACNT.NAME:"*":KEY:"*":L_AGENTMST_KEY:"*":L_AGENTMST_REC<2,L_AGENT_IND>
+          READV L_GUID FROM CRMMATRIXGUID, L_CRMMATRIXGUID_KEY, 2 ELSE L_GUID = ""
+          IF L_GUID # "" THEN
+             L_MATRIX_AGENT_GUID<1,-1> = L_GUID
+          END
+          IF L_TO_DELETE = 1 THEN
+             DELETE CRMMATRIXGUID, L_CRMMATRIXGUID_KEY
+          END
+       NEXT L_AGENT_IND
+   END
+
+B200_INSERT_CHILD_EXIT:
+
+   RETURN
+
+*************************************
+B250_INSERT_CHILD:
+*************************************
+
+   L_MATRIX_AGENT = ""
+   L_MATRIX_AGENT_GUID = ""
+
+   L_AGENTMST_KEY = L_ORIG_REP_CODE<1,L_IND>
+   READ L_AGENTMST_REC FROM AGENTMST, L_AGENTMST_KEY THEN
+*       IF RECORD<106,L_IND> # 0 THEN
+*          PARAM<10,-1> = "0":SVM:L_REP_CODE<1,L_IND>
+*       END 
+       L_NB_AGENT = DCOUNT(L_AGENTMST_REC<3>, VM)
+       FOR L_AGENT_IND = 1 TO L_NB_AGENT
+          L_MATRIX_AGENT<1,-1> = L_AGENTMST_REC<2,L_AGENT_IND>:SVM:L_AGENTMST_KEY
+          L_CRMMATRIXGUID_KEY = ACNT.NAME:"*":KEY:"*":L_AGENTMST_KEY:"*":L_AGENTMST_REC<2,L_AGENT_IND>
+          READV L_GUID FROM CRMMATRIXGUID, L_CRMMATRIXGUID_KEY, 2 ELSE L_GUID = ""
+          IF L_GUID # "" THEN
+             L_MATRIX_AGENT_GUID<1,-1> = L_GUID
+          END
+          IF L_TO_DELETE = 1 THEN
+             DELETE CRMMATRIXGUID, L_CRMMATRIXGUID_KEY
+          END
+       NEXT L_AGENT_IND
+   END
+
+B250_INSERT_CHILD_EXIT:
+
+   RETURN
+
+
+**************************
+B300_DELETE_CRMMATRIXGUID:
+**************************
+
+   L_NB_DEL = DCOUNT(L_MATRIX_AGENT_GUID, VM)
+   FOR L_DEL_IND = 1 TO L_NB_DEL
+      DELETE CRMMATRIXGUID, L_MATRIX_AGENT_GUID<1,L_DEL_IND>
+   NEXT L_MATRIX_AGENT_GUID
+
+B300_DELETE_CRMMATRIXGUID_EXIT:
+   RETURN
+****************************************
+* Exit
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END
+*
+*
+*
+*

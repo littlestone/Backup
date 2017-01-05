@@ -1,0 +1,1 @@
+<%@ Application Codebehind="Global.asax.vb" Inherits="Walkthrough_Test_WebService_VB.Global" %>

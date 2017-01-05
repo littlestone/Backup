@@ -1,0 +1,12 @@
+# -*- mode: snippet -*-
+# name: read block
+# key: rdb
+# --
+READ $1 FROM $2, $3
+ON ERROR
+   $4
+END THEN
+   $5
+END ELSE 
+   $0
+END

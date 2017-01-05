@@ -1,0 +1,244 @@
+   SUBROUTINE JJ_DDE(ARGS_IN,ARGS_OUT,STATUS)
+* Upload Data from Excel File through DDE
+* VERSION 8.2.3
+*
+*
+*
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+   $INCLUDE IIPLUS.TOP
+   PROGRAM='JJ_DDE'
+   $INCLUDE IIPLUS.TEXTLOAD
+   $INCLUDE IIPLUS.DEBUG
+
+   $INCLUDE TUBP TU.API.H
+   $INCLUDE TUBP ROC.H
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ===========
+*              This function is used to read data block directly from
+*              an opened Excel document though DDE connection between
+*              the Excel process and SBClient process on Windows OS.
+* 
+*                <<< API definition >>>
+*
+*                INPUT: Accept 4 arguments
+*                  1. ARGS_IN<1> = Excel worksheet name (string)
+*                  2. ARGS_IN<2> = Starting row number (integer)
+*                  3. ARGS_IN<3> = Ending row number (integer)
+*                  4. ARGS_IN<4> = Column number (integer)
+*
+*                OUTPUT: Return a data block in the structure defined below
+*                  1. @FM = Row delimiter
+*                  2. @VM = Cell delimiter
+*
+*                STATUS: Return an error code with message if applicable
+*                  1. STATUS<1> = Error code
+*                  2. STATUS<2> = Error message
+*
+* MODIFICATIONS:
+* =============
+*              2013/10/04 juntan - Initial Creation.
+*
+**************************************************************************
+
+A100_MAIN: 
+
+   GOSUB A200_INITIALIZATION
+   IF RTN.FLAG THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF RTN.FLAG THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF RTN.FLAG THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+   GO A500_CONCLUSION
+
+
+****************************************
+* Definition of local variables & initialization of other variables.
+****************************************
+A200_INITIALIZATION:
+
+   ARGS_OUT           = ''
+   STATUS             = ''
+
+   RTN.FLAG           = 0
+   HEXCEL             = ''
+   APPLICATION        = ''
+   TOPIC              = ''
+   L_SYSTEM_TOPICS    = ''
+   L_RF               = ''  ;* excel row reference letter based on OS language (R or L)
+
+   L_RTN_FLAG         = ''
+   L_ERROR_CODE       = ''
+   L_ERROR_MSG        = ''
+   L_TEMP             = ''
+   L_CELL_RANGE       = ''
+
+   L_WORKSHEET_NAME   = ARGS_IN<1>
+   L_ROW_START        = ARGS_IN<2>
+   L_ROW_END          = ARGS_IN<3> 
+   L_COL_NUM          = ARGS_IN<4>
+
+A200_EXIT: 
+   RETURN
+
+
+****************************************
+* Open the files needed in this subroutine.
+****************************************
+A300_OPEN_FILES: 
+
+
+A300_EXIT: 
+   RETURN
+
+
+****************************************
+* Short desc of what the main process does.
+****************************************
+A400_MAIN_PROCESS: 
+
+***   PRINT ">>>> Step #1: Detecting running Excel process... <<<<"
+   CALL TU.DDE.CONNECT('EXCEL', 'System', HEXCEL, RTN.FLAG)
+   IF RTN.FLAG THEN
+      HEXCEL = ''
+      L_RTN_FLAG = "F"
+      L_ERROR_CODE = PROGRAM:"-":"A400-ERROR-1"
+      L_ERROR_MSG = "No running Excel process found, please open your Excel document first."
+      GO A400_EXIT
+   END
+
+***   PRINT ">>>> Step #2: Verifying opened Excel spreadsheet... <<<<"
+   CALL TU.DDE.READ(HEXCEL, 'Topics', 10, L_SYSTEM_TOPICS, RTN.FLAG)
+   IF RTN.FLAG THEN
+      L_ERROR_CODE = PROGRAM:"-":"A400-ERROR-2.1"
+      L_ERROR_MSG = "Error occurred while reading system topics."
+      L_RTN_FLAG = "Q"
+      GO A400_EXIT
+   END ELSE
+      SWAP CHAR(9) WITH @VM IN L_SYSTEM_TOPICS
+      FOR L_INC = 1 TO DCOUNT(L_SYSTEM_TOPICS,@VM)
+         IF L_WORKSHEET_NAME # "" AND INDEX(FIELD(L_SYSTEM_TOPICS,@VM,L_INC,1),L_WORKSHEET_NAME,1) THEN
+            TOPIC = FIELD(L_SYSTEM_TOPICS,@VM,L_INC,1)
+            EXIT
+         END ELSE
+            TOPIC = ''
+         END
+      NEXT L_INC
+      IF TOPIC = '' THEN
+         L_RTN_FLAG = "Q"
+         L_ERROR_CODE = PROGRAM:"-":"A400-ERROR-2.2"
+         L_ERROR_MSG = "Invalid worksheet name - ":L_WORKSHEET_NAME:"."
+         GO A400_EXIT
+      END
+   END
+
+***   PRINT ">>>> Step #3: Establish DDE connection between Excel and SBClient... <<<<"
+   CALL TU.DDE.CONNECT('EXCEL', TOPIC, HEXCEL, RTN.FLAG)
+   IF RTN.FLAG THEN
+      L_ERROR_CODE = PROGRAM:"-":"A400-ERROR-3"
+      L_ERROR_MSG = "Error occurred while establishing DDE connection."
+      L_RTN_FLAG = "Q"
+      GO A400_EXIT
+   END
+    
+***   PRINT ">>>> Step #4. Determining OS language... <<<<"
+   CALL TU.DDE.READ(HEXCEL, 'R1C1..R1C1', 10, L_TEMP, RTN.FLAG)
+   IF RTN.FLAG THEN
+      CALL TU.DDE.READ(HEXCEL, 'L1C1..L1C1', 10, L_TEMP, RTN.FLAG)
+      IF RTN.FLAG THEN
+         L_ERROR_CODE = PROGRAM:"-":"A400-ERROR-4"
+         L_ERROR_MSG = "Error occurred while determining OS language."
+         L_RTN_FLAG = "Q"
+         GO A400_EXIT
+      END
+      L_RF = 'L'    ;* French environment
+   END ELSE
+      L_RF = 'R'    ;* English environment
+   END
+
+***   PRINT ">>>> Step #5: Build cell range for data block reading... <<<<"  
+   L_CELL_RANGE = L_RF:L_ROW_START:"C1:":L_RF:L_ROW_END:"C":L_COL_NUM
+*   PRINT ">>>> Cell Range ":L_CELL_RANGE:" <<<<"
+
+***   PRINT ">>>> 6. Reading data block from Excel <<<<"
+   CALL TU.DDE.READ(HEXCEL, L_CELL_RANGE, 10, ARGS_OUT, RTN.FLAG)
+   IF RTN.FLAG THEN
+      L_ERROR_CODE = PROGRAM:"-":"A400-ERROR-6"
+      L_ERROR_MSG = "Error occurred while reading data from Excel."
+      L_RTN_FLAG = "D"
+      GO A400_EXIT
+   END
+
+***   PRINT ">>>> Step #7: Clean up... <<<<"
+   IF HEXCEL # '' THEN
+      CALL TU.DDE.DISCONNECT(HEXCEL, RTN.FLAG)
+      IF RTN.FLAG THEN
+         L_ERROR_CODE = PROGRAM:"-":"A400-ERROR-7"
+         L_ERROR_MSG = "Error occurred while disconnecting DDE."
+         L_RTN_FLAG = "Q"
+         GO A400_EXIT
+      END
+   END
+
+***   PRINT ">>>> Step #8: Build output data structure... <<<<"
+   SWAP @VM WITH @FM IN ARGS_OUT      ;* per row
+   SWAP CHAR(9) WITH @VM IN ARGS_OUT  ;* per cell
+*   PRINT ARGS_OUT
+*   PRINT "===> Total lines: ":DCOUNT(ARGS_OUT,@FM)
+
+A400_EXIT: 
+   RETURN
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+   IF L_RTN_FLAG # "" THEN
+      STATUS<1> = L_ERROR_CODE
+      STATUS<2> = L_ERROR_MSG
+***   PRINT ">>>> Oops, something went wrong! <<<<"
+***   PRINT "===> Error code: L_ERROR_CODE
+***   PRINT "===> Error message: L_ERROR_MSG
+   END ELSE
+***   PRINT ">>>> Succeed! <<<<"
+   END
+
+   REFRESH = -2
+   RTN.FLAG = 0
+
+A500_EXIT:
+   GO 9999
+
+****************************************
+* Exit  
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END

@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: read block
+# key: rd
+# --
+READ $1 FROM $2, ELSE $0

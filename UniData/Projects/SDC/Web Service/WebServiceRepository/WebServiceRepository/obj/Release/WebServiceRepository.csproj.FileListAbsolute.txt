@@ -1,0 +1,7 @@
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\WebServiceRepository\WebServiceRepository\bin\Release\WebServiceRepository.dll.config
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\WebServiceRepository\WebServiceRepository\bin\Release\WebServiceRepository.dll
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\WebServiceRepository\WebServiceRepository\bin\Release\WebServiceRepository.pdb
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\WebServiceRepository\WebServiceRepository\bin\Release\UODOTNET.dll
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\WebServiceRepository\WebServiceRepository\bin\Release\UODOTNET.xml
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\WebServiceRepository\WebServiceRepository\obj\Release\WebServiceRepository.dll
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\WebServiceRepository\WebServiceRepository\obj\Release\WebServiceRepository.pdb

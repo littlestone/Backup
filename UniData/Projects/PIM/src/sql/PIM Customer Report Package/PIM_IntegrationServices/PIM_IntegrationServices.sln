@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{159641D6-6404-4A2A-AE62-294DE0FE8301}") = "Refresh DataWarehouse_PIM", "Refresh DataWarehouse_PIM\Refresh DataWarehouse_PIM.dtproj", "{5D6E0DE2-C969-41A7-BD69-4ECC1083C4A6}"
+EndProject
+Project("{159641D6-6404-4A2A-AE62-294DE0FE8301}") = "PIM Customer Reports Package", "PIM Customer Reports Package\PIM Customer Reports Package.dtproj", "{3A29614D-A323-4037-A561-347D7A58039B}"
+EndProject
+Project("{159641D6-6404-4A2A-AE62-294DE0FE8301}") = "FTP", "FTP\FTP.dtproj", "{40164C4D-86AC-4FF3-BD04-7D94EDECAFBC}"
+EndProject
+Global
+	GlobalSection(TeamFoundationVersionControl) = preSolution
+		SccNumberOfProjects = 4
+		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
+		SccTeamFoundationServer = http://sql11:8080/tfs/project%20collection
+		SccLocalPath0 = .
+		SccProjectUniqueName1 = FTP\\FTP.dtproj
+		SccProjectName1 = FTP
+		SccLocalPath1 = FTP
+		SccProjectUniqueName2 = PIM\u0020Customer\u0020Reports\u0020Package\\PIM\u0020Customer\u0020Reports\u0020Package.dtproj
+		SccProjectName2 = PIM\u0020Customer\u0020Reports\u0020Package
+		SccLocalPath2 = PIM\u0020Customer\u0020Reports\u0020Package
+		SccProjectUniqueName3 = Refresh\u0020DataWarehouse_PIM\\Refresh\u0020DataWarehouse_PIM.dtproj
+		SccProjectName3 = Refresh\u0020DataWarehouse_PIM
+		SccLocalPath3 = Refresh\u0020DataWarehouse_PIM
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Development|Default = Development|Default
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5D6E0DE2-C969-41A7-BD69-4ECC1083C4A6}.Development|Default.ActiveCfg = Development
+		{5D6E0DE2-C969-41A7-BD69-4ECC1083C4A6}.Development|Default.Build.0 = Development
+		{3A29614D-A323-4037-A561-347D7A58039B}.Development|Default.ActiveCfg = Development
+		{3A29614D-A323-4037-A561-347D7A58039B}.Development|Default.Build.0 = Development
+		{40164C4D-86AC-4FF3-BD04-7D94EDECAFBC}.Development|Default.ActiveCfg = Development
+		{40164C4D-86AC-4FF3-BD04-7D94EDECAFBC}.Development|Default.Build.0 = Development
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

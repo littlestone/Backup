@@ -1,0 +1,82 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <ProjectGuid>f5588215-0389-4121-aab5-c552a9203883</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>NewUserAdminSO</RootNamespace>
+    <AssemblyName>NewUserAdminSO</AssemblyName>
+    <Language>C#</Language>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <Name>NewUserAdminSO</Name>
+    <SelectedEnvironment>Development</SelectedEnvironment>
+    <DeploymentLabelName>CORP\juntan - 06/08/2015 11:45:34 AM</DeploymentLabelName>
+    <DeploymentLabelDescription />
+    <SmartObjectConnectionStringProperty>$Field=SmartObject Server</SmartObjectConnectionStringProperty>
+    <WorkflowManagementConnectionStringProperty>$Field=Workflow Management Server</WorkflowManagementConnectionStringProperty>
+    <HistoryIsAdvanced>Advanced</HistoryIsAdvanced>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <IncludeDebugInformation>true</IncludeDebugInformation>
+    <OutputPath>bin\Debug\</OutputPath>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <IncludeDebugInformation>false</IncludeDebugInformation>
+    <OutputPath>bin\Release\</OutputPath>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="IPEX.NewUserAdmin.EmployeeDataSO.sodx">
+      <SubType>Content</SubType>
+      <Excluded>True</Excluded>
+    </None>
+    <None Include="IPEX.NewUserAdmin.WorkflowCheckListSO.sodx">
+      <SubType>Content</SubType>
+      <Excluded>True</Excluded>
+    </None>
+    <None Include="IPEX.NewUserAdmin.ServiceCategorySO.sodx">
+      <SubType>Content</SubType>
+      <Excluded>True</Excluded>
+    </None>
+    <None Include="IPEX.NewUserAdmin.ApproverRoleSO.sodx">
+      <SubType>Content</SubType>
+      <Excluded>True</Excluded>
+    </None>
+    <None Include="IPEX.NewUserAdmin.ApprovalCheckListSO.sodx">
+      <SubType>Content</SubType>
+      <Excluded>True</Excluded>
+    </None>
+    <None Include="IPEX.NewUserAdmin.NotificationCheckListSO.sodx">
+      <SubType>Content</SubType>
+      <Excluded>True</Excluded>
+    </None>
+    <None Include="IPEX.NewUserAdmin.ServiceSO.sodx">
+      <SubType>Content</SubType>
+      <Excluded>True</Excluded>
+    </None>
+    <None Include="IPEX.NewUserAdmin.ServiceTypeSO.sodx">
+      <SubType>Content</SubType>
+      <Excluded>True</Excluded>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="IPEX.NewUserAdmin.ImplementationCheckListSO.sodx">
+      <SubType>Content</SubType>
+      <Excluded>True</Excluded>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="IPEX.NewUserAdmin.ServiceRequestTemplateSO.sodx">
+      <SubType>Content</SubType>
+      <Excluded>True</Excluded>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="IPEX.NewUserAdmin.ServiceRequestHeaderSO.sodx">
+      <SubType>Content</SubType>
+      <Excluded>True</Excluded>
+    </None>
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath)\SourceCode\v3.5\ProjectSystem.targets" />
+</Project>

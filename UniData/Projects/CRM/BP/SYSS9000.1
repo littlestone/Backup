@@ -1,0 +1,345 @@
+   SUBROUTINE SYSS9000.1(SETTINGS,IN_DATA,OUT_DATA,STATUS)
+* Infoflo CallHTTP Programmatic Interface for Web API
+* VERSION 8.2.3
+*
+* 10 JUN 16 8.2.3 piedes PRJ*QUO064D-CRM INTEGRATION WITH INFOFLO
+*
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+   PROGRAM = 'SYSS9000.1'
+
+   $INCLUDE IIPLUS.TOP
+   $INCLUDE IIPLUS.TEXTLOAD
+   $INCLUDE IIPLUS.DEBUG
+
+   $INCLUDE TUBP TU.API.H
+*  $INCLUDE /usr/igi/ud/sys/INCLUDE UDO.H   ;* JSON parser available in UniData v7.3
+*  $INCLUDE /usr/igi/ud/sys/INCLUDE XML.H   ;* XML parser
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*              This program is abstract layer for UniBasic CallHTTP API.
+*
+*              CallHTTP provides users with capability of interacting with
+*              a web server from UniBasic through the standard HTTP protocol.
+*          
+*              Internet and Web technologies have rapidly changed the way
+*              business is conducted by enterprises of all categories. 
+*              E-commerce is increasingly becoming an essential part of any
+*              business. Many companies desire the capability to "call out"
+*              to the web from UniBasic so that their now stand-alone application
+*              can be integrated with other applications through the web.
+*
+*              <<<NOTE>>>
+*
+*              Input parameters:
+*                 1. SETTINGS:
+*                    <1>   -> Accept SYSCON table record ID for the default HTTP settings
+*                    <2,1> -> Accept SYSCON table record ID for http call parameters (i.e. URL, Timeout, etc...)
+*                    <2,2> -> HTTP Methods (i.e. POST/PUT/DELETE)
+*                 2. IN_DATA: Accept various data format (e.g. JSON, XML, plain text, etc...)
+*
+*              Output parameters:
+*                 1. OUT_DATA: Reserved for furture user in case we will get data returned from the Web API
+*                 2. STATUS:   
+*                    STATUS<1> -> Error code
+*                    STATUS<2> -> Error message
+*                 (null or 0 if no error occurred)
+*
+* MODIFICATIONS:
+* ==============
+*              2016/04/19 juntan - Initial creation. 
+*
+**************************************************************************
+
+
+A100_MAIN:
+
+   GOSUB A200_INITIALIZATION
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+   GO A500_CONCLUSION
+
+
+****************************************
+* Define & initialize variables.
+****************************************
+A200_INITIALIZATION:
+
+   RTN.FLAG = 0
+   
+   STATUS                = ""
+   OUT_DATA              = ""  
+
+   HTTP.OPTION.NAME      = ""  ;* PROXY_NAME, PROXY_PORT, VERSION, BUFSIZE, AUTHENTICATE, HEADERS.
+   HTTP.OPTION.VALUE     = ""
+   HTTP.METHOD           = ""  ;* For HTTP 1.0, only GET/POST/HEAD; For HTTP 1.1 only GET/POST/HEAD/OPTIONS/DELETE/TRACE/PUT.
+   HTTP.URL              = ""  ;* A string containing the URL for a resource on a web server.
+   HTTP.TIMEOUT          = ""  ;* The time-out value (in milliseconds) before the wait response is abandoned.
+   HTTP.HANDLE           = ""  ;* A handle to the request object.
+   HTTP.SECURITY.CONTEXT = ""  ;* A handle to the security context (only for HTTPS, will be ignored for HTTP).
+   HTTP.POST.DATA        = ""  ;* The data sent with the POST/PUT request.
+   HTTP.RESPONSE.HEADERS = ""  ;* A dynamic array to store header/value pairs.
+   HTTP.RESPONSE.DATA    = ""  ;* The resultant data (may be in binary format).
+   HTTP.STATUS           = ""  ;* A dynamic array containing the status code and explanatory text.
+   HTTP.QUERY.STRING     = ""  ;* For GET or DELETE
+
+   L_RTN_CODE            = ""
+   L_ERR_CODE            = ""
+   L_ERR_MSG             = ""
+   L_KEY                 = ""
+   L_REC                 = ""
+
+   L_CNT                 = 0
+   L_TTL                 = 0
+
+   InData                = ""
+   OutData               = ""
+
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open any data files requried.
+****************************************
+
+A300_OPEN_FILES:
+
+   FILE.ERR = 0
+
+   CALL SB.OPEN.FILE("SYSCON",SYSCON,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-1"
+      L_ERR_MSG = "Open SYSCON file error."
+      GO A300_EXIT
+   END
+
+A300_EXIT:
+   RETURN
+
+
+****************************************
+* Main process logic structure.
+****************************************
+
+A400_MAIN_PROCESS:
+
+   GOSUB B100_CONFIG_HTTP_SETTINGS
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B200_SUBMIT_HTTP_REQUEST
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+A400_EXIT:
+   RETURN
+
+
+****************************************
+* Final processing.
+****************************************
+
+A500_CONCLUSION:
+
+   OUT_DATA = HTTP.RESPONSE.DATA<1>
+   IF L_ERR_CODE # "" THEN
+      STATUS<1> = L_ERR_CODE
+      STATUS<2> = L_ERR_MSG
+   END ELSE
+      STATUS<1> = 0
+   END
+
+   RTN.FLAG = 0
+   REFRESH  = -2
+
+A500_EXIT:
+   GO 9999
+
+
+****************************************
+* Internal subroutine to configuring the default HTTP settings
+****************************************
+   
+B100_CONFIG_HTTP_SETTINGS:
+
+   *** Configuring Default HTTP Request Settings - HTTP Call Options ***
+   L_KEY = SETTINGS<1>
+   READ L_REC FROM SYSCON, L_KEY
+   ON ERROR
+      L_ERR_CODE = "B100-ERROR-1-1"
+      L_ERR_MSG  = "Read SYSCON file error for record ":L_KEY:"."
+   END THEN
+      L_TTL = DCOUNT(L_REC, @AM)
+      FOR L_CNT = 1 TO L_TTL
+         HTTP.OPTION.NAME  = UPCASE(TRIM(FIELD(FIELD(L_REC<L_CNT>,';',1),':',1)))
+         HTTP.OPTION.VALUE = TRIM(FIELD(FIELD(L_REC<L_CNT>,';',1),':',2))
+         IF HTTP.OPTION.VALUE # "" THEN
+            IF HTTP.OPTION.NAME = "HEADERS" THEN
+               SWAP "," WITH @AM IN HTTP.OPTION.VALUE
+               SWAP "|" WITH @VM IN HTTP.OPTION.VALUE
+               SWAP "^" WITH ';' IN HTTP.OPTION.VALUE
+            END
+         
+            L_RTN_CODE = setHTTPDefault(HTTP.OPTION.NAME, HTTP.OPTION.VALUE)
+            IF L_RTN_CODE # 0 THEN
+               L_ERR_CODE = "B100-ERROR-1-3"
+               L_ERR_MSG = "HTTP request API setHTTPDefault call error -> "
+               BEGIN CASE
+                  CASE L_RTN_CODE = 1
+                     L_ERR_MSG := "Invalid option { ":HTTP.OPTION.NAME:" }."
+                  CASE L_RTN_CODE = 2
+                     L_ERR_MSG := "Invalid value { ":HTTP.OPTION.VALUE:" }."
+                  CASE 1
+                     L_ERR_MSG := "Unknown error."
+               END CASE
+               GO B100_EXIT
+            END
+         END
+      NEXT L_CNT
+   END ELSE
+      L_ERR_CODE = "B100-ERROR-1-2"
+      L_ERR_MSG  = "Record ":L_KEY:" does not exist in SYSCON file."
+      GO B100_EXIT
+   END
+
+   *** Configuring Default HTTP Request Settings - HTTP Call Parameters ***
+   L_KEY = SETTINGS<2,1>
+   READ L_REC FROM SYSCON, L_KEY
+   ON ERROR
+      L_ERR_CODE = "B100-ERROR-2-1"
+      L_ERR_MSG  = "Read SYSCON file error for record ":L_KEY:"."
+   END THEN
+      HTTP.URL     = TRIM(FIELD(L_REC<1>,';',1))
+      HTTP.TIMEOUT = TRIM(FIELD(L_REC<2>,';',1))
+      HTTP.METHOD  = SETTINGS<2,2>
+   END ELSE
+      L_ERR_CODE = "B100-ERROR-2-2"
+      L_ERR_MSG  = "Record ":L_KEY:" does not exist in SYSCON file."
+      GO B100_EXIT
+   END
+
+B100_EXIT:
+   RETURN
+
+
+****************************************
+* Internal subroutine to submit HTTP request.
+****************************************
+
+B200_SUBMIT_HTTP_REQUEST:
+
+   *** Apply URL Percent-encoding ***
+   InData = IN_DATA
+   CALL SYSS9220.2(InData,OutData)
+   IF OutData<2> # "" THEN
+      L_ERR_CODE = "B300-ERROR-1"
+      L_ERR_MSG  = OutData<2>
+      GO B200_EXIT
+   END
+
+   *** Get Method Query String Parameters ***
+   IF HTTP.METHOD = "GET" OR HTTP.METHOD = "DELETE" THEN
+      HTTP.QUERY.STRING = IN_DATA
+      SWAP @VM WITH "/" IN HTTP.QUERY.STRING
+      HTTP.URL = HTTP.URL:"/":HTTP.QUERY.STRING
+   END
+
+   IF USER.ID = "lisdou" THEN
+*     CALL SB.DISP(3, IN_DATA)
+*     CALL SB.DISP(3, HTTP.URL)
+   END
+
+   *** Creating an HTTP/HTTPS Request ***
+   L_RTN_CODE = createSecureRequest(HTTP.URL, HTTP.METHOD, HTTP.HANDLE, HTTP.SECURITY.CONTEXT)
+   IF L_RTN_CODE # 0 THEN
+      L_ERR_CODE = "B200-ERROR-2"
+      L_ERR_MSG  = "HTTP request API createSecureRequest call error -> "
+      BEGIN CASE
+         CASE L_RTN_CODE = 1
+            L_ERR_MSG := "Invalid URL (Syntactically)."
+         CASE L_RTN_CODE = 2
+            L_ERR_MSG := "Invalid method (For HTTP 1.0, only GET/POST/HEAD)."
+         CASE 1
+            L_ERR_MSG := "Unknown error."
+      END CASE
+      GO B200_EXIT
+   END
+
+   *** Pass Parameters through HTTP Post Request ***
+   * Instead of the fairly standard key=value encoding that most *
+   * client-and-server-side frameworks expect, Web API model     *
+   * binder expects to find the [FromBody] values in the POST    *
+   * body without a key name at all. In other words, instead of  *
+   * key=value, it's looking for =value.                         *
+   HTTP.POST.DATA = "=":OutData  ;* input parameter which is applicable only for POST/PUT method
+
+   *** Submitting a Request ***
+   L_RTN_CODE = submitRequest(HTTP.HANDLE, HTTP.TIMEOUT, HTTP.POST.DATA, HTTP.RESPONSE.HEADERS, HTTP.RESPONSE.DATA, HTTP.STATUS)
+   IF L_RTN_CODE # 0 THEN
+      L_ERR_CODE = "B200-ERROR-3"
+      L_ERR_MSG  = "HTTP request API submitRequest call error -> "
+      BEGIN CASE
+         CASE L_RTN_CODE = 1
+            L_ERR_MSG := "Invalid request handle."
+         CASE L_RTN_CODE = 2
+            L_ERR_MSG := "Timed out."
+         CASE L_RTN_CODE = 3
+            L_ERR_MSG := "Network Error."
+         CASE L_RTN_CODE = 4
+            L_ERR_MSG := "Other Errors."
+         CASE 1
+            L_ERR_MSG := "Unknown error."
+      END CASE
+      GO B200_EXIT
+   END
+
+   *** Check Web API call status ***
+   SWAP "@AM" WITH @AM IN HTTP.RESPONSE.DATA
+   IF HTTP.STATUS<1,1> # 200 THEN
+      L_ERR_CODE = HTTP.STATUS<1,1>:" - ":HTTP.STATUS<1,2>
+      L_ERR_MSG  = HTTP.RESPONSE.DATA<2>  ;* detail error message
+      GO B200_EXIT
+   END
+
+B200_EXIT:
+   RETURN
+
+****************************************
+* Exit
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END
+*

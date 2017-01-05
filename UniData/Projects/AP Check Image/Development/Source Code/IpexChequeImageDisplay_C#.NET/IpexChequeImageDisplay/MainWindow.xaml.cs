@@ -1,0 +1,286 @@
+﻿using System;
+using System.IO;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Data;
+using System.Data.SqlClient;
+using System.Configuration;
+using System.Threading;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Threading;
+using System.Globalization;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
+
+namespace IpexChequeImageDisplay
+{
+    /// <summary>
+    /// Interaction logic for MainWindow.xaml
+    /// </summary>
+    public partial class MainWindow : Window
+    {
+        public MainWindow()
+        {
+            InitializeComponent();
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            Keyboard.Focus(dpFromCheckDate);
+        }
+
+        private void tabSearch_Loaded(object sender, RoutedEventArgs e)
+        {
+            // set default check date range (-6mths to yesterday)
+            dpFromCheckDate.SelectedDate = DateTime.Today.AddMonths(-6);
+            dpToCheckDate.SelectedDate = DateTime.Today.AddDays(-1);
+        }
+
+        private void btnSearch_Click(object sender, RoutedEventArgs e)
+        {
+            if (UserInputValidationRules() == true)
+            {
+                statusTextBlock.Text = "Searching, please wait...";
+                statusTextBlock.Refresh();
+                Thread.Sleep(500);
+
+                FillAccountPayablePayments();
+                tcChequeSearch.SelectedItem = tabResult;
+            }
+        }
+
+        private bool UserInputValidationRules()
+        {
+            if (dpFromCheckDate.SelectedDate > dpToCheckDate.SelectedDate)
+            {
+                MessageBox.Show("FromCheckDate cannot be greater than ToCheckDate.");
+                Keyboard.Focus(dpFromCheckDate);
+                return false;
+            }
+
+            TimeSpan dayDifference = Convert.ToDateTime(dpToCheckDate.SelectedDate.ToString()).Subtract(Convert.ToDateTime(dpFromCheckDate.SelectedDate.ToString()));
+            if (Convert.ToInt32(dayDifference.TotalDays) > 365)
+            {
+                MessageBox.Show("Check date range cannot be greater than 365 days.");
+                Keyboard.Focus(dpFromCheckDate);
+                return false;
+            }
+
+            return true;
+        }
+
+        private void FillAccountPayablePayments()
+        {
+            try
+            {
+                string strFromCheckDate = dpFromCheckDate.SelectedDate.Value.ToString("yyyy-MM-dd");
+                string strToCheckDate = dpToCheckDate.SelectedDate.Value.ToString("yyyy-MM-dd");
+                string strCheckNumber = tbCheckNumber.Text.ToString();
+                string strBankCode = tbBankCode.Text.ToString();
+                string strCompanyCode = tbCompany.Text.ToString();
+                string strSupplierCode = tbSupplier.Text.ToString();
+                string strInvoiceNumber = tbInvoiceNumber.Text.ToString();
+
+                using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["IpexChequeImageDisplay.Properties.Settings.ConnectionString"].ConnectionString))
+                {
+                    // Open the connection
+                    conn.Open();
+
+                    // Call SQL store procedure with parameters
+                    SqlCommand cmd = new SqlCommand("sp_Select_AccountPayablePayment", conn);
+                    cmd.CommandType = CommandType.StoredProcedure;
+
+                    cmd.Parameters.AddWithValue("@strFromCheckDate", strFromCheckDate);
+                    cmd.Parameters.AddWithValue("@strToCheckDate", strToCheckDate);
+                    cmd.Parameters.AddWithValue("@strCheckNumber", strCheckNumber);
+                    cmd.Parameters.AddWithValue("@strBankCode", strBankCode);
+                    cmd.Parameters.AddWithValue("@strCompanyCode", strCompanyCode);
+                    cmd.Parameters.AddWithValue("@strSupplierCode", strSupplierCode);
+                    cmd.Parameters.AddWithValue("@strInvoiceNumber", strInvoiceNumber);
+
+                    SqlDataAdapter adp= new SqlDataAdapter(cmd);
+                    DataTable dt = new DataTable("AccountPayablePayment");
+                    adp.Fill(dt);
+                    dgResult.Columns.Clear();   // regenerate ViewImage button column to avoid duplicate
+                    dgResult.DataContext = dt.DefaultView;
+                    statusTextBlock.Text = dgResult.Items.Count.ToString() + " record(s) found.";
+
+                    // Close it myself
+                    conn.Close();
+                }
+            }
+            catch (SqlException ex)
+            {
+                MessageBox.Show(ex.Message.ToString());
+            }
+        }
+
+        private void dgResult_AutoGeneratedColumns(object sender, EventArgs e)
+        {
+            try
+            {
+                // Generate ViewImage button column
+                DataGridTemplateColumn viewCheckImage = new DataGridTemplateColumn();
+                viewCheckImage.Header = "CheckImage";
+
+                FrameworkElementFactory btnView = new FrameworkElementFactory(typeof(Button));
+                btnView.SetValue(Button.ContentProperty, "View");
+                btnView.AddHandler(Button.ClickEvent, new RoutedEventHandler(btnViewImage_Click));
+
+                DataTemplate cellView = new DataTemplate();
+                cellView.VisualTree = btnView;
+                viewCheckImage.CellTemplate = cellView;
+                dgResult.Columns.Add(viewCheckImage);
+                dgResult.UpdateLayout();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message.ToString());
+            }
+        }
+
+        private void btnViewImage_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Determine current selected check record
+                DataRowView row = (DataRowView)dgResult.SelectedItems[0];
+
+                // Configure open file dialog box
+                Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
+                dlg.FileName = row["CheckNumber"].ToString();  // default check image file name
+                dlg.DefaultExt = ".tiff";   // default file extension
+                dlg.Filter = "TIFF Image File (.tiff)|*.tiff";  // filter files by extension
+
+                // Call the ShowDialog method to show the dialog box
+                Nullable<bool> result = dlg.ShowDialog();
+
+                // Process input if the user clicked OK
+                if (result == true)
+                {
+                    // Store the full file path
+                    string filename = dlg.FileName;
+
+                    // Open image in default viewer
+                    System.Diagnostics.Process.Start(@filename.ToString());
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message.ToString());
+            }
+        }
+
+
+        private void btnExtract_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Export to CSV
+                statusTextBlock.Text = "Exporting, please wait...";
+                statusTextBlock.Refresh();
+                Thread.Sleep(500);
+
+                FillAccountPayablePayments();
+                MessageBox.Show(dgResult.Columns.Count.ToString());
+                /*
+// Loop though all columns in DataGrid to write column headings
+foreach (DataGridColumn dc in dgResult.Columns)
+{
+    // Only write DataGridTextBoxColumn types (i.e. ignore the ViewImage button column)
+    MessageBox.Show(dc.Header.ToString());
+}
+         
+
+// Get search result if there is any
+FillAccountPayablePayments();
+if (dgResult.Items.Count > 0)
+{
+    // Configure open file dialog box
+    Microsoft.Win32.SaveFileDialog dlg = new Microsoft.Win32.SaveFileDialog();
+    dlg.FileName = "CheckImageSearch_" + dpFromCheckDate.SelectedDate.Value.ToString("yyyyMMdd") + "_" + dpToCheckDate.SelectedDate.Value.ToString("yyyyMMdd") + ".csv";  // default csv file name
+    dlg.DefaultExt = ".csv";   // default file extension
+    dlg.Filter = "CSV Comma-Separated File (*.csv)|*.csv";  // filter files by extension
+
+    // Call the ShowDialog method to show the dialog box
+    Nullable<bool> result = dlg.ShowDialog();
+
+    // Process input if the user clicked OK
+    if (result == true)
+    {
+        // Store the full file path
+        string filename = dlg.FileName;
+
+
+exportDataGridViewtoCSV(Me.dgvInvoice, Me.dlgSaveCSV.FileName)
+'All good
+Me.tsStatusLabel.Text = dgvInvoice.RowCount & " records exported to CSV file."
+Me.Refresh()
+
+        // Open image in default viewer
+        System.Diagnostics.Process.Start(@filename.ToString());
+    }
+}
+*/
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message.ToString());
+            }
+        }
+
+        private bool exportDataGridToCSV(DataGrid dg, string filename)
+        {
+            // Proceed with writing to file
+            StreamWriter sw = File.CreateText(filename);
+
+            // Loop though all columns in DataGrid to write column headings
+            foreach (DataGridColumn dc in dg.Columns)
+            {
+                // Only write DataGridTextBoxColumn types (i.e. ignore the ViewImage button column)
+                MessageBox.Show(dc.Header.ToString());
+            }
+            return true;
+        }
+
+        private void btnReset_Click(object sender, RoutedEventArgs e)
+        {
+            dpFromCheckDate.SelectedDate = DateTime.Today.AddMonths(-6);
+            dpToCheckDate.SelectedDate = DateTime.Today.AddDays(-1);
+            tbCheckNumber.Text = "";
+            tbBankCode.Text = "";
+            tbCompany.Text = "";
+            tbSupplier.Text = "";
+            tbInvoiceNumber.Text = "";
+        }
+
+        private void tabSearch_GotFocus(object sender, RoutedEventArgs e)
+        {
+            statusTextBlock.Text = "Enter selection critera to start the search...";
+            statusTextBlock.Refresh();
+        }
+
+        private void tabResult_GotFocus(object sender, RoutedEventArgs e)
+        {
+            statusTextBlock.Text = dgResult.Items.Count.ToString() + " record(s) found.";
+            statusTextBlock.Refresh();
+        }
+    }
+
+    public static class ExtensionMethods
+    {
+        private static Action EmptyDelegate = delegate() { };
+
+        public static void Refresh(this UIElement uiElement)
+        {
+            uiElement.Dispatcher.Invoke(DispatcherPriority.Render, EmptyDelegate);
+        }
+    }
+}

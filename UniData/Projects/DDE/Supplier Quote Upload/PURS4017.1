@@ -1,0 +1,569 @@
+     SUBROUTINE PURS4017.2
+* Upload Supplier Quote from Excel File through DDE
+* VERSION 8.2.3
+*
+* 11 FEB 11 8.2.3 juntan PRJ*PUR073D-Ability to upload Vendor Quotes (vendor pricing) from E
+*
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+     $INCLUDE IIPLUS.TOP
+     PROGRAM='PURS4017.2'
+     $INCLUDE IIPLUS.TEXTLOAD
+     $INCLUDE IIPLUS.DEBUG
+
+     $INCLUDE TUBP TU.API.H
+     $INCLUDE TUBP ROC.H
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ===========
+*              This program is used to load supplier quotes from excel.
+*
+* MODIFICATIONS:
+* =============
+*              2011/02/10 juntan PUR073D - Initial Creation.
+*
+**************************************************************************
+
+A100_MAIN: 
+
+     GOSUB A200_INITIALIZATION
+     IF RTN.FLAG THEN
+        GO A100_EXIT
+     END
+
+     GOSUB A300_OPEN_FILES
+     IF RTN.FLAG THEN
+        GO A100_EXIT
+     END
+
+     GOSUB A400_MAIN_PROCESS
+     IF RTN.FLAG THEN
+        GO A100_EXIT
+     END
+
+     GOSUB A500_CONCLUSION
+     IF RTN.FLAG THEN
+        GO A100_EXIT
+     END
+
+A100_EXIT: 
+     GO 9999
+
+
+****************************************
+* Definition of local variables & initialization of other variables.
+****************************************
+A200_INITIALIZATION: 
+
+     RTN.FLAG           = 0
+     STATUS             = 0
+     HEXCEL             = ''
+     APPLICATION        = ''
+     TOPIC              = ''
+     L_SYSTEM_TOPICS    = ''
+     L_FILTER           = "*.xls"
+     L_START_PATH       = '%HOMEPATH%':'\Desktop\'
+     L_FILE_TYPE        = "Microsoft Office Excel Files (*.xls)":@SM:"*.xls":@SM:"All Files (*.*)":@SM:"*.*"
+     L_RETURN_PATH      = ''
+     L_FILE_NAME        = ''
+     L_QUERY            = ''
+     L_JUNK             = ''
+     L_OPEN_EXCEL_FLAG  = 0
+     L_RF               = ''  ;* excel row reference
+     L_TOT              = 8
+
+     L_SAVE_PARAM       = PARAM
+     L_RTN_FLAG         = ''
+     L_ITMXRF_REC       = ''
+     L_ITMMST_REC       = ''
+     L_COMPANY          = ''
+     L_SUPPLIER         = ''
+     L_QUO_REF          = ''
+     L_EFF_DT           = ''
+     L_EXP_DT           = ''
+     L_ITM_NBR_LIST     = ''
+     L_ITM_NBR          = ''
+     L_ITM_NBR_FOUND    = ''
+     L_ERR_ITM_LIST1    = ''   ;* list of invalid item number
+     L_ERR_ITM_LIST2    = ''   ;* list of item number with no Item/Supplier Source relationship established
+     L_BASE_PRICE_LIST  = ''
+     L_BASE_PRICE       = ''
+     L_PRICE_BRK_FLAG   = ''
+     L_BRK_QTY_PRI_LIST = ''
+     L_INC              = 0
+     L_INC2             = 0
+     L_CNT              = 0
+     WORK<14> = "" ;* RBS 10/12
+
+A200_EXIT: 
+     RETURN
+
+
+****************************************
+* Open the files needed in this subroutine.
+****************************************
+A300_OPEN_FILES: 
+
+     FILE.ERR = 0
+     CALL SB.OPEN.FILE("ITMMST",ITMMST,FILE.ERR)
+     IF FILE.ERR THEN
+        CALL SB.PROCESS("SYS0061,IP2564\":"ITMMST")
+        RTN.FLAG = 0
+        GO A300_EXIT
+     END
+
+     CALL SB.OPEN.FILE("ITMXRF",ITMXRF,FILE.ERR)
+     IF FILE.ERR THEN
+        CALL SB.PROCESS("SYS0061,IP2564\":"ITMXRF")
+        RTN.FLAG = 0
+        GO A300_EXIT
+     END
+
+     CALL SB.OPEN.FILE("ITMSUPPACT",ITMSUPPACT,FILE.ERR)
+     IF FILE.ERR THEN
+        CALL SB.PROCESS("SYS0061,IP2564\":"ITMSUPPACT")
+        RTN.FLAG = 0
+        GO A300_EXIT
+     END
+
+A300_EXIT: 
+     RETURN
+
+
+****************************************
+* Short desc of what the main process does.
+****************************************
+A400_MAIN_PROCESS: 
+
+   *** Check Quote Reference Existence ***
+     CALL SB.DISP(9, "Verifying if quote reference exists")
+     L_QUERY = 'SELECT SUPPQT WITH COMPANY = "':WORK<1>:'" AND WITH VENDOR = "':WORK<4>:'" AND WITH QUOTE.REF = "':VALUE:'"'
+     EXECUTE L_QUERY CAPTURING L_JUNK
+     IF @SYSTEM.RETURN.CODE > 0 THEN
+        CALL SB.PROCESS("SYS0061,IP2560\":VALUE:@VM:"SUPPQT")
+        L_RTN_FLAG = "Q"
+        RTN.FLAG = 1
+        GO A500_CONCLUSION
+     END
+
+   *** Check Opened Excel Document ***
+     CALL SB.DISP(9, "Verifying opened excel")
+     CALL TU.DDE.CONNECT('EXCEL', 'System', HEXCEL, RTN.FLAG)
+     IF RTN.FLAG THEN
+        L_OPEN_EXCEL_FLAG = 1
+        HEXCEL = ''
+        RTN.FLAG = 0
+     END ELSE
+        CALL TU.DDE.READ(HEXCEL, 'Topics', 10, L_SYSTEM_TOPICS, RTN.FLAG)
+        IF RTN.FLAG THEN
+           CALL SB.PROCESS("SYS0061,IP2566\":"System Topics")
+           L_RTN_FLAG = "Q"
+           GO A500_CONCLUSION
+        END
+        SWAP CHAR(9) WITH @VM IN L_SYSTEM_TOPICS
+        FOR L_INC = 1 TO DCOUNT(L_SYSTEM_TOPICS,@VM)
+           IF INDEX(FIELD(L_SYSTEM_TOPICS,@VM,L_INC,1),VALUE,1) THEN
+              TOPIC = FIELD(L_SYSTEM_TOPICS,@VM,L_INC,1)
+              L_OPEN_EXCEL_FLAG = 0
+              EXIT
+           END ELSE
+              TOPIC = ''
+           END
+        NEXT L_INC
+        L_INC = 0
+     END
+
+     IF L_OPEN_EXCEL_FLAG THEN
+        CALL SB.DISP(9, "Launching windows open file dialog box")
+        CALL TU.FORM.OPENDOS(L_FILTER, L_START_PATH, L_FILE_TYPE, L_RETURN_PATH, RTN.FLAG)
+        IF RTN.FLAG THEN
+           CALL SB.PROCESS("SYS0061,IP2564\":L_RETURN_PATH)
+           L_RTN_FLAG = "Q"
+           GO A500_CONCLUSION
+        END ELSE
+           IF L_RETURN_PATH = '' THEN
+              GO A500_CONCLUSION
+           END ELSE
+              L_FILE_NAME = FIELD(L_RETURN_PATH,"\",DCOUNT(L_RETURN_PATH,"\"),1)
+           END
+        END
+        APPLICATION = 'EXCEL.EXE ':'"':L_RETURN_PATH:'"'
+        CALL TU.LAUNCH.APP(APPLICATION, APP.SHOWMINIMIZED, RTN.FLAG)
+        IF RTN.FLAG THEN
+           CALL SB.PROCESS("SYS0061,IP2569")
+           L_RTN_FLAG = "Q"
+           GO A500_CONCLUSION
+        END ELSE
+           CALL SB.DISP(9, "Verifying excel worksheet name")
+           CALL TU.DDE.CONNECT('EXCEL', 'System', HEXCEL, RTN.FLAG)
+           IF RTN.FLAG THEN
+              CALL SB.PROCESS("SYS0061,IP2568")
+              L_RTN_FLAG = "Q"
+              GO A500_CONCLUSION
+           END ELSE
+              CALL TU.DDE.READ(HEXCEL, 'Topics', 10, L_SYSTEM_TOPICS, RTN.FLAG)
+              IF RTN.FLAG THEN
+                 CALL SB.PROCESS("SYS0061,IP2566\":"System Topics")
+                 L_RTN_FLAG = "Q"
+                 GO A500_CONCLUSION
+              END
+              SWAP CHAR(9) WITH @VM IN L_SYSTEM_TOPICS
+              FOR L_INC = 1 TO DCOUNT(L_SYSTEM_TOPICS,@VM)
+                 IF INDEX(FIELD(L_SYSTEM_TOPICS,@VM,L_INC,1),VALUE,1) THEN
+                    TOPIC = FIELD(L_SYSTEM_TOPICS,@VM,L_INC,1)
+                    EXIT
+                 END ELSE
+                    TOPIC = ''
+                 END
+              NEXT L_INC
+              L_INC = 0
+           END
+        END
+     END
+
+   *** Excel Worksheet Name Must Match With Quote Reference ***
+     IF TOPIC = '' THEN
+        CALL SB.PROCESS("SYS0061,IP2574")
+        L_RTN_FLAG = "Q"
+        RTN.FLAG = 1
+        GO A500_CONCLUSION
+     END
+
+   *** Establish DDE Connection between Excel and SBClient ***
+     CALL SB.DISP(9, "Establishing DDE connection")
+     CALL TU.DDE.CONNECT('EXCEL', TOPIC, HEXCEL, RTN.FLAG)
+     IF RTN.FLAG THEN
+        CALL SB.PROCESS("SYS0061,IP2568")
+        L_RTN_FLAG = "Q"
+        GO A500_CONCLUSION
+     END
+
+   *** Verify System Language ***
+     CALL SB.DISP(9, "Verifying System Language":@AM:0:@AM:L_TOT)
+     CALL TU.DDE.READ(HEXCEL, 'R1C1..R1C1', 10, L_HEADER, RTN.FLAG)
+     IF RTN.FLAG THEN
+        CALL TU.DDE.READ(HEXCEL, 'L1C1..L1C1', 10, L_HEADER, RTN.FLAG)
+        IF RTN.FLAG THEN
+           CALL SB.PROCESS("SYS0061,IP2566\":"System Language")
+           L_RTN_FLAG = "Q"
+           GO A500_CONCLUSION
+        END
+        L_RF = 'L'    ;* French environment
+     END ELSE
+        L_RF = 'R'    ;* English environment
+     END
+
+   *** Load Supplier Quote to Screen ***
+     CALL SB.DISP(9, "Loading Company Code":@AM:1:@AM:L_TOT)
+     CALL TU.DDE.READ(HEXCEL, L_RF:'2C1', 10, L_COMPANY, RTN.FLAG)
+     IF RTN.FLAG THEN
+        CALL SB.PROCESS("SYS0061,IP2566\":"Company Code")
+        L_RTN_FLAG = "C"
+        GO A500_CONCLUSION
+     END
+     IF '"':L_COMPANY:'"' # '"':WORK<1>:'"' THEN
+        CALL SB.PROCESS("SYS0061,IP2562\":"Company Code")
+        L_RTN_FLAG = "C"
+        RTN.FLAG = 1
+        GO A500_CONCLUSION
+     END
+
+     CALL SB.DISP(9, "Loading Supplier Code":@AM:2:@AM:L_TOT)
+     CALL TU.DDE.READ(HEXCEL, L_RF:'2C2', 10, L_SUPPLIER, RTN.FLAG)
+     IF RTN.FLAG THEN
+        CALL SB.PROCESS("SYS0061,IP2566\":"Supplier Code")
+        L_RTN_FLAG = "V"
+        GO A500_CONCLUSION
+     END
+     IF '"':L_SUPPLIER:'"' # '"':WORK<4>:'"' THEN
+        CALL SB.PROCESS("SYS0061,IP2562\":"Supplier Number")
+        L_RTN_FLAG = "V"
+        RTN.FLAG = 1
+        GO A500_CONCLUSION
+     END
+
+     CALL SB.DISP(9, "Loading Quote Reference":@AM:3:@AM:L_TOT)
+     CALL TU.DDE.READ(HEXCEL, L_RF:'2C3', 10, L_QUO_REF, RTN.FLAG)
+     IF RTN.FLAG THEN
+        CALL SB.PROCESS("SYS0061,IP2566\":"Quote Reference")
+        L_RTN_FLAG = "Q"
+        GO A500_CONCLUSION
+     END
+     IF '"':L_QUO_REF:'"' # '"':WORK<8>:'"' THEN
+        CALL SB.PROCESS("SYS0061,IP2562\":"Quote Reference")
+        L_RTN_FLAG = "Q"
+        RTN.FLAG = 1
+        GO A500_CONCLUSION
+     END
+
+     CALL SB.DISP(9, "Loading Effective Date":@AM:4:@AM:L_TOT)
+     CALL TU.DDE.READ(HEXCEL, L_RF:'2C4', 10, L_EFF_DT, RTN.FLAG)
+     IF RTN.FLAG THEN
+        CALL SB.PROCESS("SYS0061,IP2566\":"Effective Date")
+        L_RTN_FLAG = "Q"
+        GO A500_CONCLUSION
+     END
+     IF L_EFF_DT = "" THEN
+        CALL SB.PROCESS("SYS0061,IP2573")
+        L_RTN_FLAG = "Q"
+        RTN.FLAG = 1
+        GO A500_CONCLUSION
+     END
+     WORK<13> = ICONV(L_EFF_DT,"D")
+
+     CALL SB.DISP(9, "Loading Expiration Date":@AM:5:@AM:L_TOT)
+     CALL TU.DDE.READ(HEXCEL, L_RF:'2C5', 10, L_EXP_DT, RTN.FLAG)
+     IF RTN.FLAG THEN
+        CALL SB.PROCESS("SYS0061,IP2566\":"Expiration Date")
+        GO A500_CONCLUSION
+     END
+     IF L_EXP_DT # "" THEN
+        IF ICONV(L_EXP_DT,"D") < DATE() THEN
+           CALL SB.PROCESS("SYS0061,IP2571")
+           L_RTN_FLAG = "Q"
+           RTN.FLAG = 1
+           GO A500_CONCLUSION
+        END
+        IF ICONV(L_EFF_DT,"D") > ICONV(L_EXP_DT,"D") THEN
+           CALL SB.PROCESS("SYS0061,IP2572")
+           L_RTN_FLAG = "Q"
+           RTN.FLAG = 1
+           GO A500_CONCLUSION
+        END
+     END
+     IF ICONV(L_EXP_DT,"D") > WORK<14> OR L_EXP_DT = "" THEN ;* RBS 10/12
+        WORK<14> = ICONV(L_EXP_DT,"D")
+*CALL SB.DISP(3,"W14=":OCONV(WORK<14>,"D2/"))
+     END ;* RBS 10/12
+
+     CALL SB.DISP(9, "Loading Item Number":@AM:6:@AM:L_TOT)
+     CALL TU.DDE.READ(HEXCEL, L_RF:'2C6..':L_RF:'65536C6', 10, L_ITM_NBR_LIST, RTN.FLAG)
+     IF RTN.FLAG THEN
+        CALL SB.PROCESS("SYS0061,IP2566\":"Item Number")
+        L_RTN_FLAG = "Q"
+        GO A500_CONCLUSION
+     END
+
+     CALL SB.DISP(9, "Loading Base Price":@AM:7:@AM:L_TOT)
+     CALL TU.DDE.READ(HEXCEL, L_RF:'2C7..':L_RF:'65536C7', 10, L_BASE_PRICE_LIST, RTN.FLAG)
+     IF RTN.FLAG THEN
+        CALL SB.PROCESS("SYS0061,IP2566\":"Base Price")
+        L_RTN_FLAG = "Q"
+        GO A500_CONCLUSION
+     END
+
+     CALL SB.DISP(9, "Loading Price Break Flag":@AM:8:@AM:L_TOT)
+     CALL TU.DDE.READ(HEXCEL, L_RF:'2C8..':L_RF:'65536C8', 10, L_PRICE_BRK_FLAG, RTN.FLAG)
+     IF RTN.FLAG THEN
+        CALL SB.PROCESS("SYS0061,IP2566\":"Price Break Flag")
+        L_RTN_FLAG = "Q"
+        GO A500_CONCLUSION
+     END
+
+     CALL SB.DISP(9, "Processing data, please wait":@AM:L_INC:@AM:DCOUNT(L_ITM_NBR_LIST,@VM))
+     IF L_ITM_NBR_LIST = '' THEN
+        GO A500_CONCLUSION
+     END
+     FOR L_INC = 1 TO DCOUNT(L_ITM_NBR_LIST,@VM)
+        IF DCOUNT(L_ITM_NBR_LIST,@VM) > 500 THEN
+           IF NOT(MOD(L_INC,500)) THEN
+              CALL SB.DISP(9, "Processing data, please wait":@AM:L_INC:@AM:DCOUNT(L_ITM_NBR_LIST,@VM))
+           END
+        END ELSE
+           CALL SB.DISP(9, "Processing data, please wait":@AM:L_INC:@AM:DCOUNT(L_ITM_NBR_LIST,@VM))
+        END
+        L_ITM_NBR = FIELD(L_ITM_NBR_LIST,@VM,L_INC,1)
+        IF LEN(L_ITM_NBR) # 6 AND INDEX(L_ITM_NBR,"-",1) THEN
+           LOCATE L_ITM_NBR IN L_ERR_ITM_LIST1 SETTING L_ITM_NBR_FOUND ELSE L_ITM_NBR_FOUND = 0
+           IF NOT(L_ITM_NBR_FOUND) THEN
+              L_ERR_ITM_LIST1<-1> = L_ITM_NBR
+           END
+           CONTINUE
+        END
+        LOCATE L_ITM_NBR IN WORK<19> SETTING L_ITM_NBR_FOUND ELSE L_ITM_NBR_FOUND = 0
+        IF NOT(L_ITM_NBR_FOUND) THEN
+           READ L_ITMXRF_REC FROM ITMXRF,L_ITM_NBR ELSE L_ITMXRF_REC = ''
+           IF L_ITMXRF_REC = '' THEN
+              LOCATE L_ITM_NBR IN L_ERR_ITM_LIST1 SETTING L_ITM_NBR_FOUND ELSE L_ITM_NBR_FOUND = 0
+              IF NOT(L_ITM_NBR_FOUND) THEN
+                 L_ERR_ITM_LIST1<-1> = L_ITM_NBR
+              END
+              CONTINUE
+           END ELSE
+              READ L_ITMMST_REC FROM ITMMST,L_ITMXRF_REC<1> ELSE L_ITMMST_REC = ''
+              IF L_ITMMST_REC = '' THEN
+                 LOCATE L_ITM_NBR IN L_ERR_ITM_LIST1 SETTING L_ITM_NBR_FOUND ELSE L_ITM_NBR_FOUND = 0
+                 IF NOT(L_ITM_NBR_FOUND) THEN
+                    L_ERR_ITM_LIST1<-1> = L_ITMXRF_REC<1>
+                 END
+                 CONTINUE
+              END ELSE
+                 READ L_ITMSUPPACT_REC FROM ITMSUPPACT,L_ITMXRF_REC<1>:"*":WORK<1>:"*":WORK<4> ELSE L_ITMSUPPACT_REC = ''
+                 IF L_ITMSUPPACT_REC = '' THEN
+                    LOCATE L_ITM_NBR IN L_ERR_ITM_LIST2 SETTING L_ITM_NBR_FOUND ELSE L_ITM_NBR_FOUND = 0
+                    IF NOT(L_ITM_NBR_FOUND) THEN
+                       L_ERR_ITM_LIST2<-1> = L_ITM_NBR
+                    END
+                    CONTINUE
+                 END
+
+                 L_CNT += 1
+                 WORK<19,L_CNT> = L_ITM_NBR
+                 IF FIELD(L_BASE_PRICE_LIST,@VM,L_INC,1) # "" THEN
+                    WORK<21,L_CNT> = ICONV(FIELD(L_BASE_PRICE_LIST,@VM,L_INC,1),'MCN')
+                 END ELSE
+                    WORK<21,L_CNT> = ""
+                 END
+
+                 WORK<22,L_CNT> = UPCASE(TRIM(FIELD(L_PRICE_BRK_FLAG,@VM,L_INC,1),1))
+                 IF WORK<22,L_CNT> = "Y" THEN
+                    CALL TU.DDE.READ(HEXCEL, L_RF:L_INC+1:'C9..':L_RF:L_INC+1:'C256', 10, L_BRK_QTY_PRI_LIST, RTN.FLAG)
+                    IF RTN.FLAG THEN
+                       CALL SB.PROCESS("SYS0061,IP2566\":"Break Quantity & Break Price")
+                       L_RTN_FLAG = "Q"
+                       GO A500_CONCLUSION
+                    END
+                    IF L_BRK_QTY_PRI_LIST # "" THEN
+                       FOR L_INC2 = 1 TO DCOUNT(TRIM(L_BRK_QTY_PRI_LIST),CHAR(9))
+                          IF MOD(L_INC2,2) THEN
+                             IF NUM(TRIM(FIELD(L_BRK_QTY_PRI_LIST,CHAR(9),L_INC2,1))) THEN
+                                WORK<37,L_CNT> := TRIM(FIELD(L_BRK_QTY_PRI_LIST,CHAR(9),L_INC2,1)):@SM
+                             END
+                          END ELSE
+                             IF NUM(TRIM(FIELD(L_BRK_QTY_PRI_LIST,CHAR(9),L_INC2,1))) THEN
+                                WORK<38,L_CNT> := ICONV(TRIM(FIELD(L_BRK_QTY_PRI_LIST,CHAR(9),L_INC2,1)),'MCN'):@SM
+                             END
+                          END
+                       NEXT L_INC2
+                    END ELSE
+                       WORK<37> = ""
+                       WORK<38> = ""
+                       WORK<22,L_CNT> = "N"
+                    END
+                 END ELSE
+                    WORK<22,L_CNT> = "N"
+                 END
+              END
+           END
+        END
+     NEXT L_INC
+
+     CALL SB.DISP(9, "Done":@AM:L_INC-1:@AM:DCOUNT(L_ITM_NBR_LIST,@VM))
+     IF HEXCEL # '' THEN
+        CALL TU.DDE.DISCONNECT(HEXCEL, RTN.FLAG)
+        IF RTN.FLAG THEN
+           CALL SB.PROCESS("SYS0061,IP2561")
+           L_RTN_FLAG = "Q"
+           GO A500_CONCLUSION
+        END
+     END
+
+A400_EXIT: 
+     RETURN
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION: 
+
+     REFRESH = -2
+     IF RTN.FLAG THEN
+        CALL SB.DISP(9, "Error occurred, program aborted")
+        BEGIN CASE
+           CASE L_RTN_FLAG = "C"
+              RTN.FLAG = "{W.CO.NBR}"
+           CASE L_RTN_FLAG = "V"
+              RTN.FLAG = "{W.VEN.NBR}"
+           CASE L_RTN_FLAG = "Q"
+              RTN.FLAG = "{W.QUOTE.REF.PS}"
+           CASE 1
+              RTN.FLAG = 0
+        END CASE
+     END ELSE
+        IF L_OPEN_EXCEL_FLAG AND L_RETURN_PATH = '' THEN
+           CALL SB.DISP(9, "Process cancelled")
+           RTN.FLAG = "{W.QUOTE.REF.PS}"
+           GO A500_EXIT
+        END
+        IF L_ITM_NBR_LIST = '' THEN
+           CALL SB.DISP(9, "Done, but no items found.")
+           RTN.FLAG = "{W.QUOTE.REF.PS}"
+           GO A500_EXIT
+        END
+        IF L_ERR_ITM_LIST1 # '' OR L_ERR_ITM_LIST2 # '' THEN
+           GOSUB B100_EMAIL_ERROR_ITEM_LIST
+        END
+        RTN.FLAG = "{W.ITEM.NBRS}"
+     END
+
+A500_EXIT: 
+     RETURN
+
+****************************************
+* Email the error items found to user  
+****************************************
+B100_EMAIL_ERROR_ITEM_LIST: 
+
+     ARG_EMAIL = ''
+     CALL SYSS9300.1(ARG_EMAIL,USER.ID)
+
+     PARAM    =  ""
+     PARAM<1> := CHAR(13)
+     IF L_ERR_ITM_LIST1 # '' THEN
+        SWAP @AM WITH ", " IN L_ERR_ITM_LIST1
+        PARAM<1> :=  "List of invalid items:" : CHAR(13)
+        PARAM<1> :=  L_ERR_ITM_LIST1 : CHAR(13) : CHAR(13) : CHAR(13)
+     END
+     IF L_ERR_ITM_LIST2 # '' THEN
+        SWAP @AM WITH ", " IN L_ERR_ITM_LIST2
+        PARAM<1> :=  "List of items with no Item/Supplier Source relationship established:" : CHAR(13)
+        PARAM<1> :=  L_ERR_ITM_LIST2 : CHAR(13)
+     END
+     PARAM<2> =  "Supplier Quote Upload Summary - " : WORK<8>
+     PARAM<3> =  ARG_EMAIL
+
+     CALL SB.PROCESS("SYSS9060.1")
+
+     IF RTN.FLAG THEN
+        CALL SB.PROCESS("SYS0061,IP2563\":"SYSS9060.1")
+        GO B100_EXIT
+     END
+
+     IF PARAM<6> > 0 THEN   ;* This means there was an error sending the email...
+        CALL SB.PROCESS("SYS0061,IP2563\":"SYSS9060.1")
+        RTN.FLAG = 1
+        GO B100_EXIT
+     END
+
+     IF NOT(RTN.FLAG) THEN
+        CALL SB.PROCESS('SYS0061,IP2559\':ARG_EMAIL)
+     END ELSE
+        RTN.FLAG = 0
+     END
+     PARAM = L_SAVE_PARAM
+
+B100_EXIT: 
+     RETURN
+
+****************************************
+* Exit  
+****************************************
+
+     $INCLUDE IIPLUS.BOTTOM
+
+     END
+*

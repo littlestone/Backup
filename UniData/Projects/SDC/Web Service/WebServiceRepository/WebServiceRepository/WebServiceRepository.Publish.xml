@@ -1,0 +1,11 @@
+<publishData>
+  <publishTarget publishUrl="C:\Users\juntan.CORP\Desktop\TEST\">
+    <file relUrl="Web.config" publishTime="09/12/2014 09:11:46" />
+    <file relUrl="bin/UODOTNET.xml" publishTime="11/08/2011 11:06:42" />
+    <file relUrl="bin/WebServiceRepository.dll.config" publishTime="09/12/2014 09:11:46" />
+    <file relUrl="bin/WebServiceRepository.dll" publishTime="09/12/2014 09:33:33" />
+    <file relUrl="WebServiceRepository.InfofloService.svc" publishTime="09/12/2014 09:34:01" />
+    <file relUrl="bin/WebServiceRepository.pdb" publishTime="09/12/2014 09:33:33" />
+    <file relUrl="bin/UODOTNET.dll" publishTime="11/08/2011 11:06:42" />
+  </publishTarget>
+</publishData>

@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<publishData>
+  <publishProfile publishUrl="http://web4stl" deleteExistingFiles="False" ftpAnonymousLogin="False" ftpPassiveMode="True" msdeploySite="WCF_K2InfofloService" msdeploySiteID="" msdeployRemoteSitePhysicalPath="" msdeployAllowUntrustedCertificate="True" msdeploySkipExtraFilesOnServer="True" msdeployMarkAsApp="False" profileName="K2InfofloService" publishMethod="MSDeploy" replaceMatchingFiles="True" userName="CORP\juntan" savePWD="False" userPWD="" SelectedForPublish="False">
+    <file relUrl="bin/K2InfofloService.pdb" publishTime="09/02/2015 10:02:27" />
+    <file relUrl="bin/SourceCode.HostClientAPI.dll" publishTime="02/26/2015 03:01:52" />
+    <file relUrl="InfofloService.svc" publishTime="01/21/2015 16:01:11" />
+    <file relUrl="Web.config" publishTime="09/02/2015 10:02:28" />
+    <file relUrl="bin/K2InfofloService.dll" publishTime="09/02/2015 10:02:27" />
+  </publishProfile>
+  <publishProfile publishUrl="C:\inetpub\K2InfofloService" deleteExistingFiles="False" ftpAnonymousLogin="False" ftpPassiveMode="True" msdeploySite="" msdeploySiteID="" msdeployRemoteSitePhysicalPath="" msdeployAllowUntrustedCertificate="False" msdeploySkipExtraFilesOnServer="True" msdeployMarkAsApp="False" profileName="Test" publishMethod="FileSystem" replaceMatchingFiles="True" userName="" savePWD="False" userPWD="" SelectedForPublish="True">
+    <file relUrl="bin/SourceCode.HostClientAPI.dll" publishTime="02/26/2015 03:01:52" />
+    <file relUrl="ShipAndDebit.svc" publishTime="09/10/2015 13:56:47" />
+    <file relUrl="Web.config" publishTime="09/10/2015 14:17:28" />
+    <file relUrl="bin/K2InfofloService.dll" publishTime="09/10/2015 14:17:25" />
+    <file relUrl="InfofloService.svc" publishTime="01/21/2015 16:01:11" />
+    <file relUrl="bin/K2InfofloService.pdb" publishTime="09/10/2015 14:17:25" />
+    <file relUrl="RFTeamMaintenance.svc" publishTime="09/10/2015 14:00:33" />
+  </publishProfile>
+</publishData>

@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<control_file>
+  <version>1.0</version>
+  <banner>AEF CDTRAN DELIVERY</banner>
+  <file_source>AEF</file_source>
+  <customer_information>
+    <customer_name> CHQ IFT Sample </customer_name>
+    <todo_group_name> Daily-CFT-ASCU </todo_group_name>
+    <scheduled_date> 20090916 </scheduled_date>
+  </customer_information>
+  <contact>
+    <contact_name> Cheque Archive Services </contact_name>
+    <contact_number> 1-800-12345678 </contact_number>
+  </contact>
+  <delivery_files>
+    <file_pair>
+      <xml_index_file> PRD.ALL.ABC.C9999.INDX.D120618.T182811.C0101 </xml_index_file>
+      <xml_index_file_size> 6478 </xml_index_file_size>
+      <xml_index_file_crc> 1585899754 </xml_index_file_crc>
+      <data_file> PRD.ALL.ABC.C9999.DATA.D120618.T182811.C0101 </data_file>
+      <data_file_size> 77540 </data_file_size>
+      <data_file_crc> 882037554 </data_file_crc>
+    </file_pair>
+  </delivery_files>
+  <file_pair_count> 1 </file_pair_count>
+</control_file>

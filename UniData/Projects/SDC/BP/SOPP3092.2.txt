@@ -1,0 +1,150 @@
+﻿*************************************************************************                                                           
+* Description:                                                                                                                      
+*             This process is used to handle the SDC resend/recall process.                                                         
+*                                                                                                                                   
+* Modifications:                                                                                                                    
+*             09/25/14 juntan SOP381D.22 - Add previous approver's response message in request email.                               
+*             09/10/14 juntan JUNTAN.69  - Logic OR to AND.                                                                         
+*             08/18/14 juntan SOP381D.18 - Revise logic for blocking resend/recall access                                           
+*             05/15/14 juntan SOP381D.11 - Initial creation                                                                         
+*                                                                                                                                   
+*************************************************************************                                                           
+LOCAL L_TOT,I,L_CNT,INPUT_PARAMS,OUTPUT_PARAMS,L_MAX_RESEND_NBR                                                                     
+LOCAL MSG_ENG,MSG_FRN,L_KEY,L_REC,L_RECALL_OPTION                                                                                   
+*** juntan \/ SOP381D.22 - 09/25/14                                                                                                 
+LOCAL L_INC,L_TTL,L_NAME,L_USERID,L_LEVEL_CNT                                                                                       
+LOCAL MSG_ENG_UPDATE,MSG_FRN_UPDATE,L_AR_COLLECTOR_NAME                                                                             
+                                                                                                                                    
+L_INC = 0                                                                                                                           
+L_TTL = 0                                                                                                                           
+L_LEVEL_CNT = 0                                                                                                                     
+L_NAME = ""                                                                                                                         
+L_USERID = ""                                                                                                                       
+MSG_ENG_UPDATE = ""MSG_FRN_UPDATE = ""                                                                                                                 
+L_AR_COLLECTOR_NAME = ""                                                                                                            
+*** juntan /\ SOP381D.22 - 09/25/14                                                                                                 
+                                                                                                                                    
+L_TOT = DCOUNT(<1>,@VM)                                                                                                             
+INPUT_PARAMS = ""                                                                                                                   
+OUTPUT_PARAMS = ""                                                                                                                  
+MSG_ENG = ""                                                                                                                        
+MSG_FRN = ""                                                                                                                        
+L_KEY = ""                                                                                                                          
+L_REC = ""                                                                                                                          
+L_RECALL_OPTION = 0                                                                                                                 
+L_MAX_RESEND_NBR = 0                                                                                                                
+I = 0                                                                                                                               
+L_CNT = 0                                                                                                                           
+                                                                                                                                    
+BEGIN CASE                                                                                                                          
+   CASE @OTHER(18) = "32"   ;* resend                                                                                               
+      *** Refresh to most recent status ***                                                                                         
+      OPEN "SDCAUDIT" TO 1                                                                                                          
+      READ @RECORD FROM "SDCAUDIT",@KEY                                                                                             
+      IF @RTN.FLAG THEN                                                                                                             
+         EXEC 'SYS0061,IP3050\':OCONV(@TIME,"MTS"):@VM:"Unable to read record ":@KEY:" in file SDCAUDIT."          EXIT 0                                                                                                                     
+      END                                                                                                                           
+                                                                                                                                    
+      READV L_MAX_RESEND_NBR FROM "SYSCON", "SDC.CONSTANT", 1                                                                       
+      IF @RTN.FLAG THEN                                                                                                             
+         EXEC 'SYS0061,IP3050\':OCONV(@TIME,"MTS"):@VM:"Cannot read max resend number in SYSCON table SDC.APPROVAL."                
+         EXIT 0                                                                                                                     
+      END                                                                                                                           
+      L_MAX_RESEND_NBR = TRIM(FIELD(L_MAX_RESEND_NBR,CHAR(59),1))                                                                   
+                                                                                                                                    
+      IF <12> >= L_MAX_RESEND_NBR THEN                                                                                              
+         EXEC 'SYS0061,IP3050\':OCONV(@TIME,"MTS"):@VM:"Maximum resend limit reached, cannot resend anymore."                       
+         EXIT 0                                                                                                                     
+      END                                                                                                                           
+                                                                                                                                    
+      *** juntan \/ JUNTAN.69 - 2014/09/10                                                                                          
+      *** juntan \/ SOP381D.18 - 2014/08/15                                                                                         
+      IF <6,@CNT> # "W" AND <6,@CNT> # "WAR" AND (<6,@CNT> = "A" AND <7,@CNT> # "") THEN                                            
+         EXEC 'SYS0061,IP3050\':OCONV(@TIME,"MTS"):@VM:"This claim is currently not waiting for approval, cannot resend."           
+         EXEC "SOPP3092.3"  ;* refresh to actual SLA level                                                                          
+         EXIT 0                                                                                                                     
+      END                                                                                                                           
+      IF <6,@CNT> = "AR" OR <6,@CNT> = "C" THEN         EXEC 'SYS0061,IP3050\':OCONV(@TIME,"MTS"):@VM:"The approval process for the claim is already completed, cannot resend."    
+         EXEC "SOPP3092.3"  ;* refresh to actual SLA level                                                                          
+         EXIT 0                                                                                                                     
+      END                                                                                                                           
+      IF <6,@CNT> = "O" THEN                                                                                                        
+         EXEC 'SYS0061,IP3050\':OCONV(@TIME,"MTS"):@VM:"Open claim can only be sent for approval from SD Claim Workbench."          
+         EXEC "SOPP3092.3"  ;* refresh to actual SLA level                                                                          
+         EXIT 0                                                                                                                     
+      END                                                                                                                           
+      *** juntan /\ SOP381D.18 - 2014/08/15                                                                                         
+      *** juntan /\ JUNTAN.69 - 2014/09/10                                                                                          
+                                                                                                                                    
+      DISP 4,"SYSD3000.2"                                                                                                           
+      IF NOT(@RTN.FLAG) THEN                                                                                                        
+         EXEC "SOPP3092.3"  ;* refresh to actual SLA level                                                                          
+         EXIT 0                                                                                                                     
+      END ELSE                                                                                                                      
+         @RTN.FLAG = 0                                                                                                              
+      END                                                                                                                           
+                                                                                                                                    
+      *** Update Ship & Debit Claim Audit For Skipped SLA Level ***                                                                 
+      IF <6,@CNT> = "W" AND @WORK<14> > @RECORD<10,@CNT> THEN                                                                       
+         FOR I = @RECORD<10,@CNT> TO @WORK<14>-1            <1>  = INS(<1>,1,@CNT,"SLA Skipped")        ;* action                                                                   
+            <2>  = INS(<2>,1,@CNT,@DATE)                ;* date                                                                     
+            <3>  = INS(<3>,1,@CNT,@TIME)                ;* time                                                                     
+            <4>  = INS(<4>,1,@CNT,@USER.ID)             ;* userid                                                                   
+            <5>  = INS(<5>,1,@CNT,<5,1>)                ;* approver                                                                 
+            <6>  = INS(<6>,1,@CNT,"W")                  ;* status                                                                   
+            <7>  = INS(<7>,1,@CNT,I)                    ;* level                                                                    
+            <8>  = INS(<8>,1,@CNT,<8,1>)                ;* claim amount                                                             
+            <9>  = INS(<9>,1,@CNT,<9,1>)                ;* SLA key (Sales Office)                                                   
+            <10> = INS(<10>,1,@CNT,<10,1>)              ;* SLA level cnt                                                            
+            <11> = INS(<11>,1,@CNT,<11,1>)              ;* reference                                                                
+            OPEN "SDCAUDIT" TO 1                                                                                                    
+            WRITE @RECORD ON "SDCAUDIT",@KEY                                                                                        
+         NEXT I                                                                                                                     
+      END                                                                                                                           
+                                                                                                                                    
+      *** juntan \/ SOP381D.22 - 2014/09/25                                                                                         
+      *** Generate Approver's Response Message for HTML Request/Response Email***                                                   
+      L_KEY = <9,1>                                                                                                                 
+      READ L_REC FROM "SDCSLA",L_KEY                                                                                                
+      IF @RTN.FLAG THEN                                                                                                             
+         EXEC 'SYS0061,IP3050\':OCONV(@TIME,"MTS"):@VM:"Cannot read record key ":L_KEY:" in SDCSLA file."                           
+         EXIT 0      END                                                                                                                           
+                                                                                                                                    
+      L_LEVEL_CNT = @WORK<14>  ;* most recent SLA Level CNT                                                                         
+      L_TTL = DCOUNT(<1>, @VM)                                                                                                      
+      FOR L_CNT = 1 TO L_LEVEL_CNT  ;* check matched SLA level                                                                      
+         FOR L_INC = 1 TO L_TTL  ;* start with the most recent status                                                               
+            IF <7,L_INC> # "" AND <7,L_INC> = L_CNT THEN  ;* level found                                                            
+               IF L_REC<4,L_CNT> # "" AND @DATE >= L_REC<5,L_CNT> AND @DATE <= L_REC<6,L_CNT> THEN  ;* check approver replacement   
+                  L_USERID = <4,L_CNT>                                                                                              
+                  READV L_NAME FROM "ADDRESSBOOK", L_USERID, 1  ;* replaced approver                                                
+                  IF @RTN.FLAG THEN                                                                                                 
+                     L_NAME = <4,L_CNT>                                                                                             
+                  END                                                                                                               
+               END ELSE                                                                                                             
+                  L_USERID = <3,L_CNT>                                                                                              
+                  READV L_NAME FROM "ADDRESSBOOK", L_USERID, 1  ;* original approver                                                
+                  IF @RTN.FLAG THEN                                                                                                 
+                     L_NAME = <3,L_CNT>                                                                                             
+                  END                                                                                                               
+               END                                                                                                                  
+               BEGIN CASE                                                                                                           
+                  CASE <6,L_INC> = "A"                                                                                              
+                     MSG_ENG_UPDATE = MSG_ENG_UPDATE:"Level ":L_CNT:': <font color="green">Approved</font> by SLA approver ':L_NAME:" on ":OCONV(<2,L_INC>,"D2/"):" at ":OCONV(<3,L_INC>,"MTS"):".<br>" 
+                     MSG_FRN_UPDATE = MSG_FRN_UPDATE:"Niveau ":L_CNT:': <font color="green">Approuv&eacute':CHAR(59):"</font> par l'approbateur SLA ":L_NAME:" le ":OCONV(<2,L_INC>,"D2/"):" &agrave":CHAR(59):" ":OCONV(<3,L_INC>,"MTS"):".<br>"                  CASE <6,L_INC> = "AR"                                                                                             
+                     MSG_ENG_UPDATE = MSG_ENG_UPDATE:"Level AR":': <font color="green">Approved</font> by AR collector ':L_AR_COLLECTOR_NAME:" on ":OCONV(<2,L_INC>,"D2/"):" at ":OCONV(<3,L_INC>,"MTS"):".<br>"                     MSG_FRN_UPDATE = MSG_FRN_UPDATE:"Niveau CR":': <font color="green">Approuv&eacute':CHAR(59):"</font> par le collecteur CR ":L_AR_COLLECTOR_NAME:" le ":OCONV(<2,L_INC>,"D2/"):" &agrave":CHAR(59):" ":OCONV(<3,L_INC>,"MTS"):".<br>"                  CASE <1,L_INC> = "SLA Auto-skipped"                                                                                    
+                     MSG_ENG_UPDATE = MSG_ENG_UPDATE:"Level ":L_CNT:': <font color="green">Auto-skipped</font> by system':" on ":OCONV(<2,L_INC>,"D2/"):" at ":OCONV(<3,L_INC>,"MTS"):".<br>"                     MSG_FRN_UPDATE = MSG_FRN_UPDATE:"Niveau ":L_CNT:': <font color="green">Auto-ignor&eacute':CHAR(59):"e</font> par le syst&egrave":CHAR(59):"m le ":OCONV(<2,L_INC>,"D2/"):" &agrave":CHAR(59):" ":OCONV(<3,L_INC>,"MTS"):".<br>"               END CASE                                                                                                             
+               GOTO 99                                                                                                              
+            END                                                                                                                     
+         NEXT L_INC                                                                                                                 
+                                                                                                                                    
+99  ;* for loop exit                                                                                                                
+                                                                                                                                    
+      NEXT L_CNT                                                                                                                    
+      IF @WORK<14> > 1 THEN  ;* skip the message for level 1 approver                                                               
+         MSG_ENG_UPDATE = MSG_ENG_UPDATE:'<br><font color="blue">==> Now waiting for your approval...</font>'                       
+         MSG_FRN_UPDATE = MSG_FRN_UPDATE:'<br><font color="blue">':"==> Maintenant en attendre de votre approbation...</font>"      
+         MSG_ENG_UPDATE = "<br>":MSG_ENG_UPDATE:"<br>"                                                                              
+         MSG_FRN_UPDATE = "<br>":MSG_FRN_UPDATE:"<br>"                                                                              
+      END                                                                                                                           
+      *** juntan /\ SOP381D.22 - 2014/09/25

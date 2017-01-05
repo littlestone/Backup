@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# name: if-then-else block
+# key: ife
+# --
+IF $1 THEN
+   $2
+END ELSE
+   $0
+END

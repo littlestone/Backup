@@ -1,0 +1,6 @@
+﻿# -*- mode: snippet -*-
+# name: dev-profile
+# key: dev
+# --
+:profiles {:dev {:plugins [$1]
+                 :dependencies [$0]}}

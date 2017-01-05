@@ -1,0 +1,667 @@
+     SUBROUTINE SOPS3080.10(ARGS_IN,ARGS_OUT)
+* Generate Per Ship & Debit Approval Request/Response HTML Email
+* VERSION 8.2.3
+*
+* 24 SEP 14 8.2.3 juntan PRJ*SOP381D.22-(Sub #22) SHIP AND DEBIT - PHASE 2
+* 28 JUL 14 8.2.3 juntan PRJ*SOP381D.15-(Sub #15) SHIP AND DEBIT - PHASE 2
+* 24 FEB 14 8.2.3 juntan PRJ*SOP381D.10-(Sub #10) SHIP AND DEBIT - PHASE 2
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+
+   PROGRAM='SOPS3080.10'
+
+   $INCLUDE IIPLUS.TOP
+   $INCLUDE IIPLUS.TEXTLOAD
+   $INCLUDE IIPLUS.DEBUG
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*              This program is used to generate html email for per Ship &
+*              Debit Claims Approval Request based on a pre-defined HTML
+*              email template file located under DOM_HTML directory. The
+*              various setup constant variables of the SDC approval system
+*              is maintained under SYSCON table SDC.CONSTANT.
+*
+*              <<<NOTE>>>
+*              a) Input parameters (delimited by @FM):
+*                 ARGS_IN<1>   -> COMPANY NBR
+*                 ARGS_IN<2>   -> CUSTOMER NBR
+*                 ARGS_IN<3>   -> CUSTOMER CLAIM NBR
+*                 ARGS_IN<4>   -> CLAIM DATE
+*                 ARGS_IN<5>   -> FISCAL PERIOD
+*                 ARGS_IN<6,1> -> SALES OFFICE CODE
+*                 ARGS_IN<6,2> -> SALES OFFICE DESCRIPTION - CODE   
+*                 ARGS_IN<7>   -> USERNAME
+*                 ARGS_IN<8>   -> CONTRACTOR CODES (delimited by @VM)
+*                 ARGS_IN<9>   -> CONTRACTOR DESCS (delimited by @VM)
+*                 ARGS_IN<10>  -> CLAIM AMOUNTS    (delimited by @VM)
+*                 ARGS_IN<11>  -> TOTAL AMOUNT
+*                 ARGS_IN<12>  -> APPROVER USERID
+*                 ARGS_IN<13>  -> SLA LEVEL CNT
+*                 ARGS_IN<14>  -> Infoflo account (D = DEV, P = PREP, A = ACCT)
+*                 ARGS_IN<15>  -> SDC Security Flag (0 = N or 1 = Y)
+*                 ARGS_IN<16>  -> SDC Email Request/Response/SLA Error/AR Approval Flag (REQUEST/RESPONSE/SLAERROR/AR)
+*                 ARGS_IN<17>  -> SDC Approval Request Email Timestamp
+*                 ARGS_IN<18>  -> SDC Approval Request Response/SLA Error Message
+*
+*              b) Output parameters (delimited by @FM):
+*                 ARGS_OUT<1>   -> SDC HTML Email
+*                 ARGS_OUT<2.M> -> Program Name / Error Code / Error Message if applicable
+*
+* MODIFICATIONS:
+* ==============
+*              2014/09/24 juntan SOP381D.22 - Logic revise for printing bill to / ship to infomation.
+*              2013/02/26 juntan SOP381D.10 - Initial creation.
+*
+**************************************************************************
+
+
+A100_MAIN:
+
+   GOSUB A200_INITIALIZATION
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+   GO A500_CONCLUSION
+
+
+****************************************
+* Definition of local variables & initialization of other variables.
+****************************************
+A200_INITIALIZATION:
+
+   ARGS_OUT = ""
+
+   RTN.FLAG = 0
+   L_ERR_CODE = ""
+   L_ERR_MSG = ""
+   L_RESPONSE_MSG = ""
+   L_SLAERROR_MSG = ""
+
+   L_FILE_NAME = ""
+   L_DIR_TEMPLATE = ""
+   L_DIR_EMAIL = ""
+   L_WS_URI = ""
+   L_HTML_EMAIL_TEMPLATE = ""
+   L_LINE = ""
+   L_EOF = 0
+   L_INC = 0
+   L_CNT = 0
+   L_LEN = 0
+   L_IND = 0
+
+   L_SDCHDR_KEY = ARGS_IN<1>:"*":ARGS_IN<2>:"*":ARGS_IN<3>
+   L_SYSCON_KEY = ""
+   L_SYSCON_REC = ""
+   L_CUSTMST_KEY = ""
+   L_CUSTMST_REC = ""
+   *** juntan \/ SOP381D.22 - 2014/09/24
+   L_SDCHDR_KEY = ""
+   L_SDCHDR_REC = ""
+   *** juntan /\ SOP381D.22 - 2014/09/24
+
+   L_RAW_PARMS = ""
+   L_ENCRYPTED_PARMS = ""
+   L_URL_ENCODED = ""
+   L_URL_APPROVE = ""
+   L_URL_REJECT = ""
+   L_URL_RETURN = ""
+   L_FILE_NAME_OUT = ""
+   L_SDC_HTML_EMAIL_FILE = ""
+   L_HTML_EMAIL = ""
+   L_COMPANY_NAME = ""
+   *** juntan \/ SOP381D.22 - 2014/09/24
+   L_ADDR_1 = ""
+   L_ADDR_2 = ""
+   L_ADDR_3 = ""
+   L_ADDR_4 = ""
+   *** juntan /\ SOP381D.22 - 2014/09/24
+   L_ITEM_LINES_TABLE = ""
+   L_PURGE_IN  = ""
+   L_PURGE_OUT = ""
+
+   L_DATE_OCONV = OCONV(DATE(),"D2/")
+   L_TIME_OCONV = OCONV(TIME(), "MTS")
+
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open the files needed in this subroutine.
+****************************************
+A300_OPEN_FILES:
+
+   OPEN "SYSCON" TO SYSCON ELSE
+      L_ERR_CODE = "A300-OPEN-FILES-1"
+      L_ERR_MSG = "Cannot open file SYSCON."
+      GO A300_EXIT
+   END
+
+   OPEN "CUSTMST" TO CUSTMST ELSE
+      L_ERR_CODE = "A300-OPEN-FILES-2"
+      L_ERR_MSG = "Cannot open file CUSTMST."
+      GO A300_EXIT
+   END
+
+   *** juntan \/ SOP381D.22 - 2014/09/24
+   OPEN "SDCHDR" TO SDCHDR ELSE
+      L_ERR_CODE = "A300-OPEN-FILES-3"
+      L_ERR_MSG = "Cannot open file SDCHDR."
+      GO A300_EXIT
+   END
+   *** juntan /\ SOP381D.22 - 2014/09/24
+
+A300_EXIT:
+   RETURN
+
+
+****************************************
+* Main process logic structure.
+****************************************
+A400_MAIN_PROCESS:
+
+   GOSUB B100_READ_SYSCON_TABLE_SETUP
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B200_READ_HTML_TEMPLATE_FILE
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B300_UPDATE_HTML_TEMPLATE_VARIABLES
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B400_GENERATE_SDC_HTML_EMAIL
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B500_PURGE_SDC_HTML_EMAIL_FILES
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+A400_EXIT:
+   RETURN
+
+
+****************************************
+* Read SDC html email template based on setup on SYSCON table SDC.CONSTANT
+****************************************
+B100_READ_SYSCON_TABLE_SETUP:
+
+   L_SYSCON_KEY = "SDC.CONSTANT"
+   READ L_SYSCON_REC FROM SYSCON,L_SYSCON_KEY ELSE L_SYSCON_REC = ""
+   IF L_SYSCON_REC # "" THEN
+      BEGIN CASE
+         CASE ARGS_IN<16> = "REQUEST" OR ARGS_IN<16> = "AR"
+            L_WS_URI = TRIM(FIELD(L_SYSCON_REC<4>,';',1))
+            L_DIR_TEMPLATE = TRIM(FIELD(L_SYSCON_REC<5>,';',1))<1,1>
+            L_DIR_EMAIL = TRIM(FIELD(L_SYSCON_REC<5>,';',1))<1,2>
+            IF ARGS_IN<6,1> = "50" THEN
+               L_FILE_NAME = TRIM(FIELD(L_SYSCON_REC<6>,';',1))<1,2> ;* FR
+            END ELSE
+               L_FILE_NAME = TRIM(FIELD(L_SYSCON_REC<6>,';',1))<1,1> ;* EN
+            END
+         CASE ARGS_IN<16> = "RESPONSE"
+            L_DIR_TEMPLATE = TRIM(FIELD(L_SYSCON_REC<5>,';',1))<1,1>
+            L_DIR_EMAIL = TRIM(FIELD(L_SYSCON_REC<5>,';',1))<1,2>
+            IF ARGS_IN<6,1> = "50" THEN
+               L_FILE_NAME = TRIM(FIELD(L_SYSCON_REC<7>,';',1))<1,2>
+            END ELSE
+               L_FILE_NAME = TRIM(FIELD(L_SYSCON_REC<7>,';',1))<1,1>
+            END
+         CASE ARGS_IN<16> = "SLAERROR"
+            L_DIR_TEMPLATE = TRIM(FIELD(L_SYSCON_REC<5>,';',1))<1,1>
+            L_DIR_EMAIL = TRIM(FIELD(L_SYSCON_REC<5>,';',1))<1,2>
+            IF ARGS_IN<6,1> = "50" THEN
+               L_FILE_NAME = TRIM(FIELD(L_SYSCON_REC<8>,';',1))<1,2>
+            END ELSE
+               L_FILE_NAME = TRIM(FIELD(L_SYSCON_REC<8>,';',1))<1,1>
+            END
+         CASE 1
+            L_ERR_CODE = "B100-READ-SYSCON-TABLE-SETUP-1"
+            L_ERR_MSG = "Wrong SDC approval request message flag ":ARGS_IN<16>:" found."
+      END CASE
+   END ELSE
+      L_ERR_CODE = "B100-READ-SYSCON-TABLE-SETUP-2"
+      L_ERR_MSG = "SYSCON record ":L_SYSCON_KEY:" does not exist."
+   END
+
+B100_EXIT:
+   RETURN
+
+
+****************************************
+* Read SYSCON table setup for SDC html email template setup
+****************************************
+B200_READ_HTML_TEMPLATE_FILE:
+
+   OPENSEQ L_DIR_TEMPLATE, L_FILE_NAME TO L_HTML_EMAIL_TEMPLATE
+   ON ERROR
+      L_ERR_CODE = "B200-READ-HTML-TEMPLATE-FILE-1"
+      L_ERR_MSG = "Cannot open file ":L_FILE_NAME:"."
+   END LOCKED
+      L_ERR_CODE = "B200-READ-HTML-TEMPLATE-FILE-2"
+      L_ERR_MSG = "The html email template file ":L_FILE_NAME:" is currently locked by ":GETUSERNAME(STATUS()):"."
+   END THEN
+      LOOP
+         READSEQ L_LINE FROM L_HTML_EMAIL_TEMPLATE ELSE L_EOF = 1
+      UNTIL L_EOF
+         L_HTML_EMAIL := L_LINE:CHAR(10)
+         IF INDEX(L_LINE,"VAR_COMPANY_NAME",1) # 0 THEN
+            GOSUB B210_GENERATE_HEADER_INFO
+         END
+         IF INDEX(L_LINE,"VAR_ITEM_LINES_TABLE",1) # 0 THEN
+            GOSUB B220_GENERATE_ITEM_LINES_TABLE
+         END
+         IF INDEX(L_LINE,"VAR_RESPONSE_MSG",1) # 0 THEN
+            GOSUB B230_GENERATE_RESPONSE_MESSAGE
+         END
+         IF INDEX(L_LINE,"VAR_SLAERROR_MSG",1) # 0 THEN
+            GOSUB B240_GENERATE_SLAERROR_MESSAGE
+         END
+      REPEAT
+      CLOSESEQ L_HTML_EMAIL_TEMPLATE
+   END ELSE
+      BEGIN CASE
+         CASE STATUS() = 0
+            L_ERR_CODE = "B200-READ-HTML-TEMPLATE-FILE-3"
+            L_ERR_MSG = "The html email template file ":L_FILE_NAME:" does not exist."
+         CASE STATUS() = 1
+            L_ERR_CODE = "B200-READ-HTML-TEMPLATE-FILE-4"
+            L_ERR_MSG = "The html email template file ":L_FILE_NAME:" is not a sequential-access file."
+         CASE STATUS() = 2
+            L_ERR_CODE = "B200-READ-HTML-TEMPLATE-FILE-5"
+            L_ERR_MSG = "The file directory ":L_DIR_TEMPLATE:" does not exist."
+         CASE STATUS() = 3
+            L_ERR_CODE = "B200-READ-HTML-TEMPLATE-FILE-6"
+            L_ERR_MSG = "The READONLY clause was included in the command statement and the html email template file ":L_FILE_NAME:" does not exist."
+         CASE STATUS() = 4
+            L_ERR_CODE = "B200-READ-HTML-TEMPLATE-FILE-7"
+            L_ERR_MSG = "An unknown error occurred (such as having too many files open or permission problems) while opening sequential html email template file ":L_FILE_NAME:"."
+      END CASE
+   END
+
+B200_EXIT:
+   RETURN
+
+****************************************
+* Generate html header information
+****************************************
+B210_GENERATE_HEADER_INFO:
+
+   IF ARGS_IN<6,1> = "50" THEN
+      CALL SYSS9046.1(ARGS_IN<1>,"FRN","N",L_COMPANY_NAME)
+      IF L_COMPANY_NAME # "" THEN
+         $INCLUDE SYSS9170.1
+         L_LEN = LEN(L_CODES_ASCII)
+         FOR L_IND = 1 TO L_LEN
+            SWAP L_CODES_ASCII[L_IND,1] WITH L_CODES_HTML<L_IND> IN L_COMPANY_NAME
+         NEXT L_IND
+      END
+   END ELSE
+      CALL SYSS9046.1(ARGS_IN<1>,"ENG","N",L_COMPANY_NAME)
+   END
+   IF L_COMPANY_NAME # "" THEN
+      BEGIN CASE
+         CASE ARGS_IN<1> = "01"
+            L_COMPANY_NAME = '<font size="4" color="#00ADEC"><b>':L_COMPANY_NAME:'</b></font>'
+         CASE ARGS_IN<1> = "02"
+            L_COMPANY_NAME = '<font size="4" color="#0054A6"><b>':L_COMPANY_NAME:'</b></font>'
+         CASE ARGS_IN<1> = "05"
+            L_COMPANY_NAME = '<font size="4" color="#005696"><b>':L_COMPANY_NAME:'</b></font>'
+         CASE ARGS_IN<1> = "12"
+            L_COMPANY_NAME = '<font size="4" color="#00ADEC"><b>':L_COMPANY_NAME:'</b></font>'
+         CASE ARGS_IN<1> = "15"
+            L_COMPANY_NAME = '<font size="4" color="#005696"><b>':L_COMPANY_NAME:'</b></font>'
+         CASE ARGS_IN<1> = "16"
+            L_COMPANY_NAME = '<font size="4" color="#6FBF44"><b>':L_COMPANY_NAME:'</b></font>'
+         CASE ARGS_IN<1> = "41"
+            L_COMPANY_NAME = '<font size="4" color="#FF9933"><b>':L_COMPANY_NAME:'</b></font>'
+         CASE ARGS_IN<1> = "42"
+            L_COMPANY_NAME = '<font size="4" color="#FF9933"><b>':L_COMPANY_NAME:'</b></font>'
+      END CASE
+   END ELSE
+      L_ERR_CODE = "B210-GENERATE-HEADER-INFO-1"
+      L_ERR_MSG = "Error retrieving company name through SYSS9046.1."
+      GO B210_EXIT
+   END
+
+   *** juntan \/ SOP381D.22 - 2014/09/24
+   L_SDCHDR_KEY = ARGS_IN<1>:"*":ARGS_IN<2>:"*":ARGS_IN<3>
+   READ L_SDCHDR_REC FROM SDCHDR, L_SDCHDR_KEY THEN
+      IF DCOUNT(L_SDCHDR_REC<28>,VM) = 1 THEN  ;* single ShipTo number
+         L_CUSTMST_KEY = ARGS_IN<1>:"*":ARGS_IN<2>:L_SDCHDR_REC<28>
+      END ELSE  ;* multiple ShipTo numbers or only BillTo number
+         L_CUSTMST_KEY = ARGS_IN<1>:"*":ARGS_IN<2>
+      END
+
+      READ L_CUSTMST_REC FROM CUSTMST, L_CUSTMST_KEY THEN
+         L_ADDR_1 = L_CUSTMST_REC<3>     ;* Customer name
+         L_ADDR_2 = L_CUSTMST_REC<26,1>  ;* Contact
+         L_ADDR_3 = L_CUSTMST_REC<20>    ;* Address
+         L_ADDR_4 = L_CUSTMST_REC<22>:", ":L_CUSTMST_REC<23>:" ":L_CUSTMST_REC<24>
+      END ELSE
+         L_ERR_CODE = "B210-GENERATE-HEADER-INFO-3"
+         L_ERR_MSG = "Record ":L_CUSTMST_KEY:" does not exist in file CUSTMST."
+      END
+   END ELSE
+      L_ERR_CODE = "B210-GENERATE-HEADER-INFO-2"
+      L_ERR_MSG = "Record ":L_SDCHDR_KEY:" does not exist in file SDCHDR."
+   END
+   *** juntan /\ SOP381D.22 - 2014/09/24
+
+B210_EXIT:
+   RETURN
+
+****************************************
+* Generate html tables for item lines
+****************************************
+B220_GENERATE_ITEM_LINES_TABLE:
+
+   L_LINE_TTL = DCOUNT(ARGS_IN<8>,@VM) ;* total line items count
+   FOR L_CNT = 1 TO L_LINE_TTL
+      IF MOD(L_CNT,2) # 0 THEN
+         L_ITEM_LINES_TABLE := '<tr>':CHAR(10)
+         L_ITEM_LINES_TABLE := '<td bgcolor="lavender" align="center">':ARGS_IN<8,L_CNT>:'</td>':CHAR(10)
+         L_ITEM_LINES_TABLE := '<td bgcolor="lavender" align="center">':ARGS_IN<9,L_CNT>:'</td>':CHAR(10)
+         L_ITEM_LINES_TABLE := '<td bgcolor="lavender" align="right">':ARGS_IN<10,L_CNT>:'</td>':CHAR(10)
+         L_ITEM_LINES_TABLE := '</tr>':CHAR(10)
+      END ELSE
+         L_ITEM_LINES_TABLE := '<tr>':CHAR(10)
+         L_ITEM_LINES_TABLE := '<td bgcolor="white" align="center">':ARGS_IN<8,L_CNT>:'</td>':CHAR(10)
+         L_ITEM_LINES_TABLE := '<td bgcolor="white" align="center">':ARGS_IN<9,L_CNT>:'</td>':CHAR(10)
+         L_ITEM_LINES_TABLE := '<td bgcolor="white" align="right">':ARGS_IN<10,L_CNT>:'</td>':CHAR(10)
+         L_ITEM_LINES_TABLE := '</tr>':CHAR(10)
+      END
+   NEXT L_CNT
+
+B220_EXIT:
+   RETURN
+
+****************************************
+* Generate approver's response message
+****************************************
+B230_GENERATE_RESPONSE_MESSAGE:
+
+   IF ARGS_IN<6,1> = "50" THEN
+      L_RESPONSE_MSG = ARGS_IN<18,2>  ;* Message in English
+   END ELSE
+      L_RESPONSE_MSG = ARGS_IN<18,1>  ;* Message in French
+   END
+
+B230_EXIT:
+   RETURN
+
+****************************************
+* Generate SLA error message
+****************************************
+B240_GENERATE_SLAERROR_MESSAGE:
+
+   L_SLAERROR_MSG = ARGS_IN<18>
+
+B240_EXIT:
+   RETURN
+
+****************************************
+* Update html email template variables as per request
+****************************************
+B300_UPDATE_HTML_TEMPLATE_VARIABLES:
+
+   IF ARGS_IN = "" THEN
+      L_ERR_CODE = "B300-UPDATE-HTML-TEMPLATE-VARIABLES-0"
+      L_ERR_MSG = "No SDC input parameters found."
+      GO B300_EXIT
+   END
+
+   *** Mapping html email variables with input parameters ***
+   SWAP "VAR_COMPANY_NAME" WITH L_COMPANY_NAME IN L_HTML_EMAIL
+   SWAP "VAR_SOLD_TO_LINE_1" WITH L_ADDR_1 IN L_HTML_EMAIL
+   SWAP "VAR_SOLD_TO_LINE_2" WITH L_ADDR_2 IN L_HTML_EMAIL
+   SWAP "VAR_SOLD_TO_LINE_3" WITH L_ADDR_3 IN L_HTML_EMAIL
+   SWAP "VAR_SOLD_TO_LINE_4" WITH L_ADDR_4 IN L_HTML_EMAIL
+   SWAP "VAR_TIMESTAMP" WITH ARGS_IN<17> IN L_HTML_EMAIL
+   SWAP "VAR_CUST_NBR" WITH ARGS_IN<2> IN L_HTML_EMAIL
+   SWAP "VAR_CLAIM_NBR" WITH ARGS_IN<3> IN L_HTML_EMAIL
+   SWAP "VAR_DATE" WITH ARGS_IN<4> IN L_HTML_EMAIL
+   SWAP "VAR_PERIOD" WITH ARGS_IN<5> IN L_HTML_EMAIL
+   SWAP "VAR_SALES_OFF" WITH ARGS_IN<6,2> IN L_HTML_EMAIL
+   SWAP "VAR_USERNAME" WITH ARGS_IN<7> IN L_HTML_EMAIL
+   SWAP "VAR_ITEM_LINES_TABLE" WITH L_ITEM_LINES_TABLE IN L_HTML_EMAIL
+   SWAP "VAR_TOTAL_AMT" WITH ARGS_IN<11> IN L_HTML_EMAIL
+   SWAP "VAR_RESPONSE_MSG" WITH L_RESPONSE_MSG IN L_HTML_EMAIL
+   SWAP "VAR_SLAERROR_MSG" WITH L_SLAERROR_MSG IN L_HTML_EMAIL
+
+   *** Build SDC html request email URL links ***
+   IF ARGS_IN<16> = "REQUEST" OR ARGS_IN<16> = "AR" THEN
+      *** Encrypt SDC Approve parameters for passing to SDC Web Service ***
+      L_RAW_PARMS = ""
+      IF ARGS_IN<16> = "REQUEST" THEN
+         L_RAW_PARMS<1> = ARGS_IN<14>:"|":ARGS_IN<15>:"|":L_SDCHDR_KEY:"|":ARGS_IN<12>:"|A|":ARGS_IN<13>:"|":ARGS_IN<17>
+      END ELSE
+         L_RAW_PARMS<1> = ARGS_IN<14>:"|":ARGS_IN<15>:"|":L_SDCHDR_KEY:"|":ARGS_IN<12>:"|AR|":ARGS_IN<13>:"|":ARGS_IN<17>
+      END
+      L_RAW_PARMS<2> = "E"
+      CALL SYSS9220.1(L_RAW_PARMS,L_ENCRYPTED_PARMS) ;* Parameters encryption
+      IF L_ENCRYPTED_PARMS<1> = "" THEN
+         L_ERR_CODE = "B300-UPDATE-HTML-TEMPLATE-VARIABLES-1"
+         L_ERR_MSG = "":L_ENCRYPTED_PARMS<2>
+         GO B300_EXIT
+      END
+
+      *** Encode encrypted SDC Approve parameters for URL on browser ***
+      L_RAW_PARMS = ""
+      L_RAW_PARMS<1> = L_ENCRYPTED_PARMS
+      L_RAW_PARMS<2> = "N"
+      CALL SYSS9220.2(L_RAW_PARMS,L_URL_ENCODED)  ;* URL encoding
+      IF L_URL_ENCODED<1> = "" THEN
+         L_ERR_CODE = "B300-UPDATE-HTML-TEMPLATE-VARIABLES-2"
+         L_ERR_MSG = "":L_URL_ENCODED<2>
+         GO B300_EXIT
+      END
+      L_URL_APPROVE = L_WS_URI:L_URL_ENCODED
+
+      *** Encrypt SDC Reject parameters for passing to SDC Web Service ***
+      L_RAW_PARMS = ""
+      IF ARGS_IN<16> = "REQUEST" THEN
+         L_RAW_PARMS<1> = ARGS_IN<14>:"|":ARGS_IN<15>:"|":L_SDCHDR_KEY:"|":ARGS_IN<12>:"|X|":ARGS_IN<13>:"|":ARGS_IN<17>
+      END ELSE
+         L_RAW_PARMS<1> = ARGS_IN<14>:"|":ARGS_IN<15>:"|":L_SDCHDR_KEY:"|":ARGS_IN<12>:"|XAR|":ARGS_IN<13>:"|":ARGS_IN<17>
+      END
+      L_RAW_PARMS<2> = "E"
+      CALL SYSS9220.1(L_RAW_PARMS,L_ENCRYPTED_PARMS) ;* Parameters encryption
+      IF L_ENCRYPTED_PARMS = "" THEN
+         L_ERR_CODE = "B300-UPDATE-HTML-TEMPLATE-VARIABLES-3"
+         L_ERR_MSG = "":L_ENCRYPTED_PARMS<2>
+         GO B300_EXIT
+      END
+
+      *** Encode encrypted SDC Reject parameters for URL on browser ***
+      L_RAW_PARMS = ""
+      L_RAW_PARMS<1> = L_ENCRYPTED_PARMS
+      L_RAW_PARMS<2> = "N"
+      CALL SYSS9220.2(L_RAW_PARMS,L_URL_ENCODED)  ;* URL encoding
+      IF L_URL_ENCODED = "" THEN
+         L_ERR_CODE = "B300-UPDATE-HTML-TEMPLATE-VARIABLES-4"
+         L_ERR_MSG = "":L_URL_ENCODED<2>
+         GO B300_EXIT
+      END
+      L_URL_REJECT = L_WS_URI:L_URL_ENCODED
+
+      *** Encrypt SDC Return parameters for passing to SDC Web Service ***
+      L_RAW_PARMS = ""
+      IF ARGS_IN<16> = "REQUEST" THEN
+         L_RAW_PARMS<1> = ARGS_IN<14>:"|":ARGS_IN<15>:"|":L_SDCHDR_KEY:"|":ARGS_IN<12>:"|B|":ARGS_IN<13>:"|":ARGS_IN<17>
+      END ELSE
+         L_RAW_PARMS<1> = ARGS_IN<14>:"|":ARGS_IN<15>:"|":L_SDCHDR_KEY:"|":ARGS_IN<12>:"|BAR|":ARGS_IN<13>:"|":ARGS_IN<17>
+      END
+      L_RAW_PARMS<2> = "E"
+      CALL SYSS9220.1(L_RAW_PARMS,L_ENCRYPTED_PARMS)   ;* Encryption
+      IF L_ENCRYPTED_PARMS = "" THEN
+         L_ERR_CODE = "B300-UPDATE-HTML-TEMPLATE-VARIABLES-5"
+         L_ERR_MSG = "":L_ENCRYPTED_PARMS<2>
+         GO B300_EXIT
+      END
+
+      *** Encode encrypted SDC Return parameters for URL on browser ***
+      L_RAW_PARMS = ""
+      L_RAW_PARMS<1> = L_ENCRYPTED_PARMS
+      L_RAW_PARMS<2> = "N"
+      CALL SYSS9220.2(L_RAW_PARMS,L_URL_ENCODED)  ;* URL encoding
+      IF L_URL_ENCODED = "" THEN
+         L_ERR_CODE = "B300-UPDATE-HTML-TEMPLATE-VARIABLES-6"
+         L_ERR_MSG = "":L_URL_ENCODED<2>
+         GO B300_EXIT
+      END
+      L_URL_RETURN = L_WS_URI:L_URL_ENCODED
+
+      *** Mapping html email variabes with encrypted and encoded URL address ***
+      SWAP "VAR_URL_APPROVE" WITH L_URL_APPROVE IN L_HTML_EMAIL
+      SWAP "VAR_URL_REJECT" WITH L_URL_REJECT IN L_HTML_EMAIL
+      SWAP "VAR_URL_NOT_MINE" WITH L_URL_RETURN IN L_HTML_EMAIL
+   END
+
+B300_EXIT:
+   RETURN
+
+
+****************************************
+* Generate SDC html email as per request
+****************************************
+B400_GENERATE_SDC_HTML_EMAIL:
+
+   SWAP "/" WITH "" IN L_DATE_OCONV
+   SWAP ":" WITH "" IN L_TIME_OCONV
+
+   BEGIN CASE
+      CASE ARGS_IN<16> = "REQUEST" OR ARGS_IN<16> = "AR"
+         L_FILE_NAME_OUT = "SDC_REQUEST_":ARGS_IN<1>:"_":ARGS_IN<2>:"_":ARGS_IN<3>:"_":L_DATE_OCONV:"_":L_TIME_OCONV:".html"
+      CASE ARGS_IN<16> = "RESPONSE"
+         L_FILE_NAME_OUT = "SDC_RESPONSE_":ARGS_IN<1>:"_":ARGS_IN<2>:"_":ARGS_IN<3>:"_":L_DATE_OCONV:"_":L_TIME_OCONV:".html"
+      CASE ARGS_IN<16> = "SLAERROR"
+         L_FILE_NAME_OUT = "SDC_SLAERROR_":ARGS_IN<1>:"_":ARGS_IN<2>:"_":ARGS_IN<3>:"_":L_DATE_OCONV:"_":L_TIME_OCONV:".html"
+   END CASE
+
+   OPENSEQ L_DIR_EMAIL, L_FILE_NAME_OUT TO L_SDC_HTML_EMAIL_FILE
+   ON ERROR
+      L_ERR_CODE = "B400-GENERATE-SDC-HTML-EMAIL-1"
+      L_ERR_MSG = "Cannot open file ":L_FILE_NAME_OUT:"."
+      GO B400_EXIT
+   END LOCKED
+      L_ERR_CODE = "B400-GENERATE-SDC-HTML-EMAIL-2"
+      L_ERR_MSG = "The html email template file ":L_FILE_NAME_OUT:" is currently locked by ":GETUSERNAME(STATUS()):"."
+      GO B400_EXIT
+   END THEN
+      ;* the SDC html email file as per request should not exist before the call
+   END ELSE
+      BEGIN CASE
+         CASE STATUS() = 0
+            WEOFSEQ L_SDC_HTML_EMAIL_FILE  ;* create the empty SDC html email file
+         CASE STATUS() = 1
+            L_ERR_CODE = "B400-GENERATE-SDC-HTML-EMAIL-3"
+            L_ERR_MSG = "The html email template file ":L_FILE_NAME_OUT:" is not a sequential-access file."
+            GO B400_EXIT
+         CASE STATUS() = 2
+            L_ERR_CODE = "B400-GENERATE-SDC-HTML-EMAIL-4"
+            L_ERR_MSG = "The file directory ":L_DIR_EMAIL:" does not exist."
+            GO B400_EXIT
+         CASE STATUS() = 3
+            L_ERR_CODE = "B400-GENERATE-SDC-HTML-EMAIL-5"
+            L_ERR_MSG = "The READONLY clause was included in the command statement and the html email template file ":L_FILE_NAME_OUT:" does not exist."
+            GO B400_EXIT
+         CASE STATUS() = 4
+            L_ERR_CODE = "B400-GENERATE-SDC-HTML-EMAIL-6"
+            L_ERR_MSG = "An unknown error occurred (such as having too many files open or permission problems) while opening sequential html email template file ":L_FILE_NAME_OUT:"."
+            GO B400_EXIT
+      END CASE
+   END
+
+   WRITESEQ L_HTML_EMAIL TO L_SDC_HTML_EMAIL_FILE ON ERROR
+      L_ERR_CODE = "B400-GENERATE-SDC-HTML-EMAIL-7"
+      L_ERR_MSG = "Unable to write to sequential HTML Email file ":L_FILE_NAME_OUT:" to directory ":L_DIR_EMAIL:"."
+   END THEN
+      CLOSESEQ L_SDC_HTML_EMAIL_FILE
+      ARGS_OUT<1> = L_DIR_EMAIL:"/":L_FILE_NAME_OUT
+   END ELSE
+      L_ERR_CODE = "B400-GENERATE-SDC-HTML-EMAIL-8"
+      L_ERR_MSG = "The sequential HTML Email file ":L_FILE_NAME_OUT:" does not exist or inaccessible."
+   END
+
+B400_EXIT:
+   RETURN
+
+
+****************************************
+* Purge SDC HTML Email Files One Time a Day
+****************************************
+B500_PURGE_SDC_HTML_EMAIL_FILES:
+
+   L_PURGE_IN<1>   = L_SYSCON_KEY  ;* SDC SYSCON setup table key
+   L_PURGE_IN<2,1> = 5             ;* Attribute # for HTML files directory
+   L_PURGE_IN<2,2> = 9             ;* Attribute # for last SDC Email purging date
+   L_PURGE_IN<2,3> = 10            ;* Attribute # for SDC Email reserved days
+
+   CALL SYSS9220.4(L_PURGE_IN,L_PURGE_OUT)
+   IF L_PURGE_OUT<1> # "" THEN
+      CALL SB.DISP(7,"[":OCONV(TIME(),"MTS"):"] Program ":L_PURGE_OUT<1,1>:" aborted at ":L_PURGE_OUT<1,2>:" -> ":L_PURGE_OUT<1,3>)
+   END
+
+B500_EXIT:
+   RETURN
+
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+   IF L_ERR_CODE # "" THEN
+      ARGS_OUT = ""
+      ARGS_OUT<2> = PROGRAM:@VM:L_ERR_CODE:@VM:L_ERR_MSG
+   END
+
+   RTN.FLAG = 0
+   REFRESH = -2
+
+A500_EXIT:
+   GO 9999
+
+
+****************************************
+* Exit
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END

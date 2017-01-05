@@ -1,0 +1,452 @@
+   SUBROUTINE ARMS4004.9
+* Auto-upload A/R Reapply Excel File through DDE
+* VERSION 8.2.3
+*
+* 27 JAN 14 8.2.3 juntan PRJ*JUNTAN.65-Enhancements for project ARM163D.
+* 05 NOV 13 8.2.3 juntan PRJ*ARM163D-AR ADJUSTMENT AND REAPPLY UPLOAD
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+   $INCLUDE IIPLUS.TOP
+   PROGRAM='ARMS4004.9'
+   $INCLUDE IIPLUS.TEXTLOAD
+   $INCLUDE IIPLUS.DEBUG
+
+   $INCLUDE TUBP TU.API.H
+   $INCLUDE TUBP ROC.H
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ===========
+*              This program is used to auto-upload A/R reapply batch
+*              from source excel file (ADJUSTMENT Worksheet).
+*
+* MODIFICATIONS:
+* =============
+*
+*              2014/01/27 juntan JUNTAN.67 - Enhancements for project ARM163D.
+*                                            (Ability to do multiple accounts
+*                                             in one re-apply transactions)
+*
+*              2013/11/04 juntan ARM163D - Initial Creation.
+*
+**************************************************************************
+
+A100_MAIN:
+
+   GOSUB A200_INITIALIZATION
+   IF RTN.FLAG THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF RTN.FLAG THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF RTN.FLAG THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+   GO A500_CONCLUSION
+
+
+****************************************
+* Definition of local variables & initialization of other variables.
+****************************************
+A200_INITIALIZATION:
+
+   RTN.FLAG                  = 0
+   STATUS                    = 0
+   WORK<71>                  = ''  ;* Balance due answer
+   HEXCEL                    = ''
+   APPLICATION               = ''
+   TOPIC                     = ''
+   L_SYSTEM_TOPICS           = ''
+   L_QUERY                   = ''
+   L_JUNK                    = ''
+   L_DONE                    = ''
+   L_OPEN_EXCEL_FLAG         = 0
+   L_RF                      = ''  ;* excel row reference
+   L_TOT                     = 3   ;* total number of data blocks to load from Excel
+   L_WS_NAME                 = "REAPPLY"  ;* excel worksheet name
+   L_TEST_WS_NAME            = ''
+   L_MAX_ROWS                = 50  ;* due to the DATA queue size limit
+
+   L_RAW_FROM_ACCT_NBR_LIST  = ''  ;* A/R From customer account # list
+   L_GOOD_FROM_ACCT_NBR_LIST = ''
+   L_FROM_ACCT_NBR           = ''
+   L_PREV_FROM_ACCT_NBR      = ''
+   L_RAW_TO_ACCT_NBR_LIST    = ''  ;* A/R To customer account # list
+   L_GOOD_TO_ACCT_NBR_LIST   = ''
+   L_TO_ACCT_NBR             = ''
+   L_PREV_TO_ACCT_NBR        = ''
+   L_RAW_FROM_REF_NBR_LIST   = ''  ;* A/R From reference # list
+   L_GOOD_FROM_REF_NBR_LIST  = ''
+   L_FROM_REF_NBR            = ''
+   L_RAW_AMT_LIST            = ''  ;* A/R amount list
+   L_GOOD_AMT_LIST           = ''
+   L_AMT                     = ''
+   L_RAW_TO_REF_NBR_LIST     = ''  ;* A/R To reference # list
+   L_GOOD_TO_REF_NBR_LIST    = ''
+   L_TO_REF_NBR              = ''
+
+   L_ERR_CD                  = ''
+   L_ERR_MSG                 = ''
+   L_KEY                     = ''
+   L_REC                     = ''
+   L_INC                     = 0
+   L_CNT                     = 0
+   L_POS                     = 0
+   L_START_POS               = 0
+   L_END_POS                 = 0
+   L_BAL_DUE_FLAG            = 0
+   L_UPLOAD_SUCCEED          = 0
+
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open the files needed in this subroutine.
+****************************************
+A300_OPEN_FILES:
+
+   CALL SB.OPEN.FILE("CUSTMST",CUSTMST,FILE.ERR)
+   IF FILE.ERR THEN
+      RTN.FLAG = 1
+      L_ERR_CD = "A300-ERROR-1"
+      L_ERR_MSG = "Unable to open database file CUSTMST."
+      GO A300_EXIT
+   END
+
+A300_EXIT:
+   RETURN
+
+
+****************************************
+* Main process structural logic
+****************************************
+A400_MAIN_PROCESS:
+
+   GOSUB B100_ESTABLISH_DDE_CONNECTION
+   IF RTN.FLAG THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B200_READ_DATA_BLOCK_FROM_EXCEL
+   IF RTN.FLAG THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B300_PERFORM_DATA_VALIDATION
+   IF RTN.FLAG THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B400_LOAD_DATA_BLOCK_ONTO_SCREEN
+   IF RTN.FLAG THEN
+      GO A400_EXIT
+   END
+
+A400_EXIT:
+   RETURN
+
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+   *** Error Handler & Clean Up ***
+   IF NOT(L_UPLOAD_SUCCEED) THEN
+      IF L_ERR_CD # ""  THEN
+         CALL SB.PROCESS("SYS0061,IP3000\":OCONV(TIME(),"MTS"):@VM:PROGRAM:@VM:L_ERR_CD:@VM:L_ERR_MSG)
+         CALL SB.DISP(9, L_ERR_MSG)
+      END
+
+      VALUE = ""
+      WORK<3> = ""     ;* From Account #
+      WORK<5> = ""     ;* To Account #
+      WORK<8> = ""     ;* From Ref #
+      WORK<7> = ""     ;* From Type
+      WORK<9> = ""     ;* From Amount
+      WORK<11> = ""    ;* To Ref #
+      WORK<10> = ""    ;* To Type
+      WORK<12> = ""    ;* To Amount
+      CNT = 0
+   END
+
+A500_EXIT:
+   RTN.FLAG = 0
+   REFRESH = -2
+   GO 9999
+
+
+****************************************
+* Establish DDE connection to Excel worksheet
+****************************************
+B100_ESTABLISH_DDE_CONNECTION:
+
+   *** Check Currently Opened Excel Files ***
+   CALL SB.DISP(9, "Verifying opened Excel file(s)":@AM:1:@AM:L_TOT)
+   CALL TU.DDE.CONNECT('EXCEL', 'System', HEXCEL, RTN.FLAG)
+   IF RTN.FLAG THEN
+      L_ERR_CD = "B100-ERROR-1"
+      L_ERR_MSG = "Unable to verify opened Excel file(s)."
+      GO B100_EXIT
+   END ELSE
+      CALL TU.DDE.READ(HEXCEL, 'Topics', 10, L_SYSTEM_TOPICS, RTN.FLAG)
+      IF RTN.FLAG THEN
+         L_ERR_CD = "B100-ERROR-2"
+         L_ERR_MSG = "Unable to retrieve Excel system topics."
+         GO B100_EXIT
+      END
+      SWAP CHAR(9) WITH @AM IN L_SYSTEM_TOPICS
+      FINDSTR L_WS_NAME IN L_SYSTEM_TOPICS SETTING L_POS ELSE L_POS = 0
+      IF L_POS # 0 THEN
+         TOPIC = L_SYSTEM_TOPICS<L_POS>
+         L_START_POS = INDEX(TOPIC,"]",1) + 1
+         L_END_POS = LEN(TOPIC)
+         L_TEST_WS_NAME = TOPIC[L_START_POS,L_END_POS]
+      END
+      IF L_WS_NAME # TRIM(L_TEST_WS_NAME) THEN
+         RTN.FLAG = 1
+         L_ERR_CD = "B100-ERROR-3"
+         L_ERR_MSG = "Unable to find source worksheet ":L_WS_NAME:"."
+         GO B100_EXIT
+      END
+   END
+
+   *** Establish DDE Connection between Excel and SBClient ***
+   CALL SB.DISP(9, "Establishing DDE connection":@AM:2:@AM:L_TOT)
+   CALL TU.DDE.CONNECT('EXCEL', TOPIC, HEXCEL, RTN.FLAG)
+   IF RTN.FLAG THEN
+      L_ERR_CD = "B100-ERROR-4"
+      L_ERR_MSG = "Unable to establish DDE connection to source Excel worksheet."
+      GO B100_EXIT
+   END
+
+   *** Verify System Language ***
+   CALL SB.DISP(9, "Verifying System Language":@AM:3:@AM:L_TOT)
+   CALL TU.DDE.READ(HEXCEL, 'R1C1..R1C1', 10, L_HEADER, RTN.FLAG)
+   IF RTN.FLAG THEN
+      CALL TU.DDE.READ(HEXCEL, 'L1C1..L1C1', 10, L_HEADER, RTN.FLAG)
+      IF RTN.FLAG THEN
+         CALL SB.PROCESS("SYS0061,IP2566\":"System Language")
+         L_ERR_CD = "B100-ERROR-5"
+         L_ERR_MSG = "Unable to detect the system language."
+         GO B100_EXIT
+      END
+      L_RF = 'L'    ;* French environment
+   END ELSE
+      L_RF = 'R'    ;* English environment
+   END
+
+B100_EXIT:
+   RETURN
+
+
+****************************************
+* Read data from Excel worksheet.
+****************************************
+B200_READ_DATA_BLOCK_FROM_EXCEL:
+
+   *** Read A/R Reapply Data from Excel Worksheet ***
+   CALL SB.DISP(9, "Reading From Account #":@AM:1:@AM:L_TOT)
+   CALL TU.DDE.READ(HEXCEL, L_RF:"8C1..":L_RF:L_MAX_ROWS+1:"C1", 10, L_RAW_FROM_ACCT_NBR_LIST, RTN.FLAG)
+   IF RTN.FLAG THEN
+      L_ERR_CD = "B200-ERROR-1"
+      L_ERR_MSG = "Unable to read From Account # from Excel."
+      GO B200_EXIT
+   END
+   L_RAW_FROM_ACCT_NBR_LIST = TRIM(L_RAW_FROM_ACCT_NBR_LIST," ","A")
+
+   CALL SB.DISP(9, "Reading To Account #":@AM:2:@AM:L_TOT)
+   CALL TU.DDE.READ(HEXCEL, L_RF:"8C2..":L_RF:L_MAX_ROWS+1:"C2", 10, L_RAW_TO_ACCT_NBR_LIST, RTN.FLAG)
+   IF RTN.FLAG THEN
+      L_ERR_CD = "B200-ERROR-2"
+      L_ERR_MSG = "Unable to read From Account # from Excel."
+      GO B200_EXIT
+   END
+   L_RAW_TO_ACCT_NBR_LIST = TRIM(L_RAW_TO_ACCT_NBR_LIST," ","A")
+
+   CALL SB.DISP(9, "Reading From Reference #":@AM:3:@AM:L_TOT)
+   CALL TU.DDE.READ(HEXCEL, L_RF:"8C3..":L_RF:L_MAX_ROWS+1:"C3", 10, L_RAW_FROM_REF_NBR_LIST, RTN.FLAG)
+   IF RTN.FLAG THEN
+      L_ERR_CD = "B200-ERROR-3"
+      L_ERR_MSG = "Unable to read From Reference # from Excel."
+      GO B200_EXIT
+   END
+   L_RAW_FROM_REF_NBR_LIST = TRIM(L_RAW_FROM_REF_NBR_LIST," ","A")
+
+   CALL SB.DISP(9, "Reading Amount $":@AM:4:@AM:L_TOT)
+   CALL TU.DDE.READ(HEXCEL, L_RF:"8C4..":L_RF:L_MAX_ROWS+1:"C4", 10, L_RAW_AMT_LIST, RTN.FLAG)
+   IF RTN.FLAG THEN
+      L_ERR_CD = "B200-ERROR-4"
+      L_ERR_MSG = "Unable to read Amount $ from Excel."
+      GO B200_EXIT
+   END
+   L_RAW_AMT_LIST = TRIM(L_RAW_AMT_LIST,"$","A")
+   L_RAW_AMT_LIST = TRIM(L_RAW_AMT_LIST,",","A")
+   L_RAW_AMT_LIST = TRIM(L_RAW_AMT_LIST," ","A")
+
+   CALL SB.DISP(9, "Reading To Reference #":@AM:5:@AM:L_TOT)
+   CALL TU.DDE.READ(HEXCEL, L_RF:"8C5..":L_RF:L_MAX_ROWS+1:"C5", 10, L_RAW_TO_REF_NBR_LIST, RTN.FLAG)
+   IF RTN.FLAG THEN
+      L_ERR_CD = "B200-ERROR-5"
+      L_ERR_MSG = "Unable to read To Reference # from Excel."
+      GO B200_EXIT
+   END
+   L_RAW_TO_REF_NBR_LIST = TRIM(L_RAW_TO_REF_NBR_LIST," ","A")
+
+B200_EXIT:
+   RETURN
+
+
+****************************************
+* Data validation process
+****************************************
+B300_PERFORM_DATA_VALIDATION:
+
+   *** First Pass for Verifing A/R Reapply Data ***
+   L_TOTAL_LINES = DCOUNT(L_RAW_FROM_REF_NBR_LIST,@VM)
+   FOR L_INC = 1 TO L_TOTAL_LINES
+      ** Retrieve Per A/R Reapply Record **
+      L_FROM_ACCT_NBR = TRIM(L_RAW_FROM_ACCT_NBR_LIST<1,L_INC>)
+      L_TO_ACCT_NBR = TRIM(L_RAW_TO_ACCT_NBR_LIST<1,L_INC>)
+      L_FROM_REF_NBR = TRIM(L_RAW_FROM_REF_NBR_LIST<1,L_INC>)
+      L_AMT = TRIM(L_RAW_AMT_LIST<1,L_INC>)
+      L_TO_REF_NBR = TRIM(L_RAW_TO_REF_NBR_LIST<1,L_INC>)
+
+      ** Treat as EOF if all the key info are blank **
+      IF L_FROM_ACCT_NBR = "" AND L_TO_ACCT_NBR = "" AND L_FROM_REF_NBR = "" AND L_AMT = "" AND L_TO_REF_NBR = "" THEN
+         L_TOTAL_LINES = L_INC - 1
+         EXIT ;* EOF
+      END
+
+      ** Display Progress Bar **
+      CALL SB.DISP(9, "Validating A/R reapply data: ":L_FROM_ACCT_NBR:"->":L_TO_ACCT_NBR:"->":L_FROM_REF_NBR:"->":L_AMT:"->":L_TO_REF_NBR)
+
+      *** Validate From Account # ***
+      VALUE = L_FROM_ACCT_NBR
+      CALL SB.PROCESS("ARMP4004.8")
+      IF RTN.FLAG THEN
+         GO B300_EXIT
+      END
+      WORK<3> = L_FROM_ACCT_NBR
+
+      *** Validate To Account # ***
+      VALUE = L_TO_ACCT_NBR
+      CALL SB.PROCESS("ARMP4004.10")
+      IF RTN.FLAG THEN
+         GO B300_EXIT
+      END
+      WORK<5> = L_TO_ACCT_NBR
+
+      ** Validate From Reference # **
+      VALUE = L_FROM_REF_NBR
+      CALL SB.PROCESS("ARMP4004.12")
+      IF RTN.FLAG THEN
+         GO B300_EXIT
+      END
+
+      ** Validate To Reference # **
+      VALUE = L_TO_REF_NBR
+      CALL SB.PROCESS("ARMP4004.15")
+      IF RTN.FLAG THEN
+         GO B300_EXIT
+      END
+
+      ** Prepare Good Data List for Uploading **
+      L_CNT += 1
+      L_GOOD_FROM_ACCT_NBR_LIST<1,L_CNT> = L_FROM_ACCT_NBR
+      L_GOOD_TO_ACCT_NBR_LIST<1,L_CNT> = L_TO_ACCT_NBR
+      L_GOOD_FROM_REF_NBR_LIST<1,L_CNT> = L_FROM_REF_NBR
+      L_GOOD_AMT_LIST<1,L_CNT> = L_AMT
+      L_GOOD_TO_REF_NBR_LIST<1,L_CNT> = L_TO_REF_NBR
+   NEXT L_INC
+
+   *** Clean up ***
+   WORK<3> = ""
+   WORK<5> = ""
+
+   *** Ready to Upload ***
+   CALL SB.DISP(9, "A/R Reapply Data Validation Completed.")
+   CALL SB.DISP(4,'ARMD4002.15')   ;* Dialog Box
+   IF RTN.FLAG THEN                ;* Start upload
+      RTN.FLAG = 0
+   END ELSE                        ;* User cancelled the upload
+      RTN.FLAG = 1
+      CALL SB.DISP(9, "Upload process is cancelled.")
+   END
+
+B300_EXIT:
+   RETURN
+
+
+****************************************
+* Auto-upload data block to entry screen
+****************************************
+B400_LOAD_DATA_BLOCK_ONTO_SCREEN:
+
+   CLEARDATA
+   L_TOTAL_LINES = DCOUNT(L_GOOD_FROM_REF_NBR_LIST,@VM)
+   FOR L_INC = 1 TO L_TOTAL_LINES
+      *** Retrieve Per A/R Reapply Record ***
+      L_PREV_FROM_ACCT_NBR = L_FROM_ACCT_NBR
+      L_FROM_ACCT_NBR = L_GOOD_FROM_ACCT_NBR_LIST<1,L_INC>
+      L_PREV_TO_ACCT_NBR = L_TO_ACCT_NBR
+      L_TO_ACCT_NBR = L_GOOD_TO_ACCT_NBR_LIST<1,L_INC>
+      L_FROM_REF_NBR = L_GOOD_FROM_REF_NBR_LIST<1,L_INC>
+      L_AMT = -L_GOOD_AMT_LIST<1,L_INC>  ;* opposite +/- sign for amount
+      L_TO_REF_NBR = L_GOOD_TO_REF_NBR_LIST<1,L_INC>
+
+      *** Quit When an Empty Row is Reached ***
+      IF L_FROM_ACCT_NBR = "" AND L_TO_ACCT_NBR = "" AND L_FROM_REF_NBR = "" AND L_AMT = "" AND L_TO_REF_NBR = "" THEN
+         EXIT
+      END
+
+      ** Display Progress Bar **
+      CALL SB.DISP(9, "Uploading A/R reapply data: ":L_FROM_ACCT_NBR:" -> ":L_TO_ACCT_NBR:" -> ":L_FROM_REF_NBR:" -> ":L_AMT:" -> ":L_TO_REF_NBR)
+
+      *** Staff entry value on screen  ***
+      IF L_PREV_FROM_ACCT_NBR = "" AND L_PREV_TO_ACCT_NBR = "" THEN
+         DATA L_FROM_ACCT_NBR,L_TO_ACCT_NBR,L_FROM_REF_NBR,L_AMT,L_TO_REF_NBR
+      END ELSE
+         IF L_FROM_ACCT_NBR = L_PREV_FROM_ACCT_NBR AND L_TO_ACCT_NBR = L_PREV_TO_ACCT_NBR THEN
+            DATA L_FROM_REF_NBR,L_AMT,L_TO_REF_NBR
+         END ELSE
+            DATA "@32","@22","@22","@22",L_FROM_ACCT_NBR,L_TO_ACCT_NBR,L_FROM_REF_NBR,L_AMT,L_TO_REF_NBR
+         END
+      END
+   NEXT L_INC
+
+   CALL SB.DISP(9, "Auto-uploading A/R reapply data is completed successfully.":@AM:L_INC-1:@AM:L_TOTAL_LINES)
+   L_UPLOAD_SUCCEED = 1
+
+B400_EXIT:
+   RETURN
+
+
+****************************************
+* Exit
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END

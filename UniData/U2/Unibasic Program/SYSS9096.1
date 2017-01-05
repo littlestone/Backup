@@ -1,0 +1,914 @@
+     SUBROUTINE SYSS9096.1
+* Sub-Routine to send files by FTP
+*
+* 
+* 30 JAN 13 8.2.3 piedes PRJ*FIN002D.2-(Sub #2) MONTH END FAST CLOSE PROJECT
+* 15 MAR 12 8.2.3 piedes PRJ*PIEDES.33-Adjust SYS9096.1 for Special Agreement
+* 16 JUN 11 8.2.3 piedes PRJ*MTH013D-Create PDF version of CMA, CMD, CMS, CVR month-end repo
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+
+     $INCLUDE IIPLUS.TOP
+     PROGRAM='SYSS9096.1'
+     $INCLUDE IIPLUS.TEXTLOAD
+     $INCLUDE IIPLUS.DEBUG
+
+****************************************
+*
+* DESCRIPTION:
+*
+*              1) This routine prepare the data to tranfer files by FTP
+*              AND
+*              2) Execute FTP script stored id SYSCON_REC<11>
+*
+*              Or Execute FTP script stored id SYSCON_REC<11> When RESEND Mode
+*
+*              I88 Record:
+*              I88*SYSS9096.1            - Email error to MIS
+*              I88*SYSS9096.1_IPX        - Email summary FTP Status to IPEX responsible
+*              I88*SYSS9096.1_CPL        - Email summary FTP Status to Canplas responsible
+*              I88*SYSJ9096.1_IPX        - Email Start/Complete Job to IPEX responsible
+*              I88*SYSJ9096.1_CPL        - Email Start/Complete Job to Canplas responsible
+*              I88*SYSJ9096.1_RESEND_IPX - Email Start/Complete Job to MIS
+*              I88*SYSJ9096.1_RESEND_CPL - Email Start/Complete Job to MIS
+*
+*              Unix Script:
+*              SYSS9096.1_ftp            - Email detail FTP Status to MIS
+*
+*              JSD:
+*              SYSJ9096.1_IPX            - IPX-FTP MTH_PDF Rpts (SEND)
+*              SYSJ9096.1_CPL            - CPL-FTP MTH_PDF Rpts (SEND)
+*              SYSJ9096.1_RESEND_IPX     - IPX-FTP MTH_PDF Rpts (RESEND)
+*              SYSJ9096.1_RESEND_CPL     - CPL-FTP MTH_PDF Rpts (RESEND)
+*
+*              Parameters:
+*              PARAM<1>           = ACCRONYM (ie CPL or IPX) and Retransmission FLAG
+*              L_ACCRONYM         = FIELD(PARAM<1>,",",1)
+*              L_COUNTRY_CODE     = FIELD(PARAM<1>,",",2) 
+*              L_RESEND           = FIELD(PARAM<1>,",",2)
+*
+*              SYSCON Record:
+*
+*              KEY                = "SYSS9096.1_":L_ACCRONYM
+*
+*              L_FTP_ADDRESS      = SYSCON_REC<1>  - ftp Address
+*              L_USER_CODE        = SYSCON_REC<2>  - ftp user code
+*              L_USER_PASSWORD    = SYSCON_REC<3>  - ftp user password
+*              L_LOCAL_FILE       = SYSCON_REC<4>  - Unidata File Name ie MTH_PDF
+*              L_LOCAL_PATH       = ATT<2> OF VOC OF SYSCON_REC<4>
+*              L_TRX_MOD          = SYSCON_REC<5>  - Transfer mod (binary or ascii)
+*              L_EXT              = SYSCON_REC<6>  - Extension file name ie .pdf
+*              L_REPORTS          = SYSCON_REC<7>  - List of file name or part file name to transfer
+*              L_OUTBOX           = SYSCON_REC<8>  - Path of the outbox directory
+*                                   ie "/usr/users/ftp/canplas/dev/OUTBOX/"
+*                                   Put between single or double quote (" ")
+*              L_SENT             = SYSCON_REC<9> - Path of the sent directory
+*                                   ie "/usr/users/ftp/canplas/dev/SENT/"
+*                                   Put between single or double quote (" ")
+*              L_UNIX_SCRIPT_NAME = SYSCON_REC<10> - Name of Ftp Unix Script
+*              L_FTP_DIR          = SYSCON_REC<11> - Name of the sub-directory on ftp SERVER
+*
+*
+* MODIFICATIONS:
+*
+*
+*              2011/06/16 piedes  Creation of this Sub-Routine
+*
+*
+****************************************
+
+     GOSUB A200_INITIALIZATION
+
+     IF PARAM<1> = "" THEN L_ACCRONYM = "???"
+
+     PRINT ' '                   
+     PRINT '*****************************************************'
+     PRINT '            R U N N I N G --> SYSS9096.1'
+     PRINT '               File transfer process'
+     PRINT '            FTP (File Transfer Protocol)' 
+     PRINT '                   FOR Group: ' : L_ACCRONYM
+     PRINT '*****************************************************'
+     PRINT ' ' 
+
+     IF L_ACCRONYM = "???" THEN
+*** \/ piedes FIN002D.2 2013/01/30
+*        L_SUBJECT = PROGRAM : ' - FTP Problem - '
+        L_SUBJECT = PROGRAM :"_":L_SYSCON_KEY : ' - FTP Problem - '
+*** /\ piedes FIN002D.2 2013/01/30
+
+        L_MESSAGE = 'Missing Company Accronym from PARAM<1>'
+
+        PRINT ''
+        PRINT '     ':L_MESSAGE
+        PRINT '     PROGRAM ABORTED'
+        PRINT ''
+
+        L_EMAIL = L_INTERNAL_EMAIL
+        GOSUB A550_SEND_EMAIL
+
+        RTN.FLAG = 1
+
+        GO A110_MAIN_EXIT
+     END
+
+     GOSUB A300_OPEN_FILES
+     IF RTN.FLAG THEN
+        RTN.FLAG = 0
+        GO A110_MAIN_EXIT
+     END
+
+     GOSUB A400_ASSIGN_PARAMETER
+     IF RTN.FLAG THEN
+        RTN.FLAG = 0
+        GO A110_MAIN_EXIT
+     END
+
+     GOSUB A500_MAIN_PROCESS
+     IF RTN.FLAG THEN
+        RTN.FLAG = 0
+        GO A110_MAIN_EXIT
+     END
+
+A110_MAIN_EXIT:
+
+     PRINT '*****************************************************'
+     PRINT '     E N D   O F   R U N ----> SYSS9096.1'
+     PRINT '*****************************************************'
+     PRINT ''
+
+     GO 9999
+
+
+****************************************
+* Definition of local variables & initialization of other variables.
+****************************************
+A200_INITIALIZATION: 
+
+     RTN.FLAG           = 0
+     L_SYSCON_REC       = ''
+
+     L_ACCRONYM         = FIELD(PARAM<1>,".",1)
+     L_SYSCON_KEY       = FIELD(PARAM<1>,",",1) 
+
+     L_RESEND           = FIELD(PARAM<1>,",",2)
+
+     READV L_INTERNAL_EMAIL FROM SYSTBL, "I88*":PROGRAM, 2 ELSE L_INTERNAL_EMAIL = ""
+
+     READV L_EXTERNAL_EMAIL FROM SYSTBL, "I88*":PROGRAM:"_":L_SYSCON_KEY , 2 ELSE L_EXTERNAL_EMAIL = ""
+
+     L_FTP_ADDRESS      = ''
+     L_USER_CODE        = ''
+     L_USER_PASSWORD    = ''
+     L_LOCAL_FILE       = ''
+     L_LOCAL_PATH       = ''
+     L_REPORTS          = ''
+     L_OUTBOX           = ''
+     L_SENT             = ''
+     L_UNIX_SCRIPT_NAME = '' 
+     L_REPORTS_NAME     = ''
+     L_VALID_TYPE       = ''
+     L_NB_REPORTS       = 0
+     L_END              = 0
+     L_VALID_GRP        = 0
+     L_CPY              = ''
+     L_DIV              = ''
+     L_NB_TRS           = 0
+     L_TRN_MOD          = ""
+     L_EXT              = ""
+     L_FILE_TRANSFERED  = ""
+     L_FTP_DIR          = ""
+     RETURN
+
+
+****************************************
+* Open files
+****************************************
+A300_OPEN_FILES:
+
+     FILE.ERR = 0
+
+     CALL SB.OPEN.FILE("VOC",L_VOC,FILE.ERR)
+     IF FILE.ERR THEN
+        RTN.FLAG = 1
+        GO A310_OPEN_FILES_EXIT
+     END
+
+     CALL SB.OPEN.FILE("SYSCON",SYSCON,FILE.ERR)
+     IF FILE.ERR THEN
+        RTN.FLAG = 1
+        GO A310_OPEN_FILES_EXIT
+     END
+
+     CALL SB.OPEN.FILE("SYSTBL",SYSTBL,FILE.ERR)
+     IF FILE.ERR THEN
+        RTN.FLAG = 1
+        GO A310_OPEN_FILES_EXIT
+     END
+
+     CALL SB.OPEN.FILE("COMPMST",COMPMST,FILE.ERR)
+     IF FILE.ERR THEN
+        RTN.FLAG = 1
+        GO A310_OPEN_FILES_EXIT
+     END
+
+A310_OPEN_FILES_EXIT:
+     RETURN
+
+
+****************************************
+* Assign parameters needed for FTP Transfer
+****************************************
+A400_ASSIGN_PARAMETER:
+
+    
+     READ L_SYSCON_REC FROM SYSCON, PROGRAM:"_":L_SYSCON_KEY ELSE
+
+*** \/ piedes FIN002D.2 2013/01/30
+*        L_SUBJECT = PROGRAM : ' - FTP Problem - '
+        L_SUBJECT = PROGRAM :"_":L_SYSCON_KEY : ' - FTP Problem - '
+** /\ piedes FIN002D.2 2013/01/30
+
+        L_MESSAGE = 'Missing SYSCON Record: ' :"SYSS9096.1_":L_SYSCON_KEY 
+
+        PRINT ''
+        PRINT '     ':L_MESSAGE
+        PRINT '     PROGRAM ABORTED'
+        PRINT ''
+
+        L_EMAIL = L_INTERNAL_EMAIL
+        GOSUB A550_SEND_EMAIL
+
+        RTN.FLAG = 1
+
+        GO A400_ASSIGN_PARAMETER_EXIT
+     END
+
+     L_FTP_ADDRESS     = TRIM(FIELD(L_SYSCON_REC<1>,";",1))
+
+     IF L_FTP_ADDRESS  = "" THEN
+ 
+*** \/ piedes FIN002D.2 2013/01/30
+*        L_SUBJECT = PROGRAM : ' - FTP Problem - '
+        L_SUBJECT = PROGRAM :"_":L_SYSCON_KEY : ' - FTP Problem - '
+*** /\ piedes FIN002D.2 2013/01/30
+
+        L_MESSAGE = 'Missing Ftp Address in L_SYSCON_REC<1> for ' :"SYSS9096.1_":L_SYSCON_KEY
+
+        PRINT ''
+        PRINT '     ':L_MESSAGE
+        PRINT '     PROGRAM ABORTED'
+        PRINT ''
+
+        L_EMAIL = L_INTERNAL_EMAIL
+        GOSUB A550_SEND_EMAIL
+
+        RTN.FLAG = 1
+
+        GO A400_ASSIGN_PARAMETER_EXIT 
+     END
+
+     L_USER_CODE     = TRIM(FIELD(L_SYSCON_REC<2>,";",1))
+
+     IF L_USER_CODE  = "" THEN
+*** \/ piedes FIN002D.2 2013/01/30
+*        L_SUBJECT = PROGRAM : ' - FTP Problem - '
+        L_SUBJECT = PROGRAM :"_":L_SYSCON_KEY : ' - FTP Problem - '
+*** /\ piedes FIN002D.2 2013/01/30
+        L_MESSAGE = 'Missing User Code in L_SYSCON_REC<2> for ' :"SYSS9096.1_":L_SYSCON_KEY 
+
+        PRINT ''
+        PRINT '     ':L_MESSAGE
+        PRINT '     PROGRAM ABORTED'
+        PRINT ''
+
+        L_EMAIL = L_INTERNAL_EMAIL
+        GOSUB A550_SEND_EMAIL
+
+        RTN.FLAG = 1
+
+        GO A400_ASSIGN_PARAMETER_EXIT 
+     END
+
+     L_USER_PASSWORD    = TRIM(FIELD(L_SYSCON_REC<3>,";",1))
+
+     IF L_USER_PASSWORD = "" THEN
+*** \/ piedes FIN002D.2 2013/01/30
+*        L_SUBJECT = PROGRAM : ' - FTP Problem - '
+        L_SUBJECT = PROGRAM :"_":L_SYSCON_KEY : ' - FTP Problem - '
+*** /\ piedes FIN002D.2 2013/01/30
+        L_MESSAGE = 'Missing User Password in L_SYSCON_REC<3> for ' :"SYSS9096.1_":L_SYSCON_KEY 
+
+        PRINT ''
+        PRINT '     ':L_MESSAGE
+        PRINT '     PROGRAM ABORTED'
+        PRINT ''
+
+        L_EMAIL = L_INTERNAL_EMAIL
+        GOSUB A550_SEND_EMAIL
+
+        RTN.FLAG = 1
+
+        GO A400_ASSIGN_PARAMETER_EXIT 
+     END
+
+     L_LOCAL_FILE     = TRIM(FIELD(L_SYSCON_REC<4>,";",1))
+
+     IF L_LOCAL_FILE  = "" THEN
+*** \/ piedes FIN002D.2 2013/01/30
+*        L_SUBJECT = PROGRAM : ' - FTP Problem - '
+        L_SUBJECT = PROGRAM :"_":L_SYSCON_KEY : ' - FTP Problem - '
+*** /\ piedes FIN002D.2 2013/01/30
+        L_MESSAGE = 'Missing Source File (ie MTH_PDF) in L_SYSCON_REC<4> for ' :"SYSS9096.1_":L_SYSCON_KEY 
+
+        PRINT ''
+        PRINT '     ':L_MESSAGE
+        PRINT '     PROGRAM ABORTED'
+        PRINT ''
+
+        L_EMAIL = L_INTERNAL_EMAIL
+        GOSUB A550_SEND_EMAIL
+
+        RTN.FLAG = 1
+
+        GO A400_ASSIGN_PARAMETER_EXIT 
+     END ELSE
+        L_LOCAL_PATH = L_LOCAL_FILE
+        IF L_LOCAL_PATH[LEN(L_LOCAL_PATH),1] # "/" THEN L_LOCAL_PATH = L_LOCAL_PATH:"/"
+     END
+
+     L_TRX_MOD     = TRIM(FIELD(L_SYSCON_REC<5>,";",1))
+
+     IF L_TRX_MOD  = "" THEN
+*** \/ piedes FIN002D.2 2013/01/30
+*        L_SUBJECT = PROGRAM : ' - FTP Problem - '
+        L_SUBJECT = PROGRAM :"_":L_SYSCON_KEY : ' - FTP Problem - '
+*** /\ piedes FIN002D.2 2013/01/30
+        L_MESSAGE = 'Missing Transfering MOD (binary or ascii) in L_SYSCON_REC<5> for ' :"SYSS9096.1_":L_SYSCON_KEY
+
+        PRINT ''
+        PRINT '     ':L_MESSAGE
+        PRINT '     PROGRAM ABORTED'
+        PRINT ''
+
+        L_EMAIL = L_INTERNAL_EMAIL
+        GOSUB A550_SEND_EMAIL
+
+        RTN.FLAG = 1
+
+        GO A400_ASSIGN_PARAMETER_EXIT 
+     END
+
+     L_EXT     = TRIM(FIELD(L_SYSCON_REC<6>,";",1))
+
+     IF L_EXT  = "" THEN
+*** \/ piedes FIN002D.2 2013/01/30
+*        L_SUBJECT = PROGRAM : ' - FTP Problem - '
+        L_SUBJECT = PROGRAM :"_":L_SYSCON_KEY : ' - FTP Problem - '
+*** /\ piedes FIN002D.2 2013/01/30
+        L_MESSAGE = 'Missing File Extension (ie .pdf) in L_SYSCON_REC<6> for ' :"SYSS9096.1_":L_SYSCON_KEY
+
+        PRINT ''
+        PRINT '     ':L_MESSAGE
+        PRINT '     PROGRAM ABORTED'
+        PRINT ''
+
+        L_EMAIL = L_INTERNAL_EMAIL
+        GOSUB A550_SEND_EMAIL
+
+        RTN.FLAG = 1
+
+        GO A400_ASSIGN_PARAMETER_EXIT 
+     END
+
+     L_REPORTS    = TRIM(FIELD(L_SYSCON_REC<7>,";",1))
+
+     IF L_REPORTS = "" THEN
+*** \/ piedes FIN002D.2 2013/01/30
+*        L_SUBJECT = PROGRAM : ' - FTP Problem - '
+        L_SUBJECT = PROGRAM :"_":L_SYSCON_KEY : ' - FTP Problem - '
+*** /\ piedes FIN002D.2 2013/01/30
+        L_MESSAGE = 'Missing File Name or a part of File name to Transfer in L_SYSCON_REC<7> for ' :"SYSS9096.1_":L_SYSCON_KEY
+
+        PRINT ''
+        PRINT '     ':L_MESSAGE
+        PRINT '     PROGRAM ABORTED'
+        PRINT ''
+
+        L_EMAIL = L_INTERNAL_EMAIL
+        GOSUB A550_SEND_EMAIL
+
+        RTN.FLAG = 1
+
+        GO A400_ASSIGN_PARAMETER_EXIT 
+     END
+
+     L_OUTBOX        = TRIM(FIELD(L_SYSCON_REC<8>,";",1))[2,LEN(TRIM(FIELD(L_SYSCON_REC<8>,";",1)))-2]
+     L_SUB_DIR       = TRIM(FIELD(L_SYSCON_REC<12>,";",1))
+     L_COUNTRY_CODE  = TRIM(FIELD(L_SYSCON_REC<13>,";",1))
+     IF L_COUNTRY_CODE = "" THEN L_COUNTRY_CODE = "ALL"
+*     IF L_SUB_DIR = "" THEN L_SUB_DIR = PARAM<1>
+*     IF L_COUNTRY_CODE # "" THEN
+*        L_SUB_DIR := "_":L_COUNTRY_CODE
+*     END ELSE
+*        L_COUNTRY_CODE = "ALL"
+*     END
+
+
+     IF L_OUTBOX  = "" THEN
+*** \/ piedes FIN002D.2 2013/01/30
+*        L_SUBJECT = PROGRAM : ' - FTP Problem - '
+        L_SUBJECT = PROGRAM :"_":L_SYSCON_KEY : ' - FTP Problem - '
+*** /\ piedes FIN002D.2 2013/01/30
+        L_MESSAGE = 'Missing Outbox Directory Info in L_SYSCON_REC<8> for ' :"SYSS9096.1_":L_SYSCON_KEY
+
+        PRINT ''
+        PRINT '     ':L_MESSAGE
+        PRINT '     PROGRAM ABORTED'
+        PRINT ''
+
+        L_EMAIL = L_INTERNAL_EMAIL
+        GOSUB A550_SEND_EMAIL
+
+        RTN.FLAG = 1
+
+        GO A400_ASSIGN_PARAMETER_EXIT 
+     END ELSE
+        L_OUTBOX := L_SUB_DIR
+     END
+
+     L_SENT      =  TRIM(FIELD(L_SYSCON_REC<9>,";",1))[2,LEN(TRIM(FIELD(L_SYSCON_REC<9>,";",1)))-2]
+
+     IF L_SENT   = "" THEN
+*** \/ piedes FIN002D.2 2013/01/30
+*        L_SUBJECT = PROGRAM : ' - FTP Problem - '
+        L_SUBJECT = PROGRAM :"_":L_SYSCON_KEY : ' - FTP Problem - '
+*** /\ piedes FIN002D.2 2013/01/30
+        L_MESSAGE = 'Missing Sent Directory Info in L_SYSCON_REC<9> for ' :"SYSS9096.1_":L_SYSCON_KEY
+
+        PRINT ''
+        PRINT '     ':L_MESSAGE
+        PRINT '     PROGRAM ABORTED'
+        PRINT ''
+
+        L_EMAIL = L_INTERNAL_EMAIL
+        GOSUB A550_SEND_EMAIL
+
+        RTN.FLAG = 1
+
+        GO A400_ASSIGN_PARAMETER_EXIT
+     END ELSE
+        L_SENT := L_SUB_DIR
+     END
+
+*     L_LOCAL      = TRIM(FIELD(L_SYSCON_REC<10>,";",1))[2,LEN(TRIM(FIELD(L_SYSCON_REC<10>,";",1)))-2]
+
+*     IF L_LOCAL   = "" THEN
+*        L_SUBJECT = PROGRAM : ' - FTP Problem - '
+*        L_MESSAGE = 'Missing Source Directory Info in L_SYSCON_REC<10> for ' :"SYSS9096.1_":L_SYSCON_KEY
+
+*        PRINT ''
+*        PRINT '     ':L_MESSAGE
+*        PRINT '     PROGRAM ABORTED'
+*        PRINT ''
+
+*        L_EMAIL = L_INTERNAL_EMAIL
+*        GOSUB A550_SEND_EMAIL
+
+*        RTN.FLAG = 1
+
+*        GO A400_ASSIGN_PARAMETER_EXIT 
+*     END
+
+     L_UNIX_SCRIPT_NAME    = TRIM(FIELD(L_SYSCON_REC<10>,";",1))
+
+     IF L_UNIX_SCRIPT_NAME = "" THEN
+*** \/ piedes FIN002D.2 2013/01/30
+*        L_SUBJECT = PROGRAM : ' - FTP Problem - '
+        L_SUBJECT = PROGRAM :"_":L_SYSCON_KEY : ' - FTP Problem - '
+*** /\ piedes FIN002D.2 2013/01/30
+        L_MESSAGE = 'Missing Script Name in L_SYSCON_REC<10> for ' :"SYSS9096.1_":L_SYSCON_KEY
+
+        PRINT ''
+        PRINT '     ':L_MESSAGE
+        PRINT '     PROGRAM ABORTED'
+        PRINT ''
+
+        L_EMAIL = L_INTERNAL_EMAIL
+        GOSUB A550_SEND_EMAIL
+
+        RTN.FLAG = 1
+
+        GO A400_ASSIGN_PARAMETER_EXIT 
+     END
+
+     L_FTP_DIR       = TRIM(FIELD(L_SYSCON_REC<11>,";",1))
+
+     IF L_FTP_DIR = "" THEN
+*** \/ piedes FIN002D.2 2013/01/30
+*        L_SUBJECT = PROGRAM : ' - FTP Problem - '
+        L_SUBJECT = PROGRAM :"_":L_SYSCON_KEY : ' - FTP Problem - '
+*** /\ piedes FIN002D.2 2013/01/30
+        L_MESSAGE = 'Missing Sub Directory Name in L_SYSCON_REC<11> for ' :"SYSS9096.1_":L_SYSCON_KEY
+
+        PRINT ''
+        PRINT '     ':L_MESSAGE
+        PRINT '     PROGRAM ABORTED'
+        PRINT ''
+
+        L_EMAIL = L_INTERNAL_EMAIL
+        GOSUB A550_SEND_EMAIL
+
+        RTN.FLAG = 1
+
+        GO A400_ASSIGN_PARAMETER_EXIT 
+     END
+
+
+A400_ASSIGN_PARAMETER_EXIT:
+     RETURN
+
+
+****************************************
+* Main process
+****************************************
+A500_MAIN_PROCESS:
+
+     IF L_RESEND = "R" THEN ; * RESEND mode: resend file already in OUTBOX
+        PRINT ' '
+        PRINT '*****************************************************'
+        PRINT '     RESEND Mode'
+        PRINT '     Re-transfering file ' : L_OUTBOX : "*" :L_EXT
+        PRINT '*****************************************************'
+        PRINT ' '
+
+        GOSUB A530_FTP_TRANSFER_FILE
+     END ELSE
+
+        GOSUB A515_CHECK_DIR_EXIST
+        GOSUB A540_CLEAN_DIR
+
+        L_NB_REPORTS       = DCOUNT(L_REPORTS, VM)
+
+        FOR L_IND = 1 TO L_NB_REPORTS
+           
+           L_END = 0
+   
+           L_REPORTS_NAME = FIELD(L_REPORTS<1,L_IND>,"|",1)
+
+           L_VALID_TYPE   = FIELD(L_REPORTS<1,L_IND>,"|",2)
+
+           PRINT ' '
+           PRINT '*****************************************************'
+           PRINT '     Now processing file matching: ' : L_REPORTS_NAME
+           PRINT '*****************************************************'
+ 
+           EXECUTE "CLEARSELECT"
+
+           L_STMT  = 'SELECT ' : L_LOCAL_FILE : ' WITH @ID = "' : L_REPORTS_NAME : ']" BY @ID'
+
+           EXECUTE L_STMT CAPTURING GARB
+
+           IF @SYSTEM.RETURN.CODE <= 0 THEN
+              PRINT ''
+              PRINT '     No file matching: ' : L_REPORTS_NAME 
+              PRINT ''
+              CONTINUE
+           END
+          
+           FIN = 0
+           LOOP
+              READNEXT ID ELSE L_END = 1
+           UNTIL L_END DO
+
+              BEGIN CASE
+
+                 CASE L_VALID_TYPE[1,2] = "NV" ; * Company Accronym
+                    L_CPY = L_ACCRONYM
+                    L_DIV = ''
+                    COMP.NAME   = L_CPY
+                    L_TO_VALID  = 0
+                    L_VALID_GRP = 1
+
+                 CASE 1 ; * Company Code Included in the File Name at ID[L_VALID_TYPE,2]
+                    L_CPY = ID[FIELD(L_VALID_TYPE,",",1),2]
+                    IF FIELD(L_VALID_TYPE,",", 2) # "ALL" THEN 
+                       L_DIV = ID[FIELD(L_VALID_TYPE,",",2),2]
+                       IF L_DIV = "AL" THEN L_DIV = "01"
+                    END ELSE
+                       L_DIV = "01" 
+                    END
+                    L_TO_VALID  = 1
+ 
+              END CASE
+
+              IF L_TO_VALID THEN
+                 READV COMP.NAME FROM COMPMST, L_CPY, 1 ELSE COMP.NAME = "UNKNOWN"
+                 L_VALID_GRP = 0 
+                 GOSUB A510_VALID_CPY_GRP
+              END
+
+              IF L_VALID_GRP THEN
+                 PRINT ''
+                 PRINT '     ' : ID : ' to transfer...'
+                 PRINT '     For ' : COMP.NAME : ' Country: ' : L_COUNTRY_CODE
+                 L_FILE_TRANSFERED := ID : VM
+                 GOSUB A520_CP_FILES 
+                 L_NB_TRS += 1
+              END
+           REPEAT
+
+        NEXT L_IND
+
+        IF L_NB_TRS > 0 THEN
+           GOSUB A530_FTP_TRANSFER_FILE
+        END ELSE
+           PRINT '*****************************************************'
+           PRINT ''
+           PRINT '     No file to transfer to group ':L_ACCRONYM
+           PRINT ''
+
+           L_SUBJECT = PROGRAM :"_":L_SYSCON_KEY : ' - FTP No file to upload - '
+           L_MESSAGE = '*** No file to upload ***'
+
+           L_EMAIL = L_EXTERNAL_EMAIL :", ":L_INTERNAL_EMAIL
+           GOSUB A550_SEND_EMAIL
+        END
+     END
+
+A500_MAIN_PROCESS_EXIT:
+     RETURN
+
+
+****************************************
+* Valid Company Group
+****************************************
+A510_VALID_CPY_GRP:
+
+     PARAM      = ""
+     PARAM<1>   = L_CPY
+     PARAM<2>   = L_DIV
+
+     CALL SB.PROCESS("SYSS9045.1")
+     IF PARAM<4> = L_ACCRONYM THEN
+        IF PARAM<5> = L_COUNTRY_CODE OR L_COUNTRY_CODE = "ALL" THEN L_VALID_GRP = 1
+     END
+
+A510_VALID_CPY_GRP_EXIT:
+     RETURN
+
+
+****************************************
+* Copy file to OUTBOX dir
+****************************************
+A515_CHECK_DIR_EXIST:
+
+     L_LOC   = 0
+     L_STMT  = '!ls -d '
+     L_STMT := L_OUTBOX
+
+     EXECUTE L_STMT CAPTURING GARB
+
+     L_LOC = INDEX(GARB,"not found",1)
+
+     IF L_LOC THEN 
+        L_STMT  = '!mkdir '
+        L_STMT := L_OUTBOX
+        EXECUTE L_STMT CAPTURING GARB
+        L_STMT  = '!chmod 777 '
+        L_STMT := L_OUTBOX
+        EXECUTE L_STMT CAPTURING GARB
+     END
+
+     L_LOC   = 0
+     L_STMT  = '!ls -d '
+     L_STMT := L_SENT 
+     EXECUTE L_STMT CAPTURING GARB
+
+     L_LOC = INDEX(GARB,"not found",1)
+
+     IF L_LOC THEN 
+        L_STMT  = '!mkdir '
+        L_STMT := L_SENT
+        EXECUTE L_STMT CAPTURING GARB
+        L_STMT  = '!chmod 777 '
+        L_STMT := L_SENT
+        EXECUTE L_STMT CAPTURING GARB
+    END
+
+A515_CHECK_DIR_EXIST_EXIT:
+     RETURN
+
+
+****************************************
+* Copy file to OUTBOX dir
+****************************************
+A520_CP_FILES:
+
+     L_STMT  = '!cp -p '
+     L_STMT := L_LOCAL_PATH
+     L_STMT := ID : ' ' 
+     L_STMT := L_OUTBOX 
+     EXECUTE L_STMT CAPTURING GARB
+
+     NB_LINE = DCOUNT(GARB, AM)
+*     PRINT '     Execute Unix Command: ' : L_STMT
+     FOR I_IND = 1 TO NB_LINE
+        PRINT '     ' : GARB<I_IND>
+     NEXT I_IND
+ 
+A520_CP_FILES_EXIT:
+     RETURN
+
+
+****************************************
+* File transfer
+****************************************
+A530_FTP_TRANSFER_FILE:
+
+     L_DATE        = DATE()
+     L_TIME        = TIME()
+
+     L_CONV_DATE   = OCONV(L_DATE, "D4/")
+     L_CONV_TIME   = OCONV(L_TIME, "MTS")
+
+     PRINT '*****************************************************'
+     PRINT ''
+     PRINT '     ' : L_CONV_DATE : " - " : L_CONV_TIME 
+     PRINT '     Begin FTP transfer to ' : L_FTP_ADDRESS
+
+     L_UNIX_SCRIPT_STMT  = "! ": L_UNIX_SCRIPT_NAME
+     L_UNIX_SCRIPT_STMT := " " : L_INTERNAL_EMAIL
+     L_UNIX_SCRIPT_STMT := " " : L_FTP_ADDRESS
+     L_UNIX_SCRIPT_STMT := " " : L_USER_CODE
+     L_UNIX_SCRIPT_STMT := " " : L_USER_PASSWORD
+     L_UNIX_SCRIPT_STMT := " " : L_OUTBOX
+     L_UNIX_SCRIPT_STMT := " " : L_TRX_MOD
+     L_UNIX_SCRIPT_STMT := " " : L_EXT
+     L_UNIX_SCRIPT_STMT := " " : L_FTP_DIR 
+     L_UNIX_SCRIPT_STMT := " " : L_SUB_DIR
+
+     EXECUTE L_UNIX_SCRIPT_STMT CAPTURING L_STMT_LOG
+
+     IF @SYSTEM.RETURN.CODE = -1 THEN
+         L_DATE        = DATE()
+         L_TIME        = TIME()
+
+         L_CONV_DATE   = OCONV(L_DATE, "D4/")
+         L_CONV_TIME   = OCONV(L_TIME, "MTS")
+
+         PRINT ''
+         PRINT '     ' : L_CONV_DATE : " - " : L_CONV_TIME 
+
+         NB_LINE = DCOUNT(L_STMT_LOG, AM)
+
+         PRINT '     Problem transfering file!!!'
+         FOR I_IND = 1 TO NB_LINE
+            PRINT '     ' : L_STMT_LOG<I_IND>
+         NEXT I_IND
+         PRINT ''
+         RTN.FLAG = 1
+*** \/ piedes FIN002D.2 2013/01/30
+*         L_SUBJECT = PROGRAM : ' - FTP Failed - '
+         L_SUBJECT = PROGRAM :"_":L_SYSCON_KEY: ' - FTP Failed - '
+*** /\ piedes FIN002D.2 2013/01/30
+         L_MESSAGE = 'Upload from INFOFLO (IPEX Inc.) completed unsuccessfully.'
+
+         L_EMAIL = L_EXTERNAL_EMAIL
+         GOSUB A550_SEND_EMAIL
+     END ELSE
+         L_DATE        = DATE()
+         L_TIME        = TIME()
+
+         L_CONV_DATE   = OCONV(L_DATE, "D4/")
+         L_CONV_TIME   = OCONV(L_TIME, "MTS")
+
+         PRINT '' 
+         PRINT '     ' : L_CONV_DATE : " - " : L_CONV_TIME 
+         PRINT '     Upload completed successfully.'
+         PRINT ''
+         FILES_TRX = DCOUNT(L_FILE_TRANSFERED, VM)
+         FOR I_IND = 1 TO FILES_TRX - 1
+            PRINT '     ' : I_IND'R%3' : " - " : L_FILE_TRANSFERED<1,I_IND>
+         NEXT I_IND
+         PRINT ''
+* 
+*        Move to SENT directory
+         L_STMT  = '!mv ': L_OUTBOX : '/*.* '
+         L_STMT := L_SENT  
+
+         EXECUTE L_STMT CAPTURING GARB
+
+         NB_LINE = DCOUNT(GARB, AM)
+*         PRINT '     Execute Unix Command: ' : L_STMT
+*         PRINT ''
+         FOR I_IND = 1 TO NB_LINE
+            PRINT '     ' : GARB<I_IND>
+         NEXT I_IND
+
+*** \/ piedes FIN002D.2 2013/01/30
+*         L_SUBJECT  = PROGRAM :"_":L_ACCRONYM : ' - FTP Completed Successfully - '
+         L_SUBJECT  = PROGRAM :"_":L_SYSCON_KEY : ' - FTP Completed Successfully - '
+*** /\ piedes FIN002D.2 2013/01/30
+         L_MESSAGE  = 'Upload from  INFOFLO (IPEX Inc.) completed successfully.'
+         L_MESSAGE := VM : 'Files transfered to ' : L_FTP_ADDRESS:"/":L_FTP_DIR:"/":L_SUB_DIR 
+         L_MESSAGE := VM : L_FILE_TRANSFERED
+
+         L_EMAIL = L_EXTERNAL_EMAIL
+         GOSUB A550_SEND_EMAIL
+     END
+
+A530_FTP_TRANSFER_FILE_EXIT: 
+     RETURN
+
+
+****************************************
+* Cleanup OUTBOX & SENT dir
+****************************************
+A540_CLEAN_DIR:
+     
+     * Delete old files from OUTBOX
+     L_STMT  = '!rm ' : L_OUTBOX : "/*.*"
+     EXECUTE L_STMT CAPTURING GARB
+
+     NB_LINE = DCOUNT(GARB, AM)
+     PRINT '     Cleanup of OUTBOX directory'
+     PRINT ''
+*     PRINT '     Execute Unix Command: ' : L_STMT
+*     PRINT ''
+     FOR I_IND = 1 TO NB_LINE
+        PRINT '     ' : GARB<I_IND>
+     NEXT I_IND
+
+     * Delete old files from SENT
+     L_STMT  = '!rm ' : L_SENT : "/*.*"
+     EXECUTE L_STMT CAPTURING GARB
+
+     NB_LINE = DCOUNT(GARB, AM)
+*     PRINT '     Execute Unix Command: ' : L_STMT
+*     PRINT ''
+     FOR I_IND = 1 TO NB_LINE
+        PRINT '     ' : GARB<I_IND>
+     NEXT I_IND
+
+A540_CLEAN_DIR_EXIT:
+     RETURN
+
+
+****************************************
+* Send Email
+****************************************
+A550_SEND_EMAIL:
+
+     L_DATE        = DATE()
+     L_TIME        = TIME()
+
+     L_CONV_DATE   = OCONV(L_DATE, "D4/")
+     L_CONV_TIME   = OCONV(L_TIME, "MTS")
+
+     PARAM    =  ""
+     PARAM<1> =  L_MESSAGE   ; * Email Message
+     PARAM<2> =  L_SUBJECT : L_CONV_DATE : ' - ' : L_CONV_TIME
+     PARAM<3> =  L_EMAIL
+
+     CALL  SB.PROCESS("SYSS9060.1")
+     IF PARAM<6> > 0 THEN        ;* This means there was an error sending the email
+        PRINT "     ************************************************"
+        PRINT "     ******** Error Sending The Email ***************"
+        PRINT "     ************************************************"
+     END ELSE
+        PRINT ''
+        PRINT "     Message emailed to = " : PARAM<3>
+        PRINT ''
+     END
+
+A550_SEND_EMAIL_EXIT:
+     RETURN
+
+
+****************************************
+* Exit  
+****************************************
+
+     $INCLUDE IIPLUS.BOTTOM
+
+     END
+* 
+* 
+* 
+* 
+* 
+* 
+*
+*
+* 

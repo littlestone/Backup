@@ -1,0 +1,528 @@
+     SUBROUTINE PURS8000.1(L_PO_NBR,L_APPROVER,L_LEVEL,L_ACTION,L_FROM_AMT,L_TO_AMT,L_COMPLETED,L_SLA_KEY,UPDATE_AUDIT, UPDATE_PO)
+*     SUBROUTINE PURS8000.1(L_PO_NBR,L_APPROVER,L_LEVEL,L_ACTION,L_FROM_AMT,L_TO_AMT,L_COMPLETED,L_SLA_KEY)
+*
+*
+* 03 JUN 13 8.2.3 piedes PRJ*PUR083D.18-(Sub #18) PO INTERNAL CONTROLS
+* 28 MAY 13 8.2.3 piedes PRJ*PUR083D.14-(Sub #14) PO INTERNAL CONTROLS
+* 08 MAY 13 8.2.3 piedes PRJ*PUR083D.1-(Sub #1) PO INTERNAL CONTROLS
+*                
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+*
+* DESCRIPTION:
+* ============
+*     This Program is to:
+*          Build HTML file (PURS8000.10) to put in the EMAIL 
+*          Send Approval request to Approver wih PO attached (PURS8000.4)
+*          Update POHDR and PICAUDIT if Email succesfully
+*
+* MODIFICATIONS:
+* ==============
+*     01 MAR 2013  piedes PUR083D.1 Initial Version
+*
+**************************************************************************
+*
+    $INCLUDE IIPLUS.TOP
+    PROGRAM='PURS8000.1'
+    $INCLUDE IIPLUS.TEXTLOAD
+    $INCLUDE IIPLUS.DEBUG
+*
+********************************************
+* Main Routine
+********************************************
+*
+A000_MAIN:
+
+   IF L_PO_NBR = "" THEN
+      GO A000_MAIN_EXIT
+   END
+
+   GOSUB A100_OPEN_FILES
+   IF RTN.FLAG THEN
+      GO A000_MAIN_EXIT
+   END
+
+   GOSUB A200_INITIALIZATION
+   IF RTN.FLAG THEN
+      GO A000_MAIN_EXIT
+   END
+
+*   GOSUB A300_BUILD_DATA
+*   IF RTN.FLAG THEN
+*      GO A000_MAIN_EXIT
+*   END
+
+   READ POHDR_REC FROM POHDR, L_PO_NBR ELSE ; * READ POHDR to send to PURS8000.3 (Update POHDR/PICAUDIT)
+      RTN.FLAG = 1
+      MSG := "PO ": L_PO_NBR : " not found!"
+      GO A000_MAIN_EXIT
+   END
+
+   IF L_STATUS # "O" AND L_STATUS # "C" AND L_APPROVER # "" THEN  ; * Do not send Email when new PO or Cancel PO
+
+      GOSUB A300_BUILD_DATA
+      IF RTN.FLAG THEN
+         GO A000_MAIN_EXIT
+      END
+
+      READV L_BUY_GRP FROM PICUSRMST, L_USER_ID, 1 ELSE L_BUY_GRP = ""
+
+      IF L_ACTION # 11 AND L_ACTION # 12 AND L_ACTION # 13  THEN
+         IF L_APPROVER # L_USER_ID AND L_APPROVER # L_BUY_GRP AND L_APPROVER # L_POHDR_REC_BACK<84,L_LEVEL-1> THEN ; * NOT AUTO APPROVED
+            ********************************************
+            *  Create HTML file
+            ********************************************
+            GOSUB A400_BUILD_PARAM_FOR_HTML
+            IF RTN.FLAG THEN
+               GO A000_MAIN_EXIT
+            END
+            ********************************************
+            * Send Email in HTML + PO in PDF attached
+            ********************************************
+            GOSUB A500_EMAIL_APPROVAL_REQUEST
+         END
+         IF RTN.FLAG THEN
+            RTN.FLAG = 0
+            TRANS_KEY      = L_PO_NBR
+            TRANS_REF      = "PUR"
+            MSG            = ""
+*            UPDATE.PO      = 0
+*            UPDATE.AUDIT   = 1
+            UPD_LEVEL      = L_LEVEL
+            TIMESTAMP      = DATE() : "-" : TIME()
+            L_UPD_APPROVER = 0
+            L_COMPLETED    = 0
+            L_STATUS       = "O"
+            L_ACTION_DESC  = "Approver not found"
+            CALL PURS8000.3(L_PO_NBR, POHDR_REC, TRANS_KEY, TRANS_REF, L_STATUS, L_APPROVER, UPD_LEVEL, MSG, UPDATE_AUDIT, UPDATE_PO, L_ACTION_DESC, TIMESTAMP, L_FROM_AMT,L_TO_AMT, L_COMPLETED, L_UPD_APPROVER, L_SLA_KEY, L_ACTION)
+            GO A000_MAIN_EXIT
+         END
+      END ELSE
+         ********************************************
+         *  Create HTML file
+         ********************************************
+         GOSUB A400_BUILD_PARAM_FOR_HTML
+         IF RTN.FLAG THEN
+            GO A000_MAIN_EXIT
+         END
+         ********************************************
+         * Send Email in HTML + PO in PDF attached
+         ********************************************
+         GOSUB A500_EMAIL_APPROVAL_REQUEST
+         IF RTN.FLAG THEN
+            RTN.FLAG = 0
+            TRANS_KEY      = L_PO_NBR
+            TRANS_REF      = "PUR"
+            MSG            = ""
+*            UPDATE.PO      = 0
+*            UPDATE.AUDIT   = 1
+            UPD_LEVEL      = L_LEVEL
+            TIMESTAMP      = DATE() : "-" : TIME()
+            L_UPD_APPROVER = 0
+            L_COMPLETED    = 0
+            L_STATUS       = "O"
+            L_ACTION_DESC  = "Approver not found"
+            CALL PURS8000.3(L_PO_NBR, POHDR_REC, TRANS_KEY, TRANS_REF, L_STATUS, L_APPROVER, UPD_LEVEL, MSG, UPDATE_AUDIT, UPDATE_PO, L_ACTION_DESC, TIMESTAMP, L_FROM_AMT,L_TO_AMT, L_COMPLETED, L_UPD_APPROVER, L_SLA_KEY,L_ACTION)
+            GO A000_MAIN_EXIT
+         END
+      END
+   END ELSE
+      L_TO_SEND = 0
+      L_APPROVER = ""
+      L_LEVEL    = ""
+   END
+
+   IF RTN.FLAG # 1 THEN
+   ********************************************
+   * UPDATE POHDR & PICAUDIT
+   ********************************************
+      TRANS_KEY    = L_PO_NBR
+      TRANS_REF    = "PUR"
+      MSG          = ""
+*      UPDATE.PO = 1
+*      UPDATE.AUDIT = 1
+      UPD_LEVEL    = L_LEVEL
+
+      IF FIELD(OUTPUT_PARAMS<2>,"-",1) # "" THEN
+         TIMESTAMP    = ICONV(FIELD(OUTPUT_PARAMS<2>,"-",1), "D2/"):"-":ICONV(FIELD(OUTPUT_PARAMS<2>,"-",2), "MTS")
+      END ELSE
+         TIMESTAMP    = DATE() : "-" : TIME()
+      END
+
+      IF L_STATUS # "O" AND L_STATUS # "C" THEN
+         L_UPD_APPROVER = 1
+      END ELSE
+         L_UPD_APPROVER = 0
+      END
+
+      IF L_STATUS = "W" THEN L_COMPLETED = 0
+
+      CALL PURS8000.3(L_PO_NBR, POHDR_REC, TRANS_KEY, TRANS_REF, L_STATUS, L_APPROVER, UPD_LEVEL, MSG, UPDATE_AUDIT, UPDATE_PO, L_ACTION_DESC, TIMESTAMP, L_FROM_AMT,L_TO_AMT, L_COMPLETED, L_UPD_APPROVER, L_SLA_KEY,L_ACTION)
+   END
+
+   IF L_STATUS # "O" AND L_STATUS # "C" AND L_APPROVER # "" THEN  ; * Do not send Email when new PO or Cancel PO
+      IF L_ACTION # 11 AND L_ACTION # 12 AND L_ACTION # 13 THEN
+         IF L_APPROVER = L_USER_ID OR L_APPROVER = L_BUY_GRP OR L_APPROVER = L_POHDR_REC_BACK<84,L_LEVEL-1> THEN ; * AUTO APPROVED
+            L_TO_SEND      = 0
+            L_AUTO_APPROVE = 1
+            MSG            = 0
+            ACTIONS        = "AA"
+
+            IF @LOGNAME # 'webusr' THEN CALL SB.PROCESS('SYS0061,IP2750\':L_PO_NBR:VM:L_LEVEL)
+
+            TRANS_KEY    = L_PO_NBR
+            TRANS_REF    = "PUR"
+            MSG          = ""
+*            UPDATE.PO    = 1
+*            UPDATE.AUDIT = 1
+            UPD_LEVEL    = L_LEVEL
+            TIMESTAMP    = DATE() : "-" : TIME()
+            L_UPD_APPROVER = 1
+            L_STATUS = "A"
+            L_ACTION_DESC = "Auto approved"
+
+            CALL PURS8000.2(L_PO_NBR, L_APPROVER, ACTIONS, L_LEVEL, TIMESTAMP, MSG)
+         END
+      END
+   END
+
+A000_MAIN_EXIT:
+
+   PARAM    = L_SAVE_PARAM
+   WORK     = L_SAVE_WORK
+   RTN.FLAG = L_SAVE_RTN.FLAG
+   KEY      = L_SAVE_KEY
+   RELEASE POHDR, L_PO_NBR
+
+GO 9999
+*
+********************************************
+* Open Files needed
+********************************************
+*
+A100_OPEN_FILES:
+
+   FILE.ERR = 0 ; CALL SB.OPEN.FILE("POHDR",POHDR,FILE.ERR)
+   IF FILE.ERR THEN RTN.FLAG=1 ; GO A100_OPEN_FILES_EXIT
+
+   FILE.ERR = 0 ; CALL SB.OPEN.FILE("PODET",PODET,FILE.ERR)
+   IF FILE.ERR THEN RTN.FLAG=1 ; GO A100_OPEN_FILES_EXIT
+
+   FILE.ERR = 0 ; CALL SB.OPEN.FILE("ITMXRF",ITMXRF,FILE.ERR)
+   IF FILE.ERR THEN RTN.FLAG=1 ; GO A100_OPEN_FILES_EXIT
+
+   FILE.ERR = 0 ; CALL SB.OPEN.FILE("ADDRESSBOOK",ADDRESSBOOK ,FILE.ERR)
+   IF FILE.ERR THEN RTN.FLAG=1 ; GO A100_OPEN_FILES_EXIT
+
+   FILE.ERR = 0 ; CALL SB.OPEN.FILE("COMPMST",COMPMST,FILE.ERR)
+   IF FILE.ERR THEN RTN.FLAG=1 ; GO A100_OPEN_FILES_EXIT
+
+   FILE.ERR = 0 ; CALL SB.OPEN.FILE("SUPPMST",SUPPMST,FILE.ERR)
+   IF FILE.ERR THEN RTN.FLAG=1 ; GO A100_OPEN_FILES_EXIT
+
+   FILE.ERR = 0 ; CALL SB.OPEN.FILE("SYSTBL",SYSTBL,FILE.ERR)
+   IF FILE.ERR THEN RTN.FLAG=1 ; GO A100_OPEN_FILES_EXIT
+
+   FILE.ERR = 0 ; CALL SB.OPEN.FILE("SYSCON",SYSCON,FILE.ERR)
+   IF FILE.ERR THEN RTN.FLAG=1 ; GO A100_OPEN_FILES_EXIT
+
+   FILE.ERR = 0 ; CALL SB.OPEN.FILE("IIDEFN",IIDEFN,FILE.ERR)
+   IF FILE.ERR THEN RTN.FLAG=1 ; GO A100_OPEN_FILES_EXIT
+
+   FILE.ERR = 0 ; CALL SB.OPEN.FILE("PICUSRMST",PICUSRMST,FILE.ERR)
+   IF FILE.ERR THEN RTN.FLAG=1 ; GO A100_OPEN_FILES_EXIT
+
+
+A100_OPEN_FILES_EXIT:
+   RETURN
+*
+********************************************
+* Initialize Variables
+********************************************
+*
+A200_INITIALIZATION:
+
+   L_APPROV_NAME_ERR = 0
+
+   L_SAVE_PARAM     = PARAM
+   L_SAVE_WORK      = WORK
+   L_SAVE_RTN.FLAG  = RTN.FLAG
+   L_SAVE_KEY       = KEY
+
+   RTN.FLAG         = 0
+   POHDR_REC        = ""
+   PODET_REC        = ""
+   L_POHDR_REC_BACK = ""
+   L_BAL_AMT        = 0
+   MSG              = ""
+   OUTPUT_PARAMS    = ""
+   L_COMP_DESC      = ""
+   L_BUYER_NAME     = ""
+   L_SUPP_DESC      = ""
+   L_APPROV_NAME    = ""
+   L_USER_ID_NAME   = ""
+   L_REQUESTOR_NAME = ""
+   L_PO_TYPE_REC    = ""
+   L_PO_CLASS_DESC  = ""
+   L_AUTO_APPROVE   = 0
+   L_ACCT_PARAM     = ""
+   L_PIC_SECURITY_FLAG = ""
+*** \/ piedes PUR083D.18 06/03/2013
+   READ L_I280_REC     FROM SYSTBL,"I280*":L_ACTION ELSE L_I280_REC = ""
+   L_ACTION_DESC = L_I280_REC<4>
+   L_STATUS      = L_I280_REC<1>
+*   READV L_ACTION_DESC FROM SYSTBL,"I280*":L_ACTION, 4 ELSE L_ACTION_DESC = "N/A"
+*   READV L_STATUS      FROM SYSTBL,"I280*":L_ACTION, 1 ELSE L_STATUS = "N/A"
+*** /\ piedes PUR083D.18 06/03/2013
+
+A200_INITIALIZATION_EXIT:
+   RETURN
+*
+********************************************
+* Build Purchase Order Data
+********************************************
+*
+A300_BUILD_DATA:
+
+*   READ POHDR_REC FROM POHDR, L_PO_NBR THEN
+      L_POHDR_REC_BACK = POHDR_REC
+      MAX  = DCOUNT(POHDR_REC<7>,@VM)
+      FOR CNTR = 1 TO MAX 
+         PDKEY = POHDR_REC<7,CNTR>:L_PO_NBR
+         READ PODET_REC FROM PODET,PDKEY THEN
+*** \/ piedes PUR083D.18 06/03/2013
+            IF PODET_REC<8,CNTR> # 'X' AND PODET_REC<8,CNTR> # "C" THEN
+*            IF PODET_REC<8,CNTR> # 'X' THEN
+*** /\ piedes PUR083D.18 06/03/2013
+               NB.LINE = DCOUNT(PODET_REC<12>, @VM)
+               FOR LINE.CNTR = 1 TO NB.LINE
+                  L_BAL_AMT = L_BAL_AMT + (PODET_REC<12,LINE.CNTR>*OCONV(PODET_REC<13,LINE.CNTR>,'MD3'))
+               NEXT LINE.CNTR
+            END
+         END
+      NEXT CNTR
+
+      L_COMP           = POHDR_REC<28>
+      L_BUYER          = POHDR_REC<3>
+      L_SUPPLIER       = POHDR_REC<1>
+      L_PO_TYPE        = POHDR_REC<4>
+      L_USER_ID        = POHDR_REC<78>
+      L_PO_CLASS       = POHDR_REC<59>
+      L_REQUESTOR      = POHDR_REC<26>
+
+      IF L_COMP # "" THEN
+*** \/ piedes PUR083D.18 06/03/2013
+         READ L_COMP_REC FROM COMPMST, L_COMP ELSE L_COMP_REC = ""
+         L_COMP_DESC = L_COMP_REC<1>
+         L_COMP_CURR = L_COMP_REC<24>
+*         READV L_COMP_DESC       FROM COMPMST, L_COMP, 1 ELSE L_COMP_DESC  = "UNKNOWN"
+*         READV L_COMP_CURR       FROM COMPMST, L_COMP, 24 ELSE L_COMP_CURR  = "UNKNOWN"
+*** /\ piedes PUR083D.18 06/03/2013
+      END
+
+      IF L_BUYER # "" THEN
+         READV L_BUYER_NAME      FROM SYSTBL,  "BYR*":L_BUYER, 4 ELSE L_BUYER_NAME = "UNKNOWN"
+      END
+
+      IF L_COMP # "" AND L_SUPPLIER # "" THEN
+         READV L_SUPP_DESC       FROM SUPPMST, L_COMP:"*":L_SUPPLIER, 3 ELSE L_SUPP_DESC  = "UNKNOWN"
+      END
+
+      IF L_APPROVER # "" THEN
+         READV L_APPROV_NAME FROM ADDRESSBOOK, L_APPROVER, 1 ELSE
+            L_APPROV_NAME     =  L_APPROVER
+            L_APPROV_NAME_ERR = 1
+         END
+      END
+
+      IF L_USER_ID # "" THEN
+         READV L_USER_ID_NAME FROM ADDRESSBOOK, L_USER_ID, 1 ELSE L_USER_ID_NAME  = L_USER_ID
+      END
+
+      IF L_REQUESTOR # "" THEN
+         READV L_REQUESTOR_NAME FROM SYSTBL, "REQ*": L_REQUESTOR,4 ELSE L_REQUESTOR_NAME  = L_REQUESTOR
+      END
+
+      READV L_PO_CLASS_DESC FROM SYSTBL, "POC*": L_PO_CLASS,4 ELSE L_PO_CLASS_DESC = "POC*": L_PO_CLASS
+
+      READ  L_PO_TYPE_REC FROM IIDEFN, "PO.TYPE" THEN
+         POS = ""
+         LOCATE L_PO_TYPE IN L_PO_TYPE_REC<5> SETTING POS THEN
+            L_PO_TYPE_DESC = L_PO_TYPE_REC<4,POS>
+         END ELSE
+            L_PO_TYPE_DESC = L_PO_TYPE
+         END
+      END
+
+*   END ELSE
+
+*      RTN.FLAG = 1
+*      MSG := "PO ": L_PO_NBR : " not found!"
+
+*   END
+
+A300_BUILD_DATA_EXIT:
+   RETURN
+*
+********************************************
+*  Create HTML file
+********************************************
+*
+A400_BUILD_PARAM_FOR_HTML:
+
+   IND                = 0
+   INPUT_PARAMS       = ""
+
+   IND+=1; INPUT_PARAMS<IND> = L_PO_NBR
+   IND+=1; INPUT_PARAMS<IND> = L_PO_TYPE
+   IND+=1; INPUT_PARAMS<IND> = L_PO_TYPE_DESC
+   IND+=1; INPUT_PARAMS<IND> = L_PO_CLASS
+   IND+=1; INPUT_PARAMS<IND> = L_PO_CLASS_DESC
+   IND+=1; INPUT_PARAMS<IND> = L_USER_ID
+   IND+=1; INPUT_PARAMS<IND> = L_USER_ID_NAME
+   IND+=1; INPUT_PARAMS<IND> = L_REQUESTOR
+   IND+=1; INPUT_PARAMS<IND> = L_REQUESTOR_NAME
+   IND+=1; INPUT_PARAMS<IND> = L_BUYER
+   IND+=1; INPUT_PARAMS<IND> = L_BUYER_NAME
+   IND+=1; INPUT_PARAMS<IND> = L_APPROVER
+   IND+=1; INPUT_PARAMS<IND> = L_APPROV_NAME
+   IND+=1; INPUT_PARAMS<IND> = L_SUPPLIER
+   IND+=1; INPUT_PARAMS<IND> = L_SUPP_DESC
+   IND+=1; INPUT_PARAMS<IND> = L_LEVEL
+   IND+=1; INPUT_PARAMS<IND> = L_COMP
+   IND+=1; INPUT_PARAMS<IND> = L_COMP_DESC
+   IND+=1; INPUT_PARAMS<IND> = L_COMP_CURR
+   IND+=1; INPUT_PARAMS<IND> = OCONV(L_BAL_AMT, 'MD2,$') ; * PO TOTAL AMOUNT
+
+   IF L_APPROV_NAME_ERR = 1 THEN
+
+      IND+=1; INPUT_PARAMS<IND> = "SLAERROR"
+
+   END ELSE
+
+      IND+=1; INPUT_PARAMS<IND> = "REQUEST"
+
+      IND+=2; INPUT_PARAMS<IND> = "<p><br>"
+
+      NB_LEVEL = L_LEVEL ; *- 1  DCOUNT(POHDR_REC<84>, VM)
+
+      FOR APPROVER_IND = 1 TO NB_LEVEL
+         READV L_APPROV_NAME_TMP FROM ADDRESSBOOK, POHDR_REC<84,APPROVER_IND>, 1 ELSE L_APPROV_NAME_TMP  = POHDR_REC<84,APPROVER_IND>
+         BEGIN CASE
+            CASE APPROVER_IND = NB_LEVEL
+               INPUT_PARAMS<IND> := '<font color="red">Level ': APPROVER_IND : ': Waiting for your approval. / '
+               INPUT_PARAMS<IND> := "Niveau ": APPROVER_IND :": En attente de votre approbation.</font><br>"
+            CASE POHDR_REC<87,APPROVER_IND> = "A"
+               IF POHDR_REC<84,APPROVER_IND> = L_USER_ID OR POHDR_REC<84,APPROVER_IND> = L_BUY_GRP THEN
+                  INPUT_PARAMS<IND> := "Level ": APPROVER_IND :':<font color="green"> Approved automatically</font> by ':L_APPROV_NAME_TMP:" (":L_USER_ID:"). / "
+                  INPUT_PARAMS<IND> := "Niveau ": APPROVER_IND :': <font color="green"> Approuv&eacute; automatiquement</font> par ':L_APPROV_NAME_TMP:" (":L_USER_ID:").<br>"
+               END ELSE
+                  INPUT_PARAMS<IND> := "Level ": APPROVER_IND :': <font color="green"> Approved</font> by ':L_APPROV_NAME_TMP:". / "
+                  INPUT_PARAMS<IND> := "Niveau ": APPROVER_IND :': <font color="green"> Approuv&eacute;</font> par ':L_APPROV_NAME_TMP:".<br>"
+               END
+            CASE POHDR_REC<87,APPROVER_IND> = "W"
+               INPUT_PARAMS<IND> := "Level ": APPROVER_IND : ': No answer from ':L_APPROV_NAME_TMP:'. Request sent to next level. / '
+               INPUT_PARAMS<IND> := "Niveau ": APPROVER_IND :': Pas de r&eacuteponse de ':L_APPROV_NAME_TMP:'. Demande envoy&eacutee au niveau suivant.<br>'
+            CASE 1
+               INPUT_PARAMS<IND> := '<font color="darkslategray">Level ': APPROVER_IND : ': No approval request sent for that level. / '
+               INPUT_PARAMS<IND> := 'Niveau ': APPROVER_IND :': Pas de demande d':"'":'approbation envoy&eacute; pour ce niveau.</font><br>'
+         END CASE 
+      NEXT APPROVER_IND
+   END
+
+   READV L_PIC_SECURITY_FLAG FROM SYSCON, "PIC.CONSTANT",16 ELSE L_PIC_SECUTIRY_FLAG = 1
+   L_PIC_SECURITY_FLAG = TRIM(FIELD(L_PIC_SECURITY_FLAG, ";",1))
+
+   IND+=1; INPUT_PARAMS<IND> = L_PIC_SECURITY_FLAG ; * Security Flag, 1 = true 0 = False
+   READV L_ACCT FROM SYSCON, "HDD",2 ELSE L_ACCT = ""
+   L_ACCT = TRIM(FIELD(L_ACCT,";",1))[1,1]
+
+   IND+=1; INPUT_PARAMS<IND> = TRIM(FIELD(L_ACCT,";",1)) ; * Environment (Account), A=ACCT.DATA, P=PREP.DATA, D=DEV.DATA
+
+   CALL PURS8000.10(INPUT_PARAMS,OUTPUT_PARAMS)
+
+   IF OUTPUT_PARAMS<1> = "" THEN
+      MSG := OUTPUT_PARAMS<3>
+      IF @LOGNAME # 'webusr' THEN
+         CALL SB.PROCESS('SYS0061,IP1605\':MSG)
+      END
+      RTN.FLAG = 1
+   END
+
+A400_BUILD_PARAM_FOR_HTML_EXIT:
+   RETURN
+*
+****************************************
+* Email the Approval Request.
+****************************************
+*
+A500_EMAIL_APPROVAL_REQUEST:
+
+   IF L_APPROV_NAME_ERR = 1 THEN
+
+      MSG = "Aprrover : " : L_APPROVER : " not exist in ADRESSBOOK!!!"
+
+      READV SLA_ADMIN FROM SYSCON, "PIC.CONSTANT",3 ELSE SLA_ADMIN = ""
+      SLA_ADMIN = TRIM(FIELD(SLA_ADMIN, ";",1))
+
+      READV IT_ADDRESS FROM SYSCON, "PIC.CONSTANT",4 ELSE IT_ADDRESS = ""
+      IT_ADDRESS = TRIM(FIELD(IT_ADDRESS, ";",1))
+
+      PARAM<1> = ""
+      PARAM<1> = OUTPUT_PARAMS<1>
+      PARAM<2> = MSG
+      PARAM<3> = SLA_ADMIN
+      PARAM<4> = ""
+      PARAM<5> = 1
+      PARAM<6> = 0
+      PARAM<7> = ""
+      PARAM<8> = TRIM(FIELD(IT_ADDRESS, ";",1))
+*
+      CALL SYSS9060.4(PARAM)
+
+
+      IF PARAM<10> > 0 THEN        ;* This means there was an error sending the email
+         MSG := " ** Error sending Email to SLA Admin **"
+      END ELSE
+         MSG := " ** Request status Emailed to SLA Admin **"
+      END
+      IF @LOGNAME # "webusr" THEN
+         CALL SB.PROCESS('SYS0061,IP1605\':MSG)
+      END
+      RTN.FLAG = 1
+
+   END ELSE
+
+      WORK<100> = 0
+      WORK<609> = "E"
+
+      WORK<601> = L_PO_NBR
+      WORK<106> = "I"
+      WORK<107> = OUTPUT_PARAMS<1>
+      WORK<108> = L_APPROVER
+      WORK<109> = "PO # ": L_PO_NBR: " approval request (*** LEVEL " :L_LEVEL:" ***) / demande d'approbation (*** NIVEAU ": L_LEVEL :" ***) du BC # ": L_PO_NBR : " (": OUTPUT_PARAMS<2> :")"
+      WORK<110> = L_LEVEL
+      CALL PURS8000.4
+
+   END
+
+A500_EMAIL_APPROVAL_REQUEST_EXIT:
+   RETURN
+*
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+END
+*
+*
+*

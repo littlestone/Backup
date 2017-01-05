@@ -1,0 +1,62 @@
+*
+* Example of Sending a SOAP Request from UniBasic
+*
+
+*x = 3
+*y = 6
+
+* Setup SOAP Request Content Envelop
+SoapEnvelop = ""
+SoapEnvelop := '<?xml version="1.0" encoding="utf-8"?>'
+SoapEnvelop := '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">'
+SoapEnvelop := '  <soap:Body>'
+*SoapEnvelop := '    <Add xmlns="http://ws-dev.erp.intranet.local/WebService/ActiveDirectoryWebService/">'
+*SoapEnvelop := "      <x>":x:"</x>"
+*SoapEnvelop := "      <y>":y:"</y>"
+*SoapEnvelop := '    </Add>'
+SoapEnvelop := '    <ExtractActiveDirectory xmlns="http://ws-dev.erp.intranet.local/WebService/ActiveDirectoryWebService/">'
+SoapEnvelop := '    </ExtractActiveDirectory>'
+SoapEnvelop := '</soap:Body>'
+SoapEnvelop := '</soap:Envelope>'
+
+* Setup SOAP Request Parameters
+URL="http://ws-dev.erp.intranet.local/WebService/ActiveDirectoryWebService/Service.asmx?WSDL"
+*SoapAction = "http://ws-dev.erp.intranet.local/WebService/ActiveDirectoryWebService/Add"
+SoapAction = "http://ws-dev.erp.intranet.local/WebService/ActiveDirectoryWebService/ExtractActiveDirectory"
+Timeout = 30000
+
+* Creat the Request
+Ret = SOAPCreateRequest(URL, SoapAction, SoapReq)
+IF Ret <> 0 THEN
+   STOP "Error in SOAPCreateRequest: " : Ret
+END
+
+* Submit the Request
+SETREQUEST.STATUS = SOAPSetRequestContent(SoapReq, SoapEnvelop, 1)
+Ret = SOAPSubmitRequest(SoapReq, Timeout, RespHeaders, RespData, SoapStatus)
+IF Ret <> 0 THEN
+   STOP "Error in SOAPSubmitRequest: " : Ret
+END
+
+PRINT "Response status : " : SoapStatus
+*PRINT
+*PRINT "Response headers : " : RespHeaders
+*PRINT
+*PRINT "Response data : " : RespData
+
+CRT INDEX(RespData,"eritru",1)
+
+SWAP "<string>" WITH @FM IN RespData
+SWAP "</string>" WITH "" IN RespData
+SWAP "|" WITH @VM IN RespData
+SWAP "</ExtractActiveDirectoryResult>" WITH @FM IN RespData
+
+L_TOT = DCOUNT(RespData,@FM)
+L_DATA = FIELD(RespData,@FM,2,L_TOT-1)
+L_DATA = FIELD(L_DATA,@FM,1,L_TOT-2)
+
+FOR L_INC = 1 TO L_TOT
+   L_DATA<L_INC,13> = FIELD(FIELD(L_DATA<L_INC,13>,",",1,1),"=",2,1)
+NEXT L_INC
+
+CRT L_DATA<353>

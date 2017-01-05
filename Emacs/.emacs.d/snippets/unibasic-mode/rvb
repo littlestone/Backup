@@ -1,0 +1,12 @@
+# -*- mode: snippet -*-
+# name: readv block
+# key: rvb
+# --
+READV $1 FROM $2, $3, $4
+ON ERROR
+   $5
+END THEN
+   $6
+END ELSE 
+   $0
+END

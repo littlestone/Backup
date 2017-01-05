@@ -1,0 +1,523 @@
+   SUBROUTINE CRMS9000.6
+* Infoflo to CRM Build Sales Rep Matrix based on Agent
+* VERSION 8.2.3
+*
+* 20 DEC 16 8.2.3 piedes PRJ*PIEDES.112-Fix somes bugs related to CRM
+* 12 DEC 16 8.2.3 piedes PRJ*PIEDES.112 - Fix somes bugs related to CRM
+* 19 SEP 16 8.2.3 piedes PRJ*SLS086D-ICONNECT - CRM PROJECT - SALES MANAGER AND SALES AGENT 
+* 29 JUL 16 8.2.3 piedes PRJ*QUO064D-CRM INTEGRATION WITH INFOFLO
+*  
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+
+   PROGRAM = 'CRMS9000.6'
+
+   $INCLUDE IIPLUS.TOP
+   $INCLUDE IIPLUS.TEXTLOAD
+   $INCLUDE IIPLUS.DEBUG
+
+   $INCLUDE TUBP TU.API.H
+   $INCLUDE TUBP ROC.H
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*
+* MODIFICATIONS:
+* ==============
+*              2016/07/16 piedes - Initial creation.
+*
+**************************************************************************
+
+
+A100_MAIN:
+
+   GOSUB A200_INITIALIZATION
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+
+   GO A500_CONCLUSION
+
+
+****************************************
+* Define & initialize variables.
+****************************************
+A200_INITIALIZATION:
+
+   RTN.FLAG = 0
+   STATUS = ""
+   L_ERR_CODE = ""
+   L_ERR_MSG = ""
+   L_DELETED = 0
+
+   L_CUST_ACCT_TYPE = PARAM<4>
+   L_CRM_GUID_LIST  = PARAM<9>
+   L_COMPANY_CODE   = FIELD(KEY,"*",1)
+   L_MATRIX_GUID    = ""
+   PARAM<10>        = ""
+   PARAM<11>        = ""
+   PARAM<12>        = ""
+   L_RESEND_FLAG    = PARAM<14>
+   L_TO_DELETE      = 0
+
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open any data files requried.
+****************************************
+A300_OPEN_FILES:
+
+   FILE.ERR = 0
+
+   CALL SB.OPEN.FILE("SYSCON",SYSCON,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-1"
+      L_ERR_MSG = "Open SYSCON file error."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("CUSTMSTCRM",CUSTMSTCRM,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-2"
+      L_ERR_MSG = "Unable to open file CUSTMSTCRM."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("AGENTMST",AGENTMST,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-3"
+      L_ERR_MSG = "Unable to open file AGENTMST."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("CRMMATRIXGUID",CRMMATRIXGUID,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-4"
+      L_ERR_MSG = "Unable to open file CRMMATRIXGUID."
+      GO A300_EXIT
+   END
+
+A300_EXIT:
+   RETURN
+
+****************************************
+* Main process.
+****************************************
+A400_MAIN_PROCESS:
+
+   GOSUB B100_BUILD_DATA
+
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+A400_EXIT:
+   RETURN
+
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+   IF L_ERR_CODE # "" THEN
+      STATUS<1> = L_ERR_CODE
+      STATUS<2> = L_ERR_MSG
+   END
+
+   RTN.FLAG = 0
+*   REFRESH = -2
+
+A500_EXIT:
+   GO 9999
+
+
+****************************************
+* Validate CRM integration request data.
+****************************************
+B100_BUILD_DATA:
+   L_AGENT_CODE      = ""
+
+   L_NB_BEFORE = DCOUNT(ORIG.REC<106>, VM)
+   L_NB_AFTER  = DCOUNT(RECORD<106>, VM)
+
+********************************
+*  COMPARE RECORD WITH ORIG.REC
+********************************
+   L_NEW_AGENT_CODES       =  ""
+   L_OVERRIDE_NEW_AGENT_CODES   = ""
+
+   IF TRIM(RECORD<178>) # "" THEN
+      L_AGENT_TO_INSERT = RECORD<112>:"*":RECORD<178>
+      L_NEW_AGENT_CODES<1> = L_AGENT_TO_INSERT:"|0" ;* we start with the default agent
+   END ELSE
+      L_AGENT_TO_INSERT = RECORD<112>
+      L_NEW_AGENT_CODES<1> = L_AGENT_TO_INSERT ;* we start with the default agent
+   END
+
+   FOR L_IND = 1 TO L_NB_AFTER
+      IF TRIM(RECORD<179,L_IND>) # "" THEN
+         IF RECORD<108,L_IND> # "" THEN
+            L_AGENT_TO_INSERT = RECORD<108,L_IND>:"*":RECORD<179,L_IND>
+            LOCATE L_AGENT_TO_INSERT IN L_NEW_AGENT_CODES<1> SETTING POS ELSE
+               L_NEW_AGENT_CODES<1,-1> = L_AGENT_TO_INSERT :"|":RECORD<106,L_IND>
+               L_OVERRIDE_NEW_AGENT_CODES<1,-1> = RECORD<108,L_IND> :"*":RECORD<106,L_IND>
+            END
+         END
+      END ELSE
+         IF RECORD<108,L_IND> # "" THEN
+            L_AGENT_TO_INSERT = RECORD<108,L_IND>
+            LOCATE L_AGENT_TO_INSERT IN L_NEW_AGENT_CODES<1> SETTING POS ELSE
+               L_NEW_AGENT_CODES<1,-1> = L_AGENT_TO_INSERT
+            END
+         END
+      END
+   NEXT L_IND
+
+   L_ORIG_AGENT_CODES     =  ""
+   L_OVERRIDE_ORIG_AGENT_CODES     =  ""
+
+   IF TRIM(ORIG.REC<178>) # "" THEN
+      L_AGENT_TO_INSERT = ORIG.REC<112>:"*":ORIG.REC<178>
+      L_ORIG_AGENT_CODES<1> = L_AGENT_TO_INSERT:"|0" ;* we start with the default agent
+   END ELSE
+      L_AGENT_TO_INSERT = ORIG.REC<112>
+      L_ORIG_AGENT_CODES<1> = L_AGENT_TO_INSERT ;* we start with the default agent
+   END
+   FOR L_IND = 1 TO L_NB_BEFORE
+      IF TRIM(ORIG.REC<179,L_IND>) # "" THEN
+         IF ORIG.REC<108,L_IND> # "" THEN
+            L_AGENT_TO_INSERT = ORIG.REC<108,L_IND>:"*":ORIG.REC<179,L_IND>
+            LOCATE L_AGENT_TO_INSERT IN L_ORIG_AGENT_CODES<1> SETTING POS ELSE
+               L_ORIG_AGENT_CODES<1,-1>  =  L_AGENT_TO_INSERT:"|":ORIG.REC<106,L_IND>
+               L_OVERRIDE_ORIG_AGENT_CODES<1,-1> = ORIG.REC<108,L_IND> :"*":ORIG.REC<106,L_IND>
+            END
+         END
+      END ELSE
+         IF ORIG.REC<108,L_IND> # "" THEN
+            L_AGENT_TO_INSERT = ORIG.REC<108,L_IND>
+            LOCATE L_AGENT_TO_INSERT IN L_ORIG_AGENT_CODES<1> SETTING POS ELSE
+              L_ORIG_AGENT_CODES<1,-1> = L_AGENT_TO_INSERT
+            END
+         END
+      END
+   NEXT L_IND
+
+   L_AGENT_COUNT =  DCOUNT(L_NEW_AGENT_CODES<1>,VM)
+   FOR L_IND = 1 TO L_AGENT_COUNT
+
+        LOCATE L_NEW_AGENT_CODES<1,L_IND> IN L_ORIG_AGENT_CODES<1> SETTING POS THEN
+           L_AGENT_CODE   =  L_NEW_AGENT_CODES<1,L_IND>
+           GOSUB B200_CHECK_IF_NEED_TO_INSERT_IN_MATRIX
+           IF L_MATRIX_AGENT # "" THEN
+              PARAM<10,-1> = L_MATRIX_AGENT
+           END
+        END ELSE
+           L_AGENT_CODE   =  L_NEW_AGENT_CODES<1,L_IND>
+           GOSUB B210_CHECK_IF_NEED_TO_INSERT_IN_MATRIX
+           IF L_MATRIX_AGENT # "" THEN
+              PARAM<10,-1> = L_MATRIX_AGENT
+           END
+        END
+
+   NEXT L_IND
+
+   L_AGENT_COUNT =  DCOUNT(L_ORIG_AGENT_CODES<1>,VM)
+   FOR L_IND = 1 TO L_AGENT_COUNT
+
+      LOCATE L_ORIG_AGENT_CODES<1,L_IND> IN L_NEW_AGENT_CODES<1> SETTING POS ELSE
+         L_AGENT_CODE   =  L_ORIG_AGENT_CODES<1,L_IND>
+         GOSUB B220_CHECK_IF_NEED_TO_DELETE_FROM_MATRIX
+         IF L_MATRIX_AGENT # "" THEN
+            PARAM<12,-1> =  L_MATRIX_AGENT_GUID
+         END
+      END
+      IF L_MATRIX_AGENT_GUID  # "" THEN
+         GOSUB B300_DELETE_CRMMATRIXGUID
+      END
+
+   NEXT L_IND
+
+   GOSUB B310_REMOVE_OLD_AGENTMST
+
+B100_EXIT:
+   RETURN
+
+*************************************
+B200_CHECK_IF_NEED_TO_INSERT_IN_MATRIX:
+*************************************
+
+   L_MATRIX_AGENT = ""
+   L_MATRIX_AGENT_GUID = ""
+   L_MATRIX_OVERRIDE_MGR = TRIM(FIELD(L_AGENT_CODE, "*",2))
+   L_MATRIX_OVERRIDE_MGR = TRIM(FIELD(L_MATRIX_OVERRIDE_MGR, "|",1))
+
+* 1. Let's look for the GUID of the "Default [0]" + agent combination.
+
+   IF L_MATRIX_OVERRIDE_MGR = "" THEN
+      L_CRMMATRIXGUID_KEY  = ACNT.NAME:"*":KEY:"*":L_AGENT_CODE:"*":"0"
+      READV L_GUID FROM CRMMATRIXGUID, L_CRMMATRIXGUID_KEY, 2 ELSE L_GUID = ""
+      IF L_GUID = "" THEN
+         L_MATRIX_AGENT<1,-1> = "0":SVM:L_AGENT_CODE
+      END ELSE
+         IF L_RESEND_FLAG = 1 THEN   
+            PARAM<11,-1> = "0":SVM:L_AGENT_CODE:SVM:L_GUID
+         END
+      END
+   END ELSE
+      L_REAL_AGENT_CODE = FIELD(L_AGENT_CODE,"|",1)
+      L_MKT_CODE        = FIELD(L_AGENT_CODE,"|",2)
+
+      L_CRMMATRIXGUID_KEY  = ACNT.NAME:"*":KEY:"*":L_REAL_AGENT_CODE:"*":L_MKT_CODE
+      READV L_GUID FROM CRMMATRIXGUID, L_CRMMATRIXGUID_KEY, 2 ELSE L_GUID = ""
+      IF L_GUID = "" THEN
+         L_MATRIX_AGENT<1,-1> = L_MKT_CODE:SVM:L_REAL_AGENT_CODE
+      END ELSE
+         IF L_RESEND_FLAG = 1 THEN   
+            PARAM<11,-1> = L_MKT_CODE:SVM:L_REAL_AGENT_CODE:SVM:L_GUID
+         END
+      END
+   END
+* 2. Now, let's read the AGENTMST record to see if any MS specific values exist.
+*    if some MS specific values exist, let's look for the GUID of the MS + agent combination.
+* 2.1 First look if the AGENTMST record exists for the State Code of the customer, AGENT_KEY = AGENT * STATE
+   IF L_MATRIX_OVERRIDE_MGR = "" THEN
+      L_AGENTMST_KEY   =  L_AGENT_CODE : "*" : RECORD<23>
+      READ L_AGENTMST_REC FROM AGENTMST, L_AGENTMST_KEY ELSE L_AGENTMST_REC = ""
+
+* 2.2 If the state specific AGENTMST record is not found, then read using strictly the agent code.
+      IF L_AGENTMST_REC = "" THEN
+         L_AGENTMST_KEY   =  L_AGENT_CODE
+         READ L_AGENTMST_REC FROM AGENTMST, L_AGENTMST_KEY ELSE L_AGENTMST_REC = ""
+      END
+
+      IF L_AGENTMST_REC # "" THEN
+         L_NB_AGENT = DCOUNT(L_AGENTMST_REC<3>, VM)
+         FOR L_AGENT_IND = 1 TO L_NB_AGENT
+            L_CRMMATRIXGUID_KEY  = ACNT.NAME:"*":KEY:"*":L_AGENT_CODE:"*":L_AGENTMST_REC<2,L_AGENT_IND>
+
+            READV L_GUID FROM CRMMATRIXGUID, L_CRMMATRIXGUID_KEY, 2 ELSE L_GUID = ""
+            IF L_GUID = "" THEN
+*****
+* VALID IF OVERRIDE
+               LOCATE L_AGENT_CODE:"*":L_AGENTMST_REC<2,L_AGENT_IND> IN L_OVERRIDE_NEW_AGENT_CODES<1> SETTING POS ELSE
+                  L_MATRIX_AGENT<1,-1> = L_AGENTMST_REC<2,L_AGENT_IND>:SVM:L_AGENT_CODE
+               END
+*****
+            END ELSE
+               IF L_RESEND_FLAG = 1 THEN   
+                  PARAM<11,-1> =L_AGENTMST_REC<2,L_AGENT_IND>:SVM:L_AGENT_CODE:SVM:L_GUID
+               END
+            END
+         NEXT L_AGENT_IND
+      END
+   END
+B200_CHECK_IF_NEED_TO_INSERT_IN_MATRIX_EXIT:
+   RETURN
+
+*************************************
+B210_CHECK_IF_NEED_TO_INSERT_IN_MATRIX:
+*************************************
+
+   L_MATRIX_AGENT = ""
+   L_MATRIX_AGENT_GUID = ""
+   L_MATRIX_OVERRIDE_MGR = TRIM(FIELD(L_AGENT_CODE, "*",2))
+   L_MATRIX_OVERRIDE_MGR = TRIM(FIELD(L_MATRIX_OVERRIDE_MGR, "|",1))
+
+*1. Let's look for the GUID of the "Default [0]" + agent combination.
+   IF L_MATRIX_OVERRIDE_MGR = "" THEN
+      L_CRMMATRIXGUID_KEY  = ACNT.NAME:"*":KEY:"*":L_AGENT_CODE:"*":"0"
+      READV L_GUID FROM CRMMATRIXGUID, L_CRMMATRIXGUID_KEY, 2 ELSE L_GUID = ""
+      IF L_GUID = "" THEN
+        L_MATRIX_AGENT<1,-1> = "0":SVM:L_AGENT_CODE
+      END
+   END ELSE
+
+      L_REAL_AGENT_CODE = FIELD(L_AGENT_CODE,"|",1)
+      L_MKT_CODE        = FIELD(L_AGENT_CODE,"|",2)
+
+      L_CRMMATRIXGUID_KEY  = ACNT.NAME:"*":KEY:"*":L_REAL_AGENT_CODE:"*":L_MKT_CODE
+      READV L_GUID FROM CRMMATRIXGUID, L_CRMMATRIXGUID_KEY, 2 ELSE L_GUID = ""
+      IF L_GUID = "" THEN
+        L_MATRIX_AGENT<1,-1> = L_MKT_CODE:SVM:L_REAL_AGENT_CODE
+      END
+   END
+
+   IF L_MATRIX_OVERRIDE_MGR = "" THEN
+
+* 2. Now, let's read the AGENTMST record to see if any MS specific values exist.
+*    if some MS specific values exist, let's look for the GUID of the MS + agent combination.
+* 2.1 First look if the AGENTMST record exists for the State Code of the customer, AGENT_KEY = AGENT * STATE
+      L_AGENTMST_KEY   =  L_AGENT_CODE : "*" : RECORD<23>
+      READ L_AGENTMST_REC FROM AGENTMST, L_AGENTMST_KEY ELSE L_AGENTMST_REC = ""
+
+* 2.2 If the state specific AGENTMST record is not found, then read using strictly the agent code.
+      IF L_AGENTMST_REC = "" THEN
+         L_AGENTMST_KEY   =  L_AGENT_CODE
+         READ L_AGENTMST_REC FROM AGENTMST, L_AGENTMST_KEY ELSE L_AGENTMST_REC = ""
+      END
+
+      IF L_AGENTMST_REC # "" THEN
+
+         L_NB_AGENT = DCOUNT(L_AGENTMST_REC<3>, VM)
+         FOR L_AGENT_IND = 1 TO L_NB_AGENT
+            L_CRMMATRIXGUID_KEY  = ACNT.NAME:"*":KEY:"*":L_AGENT_CODE:"*":L_AGENTMST_REC<2,L_AGENT_IND>
+            READV L_GUID FROM CRMMATRIXGUID, L_CRMMATRIXGUID_KEY, 2 ELSE L_GUID = ""
+            IF L_GUID = "" THEN
+*****
+* VALID IF OVERRIDE
+*****
+               LOCATE L_AGENT_CODE:"*":L_AGENTMST_REC<2,L_AGENT_IND> IN L_OVERRIDE_NEW_AGENT_CODES <1> SETTING POS ELSE
+                  L_MATRIX_AGENT<1,-1> = L_AGENTMST_REC<2,L_AGENT_IND>:SVM:L_AGENT_CODE
+               END
+            END
+         NEXT L_AGENT_IND
+      END
+   END
+
+B210_CHECK_IF_NEED_TO_INSERT_IN_MATRIX_EXIT:
+   RETURN
+
+*************************************
+B220_CHECK_IF_NEED_TO_DELETE_FROM_MATRIX:
+*************************************
+
+   L_MATRIX_AGENT         = ""
+   L_MATRIX_AGENT_GUID    = ""
+   L_MATRIX_AGENT_ERP_KEY = ""
+   L_MATRIX_OVERRIDE_MGR = TRIM(FIELD(L_AGENT_CODE, "*",2))
+   L_AGENT_CODE          = TRIM(FIELD(L_AGENT_CODE,"*",1))
+
+*1. Let's look for the GUID of the "Default [0]" + agent combination.
+   IF TRIM(L_MATRIX_OVERRIDE_MGR) # "" THEN
+      L_MK_CODE = TRIM(FIELD(L_MATRIX_OVERRIDE_MGR, "|",2))
+      L_MATRIX_OVERRIDE_MGR = TRIM(FIELD(L_MATRIX_OVERRIDE_MGR, "|",1))
+      L_CRMMATRIXGUID_KEY  = ACNT.NAME:"*":KEY:"*":L_AGENT_CODE:"*":L_MATRIX_OVERRIDE_MGR:"*":L_MK_CODE
+   END ELSE
+      L_CRMMATRIXGUID_KEY  = ACNT.NAME:"*":KEY:"*":L_AGENT_CODE:"*":"0"
+   END
+   READV L_GUID FROM CRMMATRIXGUID, L_CRMMATRIXGUID_KEY, 2 ELSE L_GUID = ""
+   IF L_GUID # "" THEN
+     L_MATRIX_AGENT_GUID<1,-1>      = L_GUID
+     L_MATRIX_AGENT_ERP_KEY<1,-1>   = L_CRMMATRIXGUID_KEY
+     IF TRIM(L_MATRIX_OVERRIDE_MGR) # "" THEN
+        L_MATRIX_AGENT<1,-1>        = L_MK_CODE:SVM:L_AGENT_CODE
+     END ELSE
+        L_MATRIX_AGENT<1,-1>        = "0":SVM:L_AGENT_CODE
+     END
+   END
+   IF L_MATRIX_OVERRIDE_MGR = "" THEN
+*2. Now, let's read the AGENTMST record to see if any MS specific values exist.
+*   if some MS sopecific values exist, let's look for the GUID of the MS + agent combination.
+      READ L_AGENTMST_REC FROM AGENTMST, L_AGENT_CODE THEN
+         L_NB_AGENT = DCOUNT(L_AGENTMST_REC<3>, VM)
+         FOR L_AGENT_IND = 1 TO L_NB_AGENT
+            L_CRMMATRIXGUID_KEY  = ACNT.NAME:"*":KEY:"*":L_AGENT_CODE:"*":L_AGENTMST_REC<2,L_AGENT_IND>
+            READV L_GUID FROM CRMMATRIXGUID, L_CRMMATRIXGUID_KEY, 2 ELSE L_GUID = ""
+            IF L_GUID # "" THEN
+*****
+* VALID IF OVERRIDE
+*****
+               LOCATE L_AGENT_CODE:"*":L_AGENTMST_REC<2,L_AGENT_IND> IN L_OVERRIDE_ORIG_AGENT_CODES <1> SETTING POS ELSE
+                  L_MATRIX_AGENT_GUID<1,-1>      = L_GUID
+                  L_MATRIX_AGENT_ERP_KEY<1,-1>   = L_CRMMATRIXGUID_KEY
+                  L_MATRIX_AGENT<1,-1>           = L_AGENTMST_REC<2,L_AGENT_IND>:SVM:L_AGENT_CODE
+               END
+            END
+         NEXT L_AGENT_IND
+      END
+   END
+B220_CHECK_IF_NEED_TO_DELETE_FROM_MATRIX_EXIT:
+   RETURN
+
+**************************
+B300_DELETE_CRMMATRIXGUID:
+**************************
+
+   L_NB_DEL = DCOUNT(L_MATRIX_AGENT_ERP_KEY,VM)
+
+   FOR L_DEL_IND = 1 TO L_NB_DEL
+*** \/ PIEDES.112
+*      DELETE CRMMATRIXGUID, L_MATRIX_AGENT_ERP_KEY<1,L_DEL_IND>
+      PARAM<16,-1> = L_MATRIX_AGENT_ERP_KEY<1,L_DEL_IND>
+*** /\ PIEDES.112
+   NEXT L_DEL_IND
+
+   L_MATRIX_AGENT_GUID = ""
+   L_MATRIX_AGENT_ERP_KEY = ""
+
+B300_DELETE_CRMMATRIXGUID_EXIT:
+   RETURN
+
+**************************
+B310_REMOVE_OLD_AGENTMST:
+**************************
+   L_END = 0
+   L_LIST = ""
+   L_STMT = "CLEARSELECT"
+   EXECUTE L_STMT  CAPTURING GARB
+
+   L_STMT = 'SELECT CRMMATRIXGUID WITH @ID = "[*':KEY:'*]"'
+   EXECUTE L_STMT  CAPTURING GARB
+
+   LOOP
+      READNEXT L_MATRIX_KEY  ELSE L_END = 1
+   UNTIL L_END = 1
+      READV L_OVERRIDE_MGR_ID FROM CRMMATRIXGUID, L_MATRIX_KEY, 6 ELSE L_OVERRIDE_MGR_ID = ""
+      IF TRIM(L_OVERRIDE_MGR_ID) = "" THEN
+         L_ROLE_KEY = FIELD(L_MATRIX_KEY, "*",4)
+         L_MK       = FIELD(L_MATRIX_KEY, "*",5)
+         IF L_MK # 0 THEN
+            READ L_AGENTMST_REC FROM AGENTMST, L_ROLE_KEY THEN
+               LOCATE L_MK IN L_AGENTMST_REC<2> SETTING L_POS2 ELSE
+                  READV L_DEL_GUID FROM CRMMATRIXGUID, L_MATRIX_KEY, 2 THEN
+                    IF L_DEL_GUID # "" THEN
+                       PARAM<12,-1> =  L_DEL_GUID
+                       DELETE CRMMATRIXGUID, L_MATRIX_KEY
+                    END
+                  END
+               END
+            END
+         END
+      END
+   REPEAT
+
+B310_REMOVE_OLD_AGENTMST_EXIT:
+   RETURN
+
+****************************************
+* Exit
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END
+
+
+*
+*

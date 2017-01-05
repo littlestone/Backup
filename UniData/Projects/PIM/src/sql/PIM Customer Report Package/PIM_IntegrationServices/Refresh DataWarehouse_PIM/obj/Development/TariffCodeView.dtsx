@@ -1,0 +1,694 @@
+<?xml version="1.0"?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:refId="Package"
+  DTS:CreationDate="3/4/2016 5:11:59 PM"
+  DTS:CreationName="SSIS.Package.3"
+  DTS:CreatorComputerName="63RJGV1"
+  DTS:CreatorName="CORP\juntan"
+  DTS:DTSID="{80F57E25-43F0-4BAE-AA1F-3F3EAD91088C}"
+  DTS:ExecutableType="SSIS.Package.3"
+  DTS:LastModifiedProductVersion="11.0.5583.0"
+  DTS:LocaleID="4105"
+  DTS:ObjectName="TariffCodeView"
+  DTS:PackageType="5"
+  DTS:ProtectionLevel="0"
+  DTS:VersionBuild="33"
+  DTS:VersionGUID="{14A42310-7715-46BF-977B-DBC719155343}">
+  <DTS:Property
+    DTS:Name="PackageFormatVersion">6</DTS:Property>
+  <DTS:ConnectionManagers>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[step.stepview]"
+      DTS:CreationName="OLEDB"
+      DTS:DTSID="{6280328F-A55F-40D7-8D5A-6BA9BE0BC938}"
+      DTS:ObjectName="step.stepview">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:Retain="True"
+          DTS:ConnectionString="Data Source=step;User ID=stepview;Provider=OraOLEDB.Oracle.1;Persist Security Info=True;" />
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+  </DTS:ConnectionManagers>
+  <DTS:Variables />
+  <DTS:Executables>
+    <DTS:Executable
+      DTS:refId="Package\Sequence Container"
+      DTS:CreationName="STOCK:SEQUENCE"
+      DTS:Description="Sequence Container"
+      DTS:DTSID="{9E101CE9-49C5-48FD-9263-434A7D1EE481}"
+      DTS:ExecutableType="STOCK:SEQUENCE"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Sequence Container">
+      <DTS:Variables />
+      <DTS:Executables>
+        <DTS:Executable
+          DTS:refId="Package\Sequence Container\Copy TariffCodeView"
+          DTS:CreationName="SSIS.Pipeline.3"
+          DTS:Description="Data Flow Task"
+          DTS:DTSID="{EA8BF9DF-8637-4CB0-B51C-B6E9A308FCD5}"
+          DTS:ExecutableType="SSIS.Pipeline.3"
+          DTS:LocaleID="-1"
+          DTS:ObjectName="Copy TariffCodeView"
+          DTS:TaskContact="Performs high-performance data extraction, transformation and loading;Microsoft Corporation; Microsoft SQL Server; (C) 2007 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1">
+          <DTS:Variables />
+          <DTS:ObjectData>
+            <pipeline
+              version="1">
+              <components>
+                <component
+                  refId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM"
+                  componentClassID="{4ADA7EAA-136C-4215-8098-D7A7C27FC0D1}"
+                  contactInfo="OLE DB Destination;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;4"
+                  description="OLE DB Destination"
+                  name="DataWarehouse PIM"
+                  usesDispositions="true"
+                  version="4">
+                  <properties>
+                    <property
+                      dataType="System.Int32"
+                      description="The number of seconds before a command times out.  A value of 0 indicates an infinite time-out."
+                      name="CommandTimeout">0</property>
+                    <property
+                      dataType="System.String"
+                      description="Specifies the name of the database object used to open a rowset."
+                      name="OpenRowset">[dbo].[TariffCodeView]</property>
+                    <property
+                      dataType="System.String"
+                      description="Specifies the variable that contains the name of the database object used to open a rowset."
+                      name="OpenRowsetVariable"></property>
+                    <property
+                      dataType="System.String"
+                      description="The SQL command to be executed."
+                      name="SqlCommand"
+                      UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor, Microsoft.DataTransformationServices.Controls, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"></property>
+                    <property
+                      dataType="System.Int32"
+                      description="Specifies the column code page to use when code page information is unavailable from the data source."
+                      name="DefaultCodePage">1252</property>
+                    <property
+                      dataType="System.Boolean"
+                      description="Forces the use of the DefaultCodePage property value when describing character data."
+                      name="AlwaysUseDefaultCodePage">false</property>
+                    <property
+                      dataType="System.Int32"
+                      description="Specifies the mode used to access the database."
+                      name="AccessMode"
+                      typeConverter="AccessMode">3</property>
+                    <property
+                      dataType="System.Boolean"
+                      description="Indicates whether the values supplied for identity columns will be copied to the destination. If false, values for identity columns will be auto-generated at the destination. Applies only if fast load is turned on."
+                      name="FastLoadKeepIdentity">false</property>
+                    <property
+                      dataType="System.Boolean"
+                      description="Indicates whether the columns containing null will have null inserted in the destination. If false, columns containing null will have their default values inserted at the destination. Applies only if fast load is turned on."
+                      name="FastLoadKeepNulls">false</property>
+                    <property
+                      dataType="System.String"
+                      description="Specifies options to be used with fast load.  Applies only if fast load is turned on."
+                      name="FastLoadOptions">TABLOCK</property>
+                    <property
+                      dataType="System.Int32"
+                      description="Specifies when commits are issued during data insertion.  A value of 0 specifies that one commit will be issued at the end of data insertion.  Applies only if fast load is turned on."
+                      name="FastLoadMaxInsertCommitSize">2147483647</property>
+                  </properties>
+                  <connections>
+                    <connection
+                      refId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Connections[OleDbConnection]"
+                      connectionManagerID="{8D6DB1AA-86B9-44CA-AAC3-F419A009453B}:external"
+                      connectionManagerRefId="Project.ConnectionManagers[sql11.DataWarehouse_PIM]"
+                      description="The OLE DB runtime connection used to access the database."
+                      name="OleDbConnection" />
+                  </connections>
+                  <inputs>
+                    <input
+                      refId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input]"
+                      errorOrTruncationOperation="Insert"
+                      errorRowDisposition="FailComponent"
+                      hasSideEffects="true"
+                      name="OLE DB Destination Input">
+                      <inputColumns>
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[TARIFFCODEID]"
+                          cachedDataType="wstr"
+                          cachedLength="40"
+                          cachedName="TARIFFCODEID"
+                          externalMetadataColumnId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[TariffCodeID]"
+                          lineageId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[TARIFFCODEID]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[TARIFFCODE]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="TARIFFCODE"
+                          externalMetadataColumnId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[TariffCode]"
+                          lineageId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[TARIFFCODE]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[TARIFFCODECA]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="TARIFFCODECA"
+                          externalMetadataColumnId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[TariffCodeCA]"
+                          lineageId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[TARIFFCODECA]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[TARIFFCODEUS]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="TARIFFCODEUS"
+                          externalMetadataColumnId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[TariffCodeUS]"
+                          lineageId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[TARIFFCODEUS]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[TARIFFCODECODE]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="TARIFFCODECODE"
+                          externalMetadataColumnId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[TariffCodeCode]"
+                          lineageId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[TARIFFCODECODE]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[TARIFFCODELONGDESCRIPTION]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="TARIFFCODELONGDESCRIPTION"
+                          externalMetadataColumnId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[TariffCodeLongDescription]"
+                          lineageId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[TARIFFCODELONGDESCRIPTION]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[TARIFFCODESHORTDESCRIPTION]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="TARIFFCODESHORTDESCRIPTION"
+                          externalMetadataColumnId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[TariffCodeShortDescription]"
+                          lineageId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[TARIFFCODESHORTDESCRIPTION]" />
+                      </inputColumns>
+                      <externalMetadataColumns
+                        isUsed="True">
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[TariffCodeID]"
+                          dataType="wstr"
+                          length="255"
+                          name="TariffCodeID" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[TariffCode]"
+                          dataType="wstr"
+                          length="255"
+                          name="TariffCode" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[TariffCodeCA]"
+                          dataType="wstr"
+                          length="255"
+                          name="TariffCodeCA" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[TariffCodeUS]"
+                          dataType="wstr"
+                          length="255"
+                          name="TariffCodeUS" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[TariffCodeCode]"
+                          dataType="wstr"
+                          length="255"
+                          name="TariffCodeCode" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[TariffCodeLongDescription]"
+                          dataType="wstr"
+                          length="255"
+                          name="TariffCodeLongDescription" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[TariffCodeShortDescription]"
+                          dataType="wstr"
+                          length="255"
+                          name="TariffCodeShortDescription" />
+                      </externalMetadataColumns>
+                    </input>
+                  </inputs>
+                  <outputs>
+                    <output
+                      refId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Outputs[OLE DB Destination Error Output]"
+                      exclusionGroup="1"
+                      isErrorOut="true"
+                      name="OLE DB Destination Error Output"
+                      synchronousInputId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input]">
+                      <outputColumns>
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
+                          dataType="i4"
+                          lineageId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
+                          name="ErrorCode"
+                          specialFlags="1" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
+                          dataType="i4"
+                          lineageId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
+                          name="ErrorColumn"
+                          specialFlags="2" />
+                      </outputColumns>
+                      <externalMetadataColumns />
+                    </output>
+                  </outputs>
+                </component>
+                <component
+                  refId="Package\Sequence Container\Copy TariffCodeView\Oracle Query"
+                  componentClassID="{165A526D-D5DE-47FF-96A6-F8274C19826B}"
+                  contactInfo="OLE DB Source;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;7"
+                  description="OLE DB Source"
+                  name="Oracle Query"
+                  usesDispositions="true"
+                  version="7">
+                  <properties>
+                    <property
+                      dataType="System.Int32"
+                      description="The number of seconds before a command times out.  A value of 0 indicates an infinite time-out."
+                      name="CommandTimeout">0</property>
+                    <property
+                      dataType="System.String"
+                      description="Specifies the name of the database object used to open a rowset."
+                      name="OpenRowset"></property>
+                    <property
+                      dataType="System.String"
+                      description="Specifies the variable that contains the name of the database object used to open a rowset."
+                      name="OpenRowsetVariable"></property>
+                    <property
+                      dataType="System.String"
+                      description="The SQL command to be executed."
+                      name="SqlCommand"
+                      UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor, Microsoft.DataTransformationServices.Controls, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91">select name TariffCodeID, pimviewapipck.getcontextname(id) TariffCode, 
+  pimviewapipck.getcontextvalue4node(id,1754137) TariffCodeCA,
+  pimviewapipck.getcontextvalue4node(id,1754149) TariffCodeUS,
+  pimviewapipck.getcontextvalue4node(id,1754252) TariffCodeCode,
+  pimviewapipck.getcontextvalue4node(id,1754559) TariffCodeLongDescription,
+  pimviewapipck.getcontextvalue4node(id,1754577) TariffCodeShortDescription
+from entity_all where subtypeid = 1753474</property>
+                    <property
+                      dataType="System.String"
+                      description="The variable that contains the SQL command to be executed."
+                      name="SqlCommandVariable"></property>
+                    <property
+                      dataType="System.Int32"
+                      description="Specifies the column code page to use when code page information is unavailable from the data source."
+                      name="DefaultCodePage">1252</property>
+                    <property
+                      dataType="System.Boolean"
+                      description="Forces the use of the DefaultCodePage property value when describing character data."
+                      name="AlwaysUseDefaultCodePage">false</property>
+                    <property
+                      dataType="System.Int32"
+                      description="Specifies the mode used to access the database."
+                      name="AccessMode"
+                      typeConverter="AccessMode">2</property>
+                    <property
+                      dataType="System.String"
+                      description="The mappings between the parameters in the SQL command and variables."
+                      name="ParameterMapping"></property>
+                  </properties>
+                  <connections>
+                    <connection
+                      refId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Connections[OleDbConnection]"
+                      connectionManagerID="Package.ConnectionManagers[step.stepview]"
+                      connectionManagerRefId="Package.ConnectionManagers[step.stepview]"
+                      description="The OLE DB runtime connection used to access the database."
+                      name="OleDbConnection" />
+                  </connections>
+                  <outputs>
+                    <output
+                      refId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output]"
+                      name="OLE DB Source Output">
+                      <outputColumns>
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[TARIFFCODEID]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[TARIFFCODEID]"
+                          length="40"
+                          lineageId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[TARIFFCODEID]"
+                          name="TARIFFCODEID"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[TARIFFCODE]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[TARIFFCODE]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[TARIFFCODE]"
+                          name="TARIFFCODE"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[TARIFFCODECA]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[TARIFFCODECA]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[TARIFFCODECA]"
+                          name="TARIFFCODECA"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[TARIFFCODEUS]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[TARIFFCODEUS]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[TARIFFCODEUS]"
+                          name="TARIFFCODEUS"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[TARIFFCODECODE]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[TARIFFCODECODE]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[TARIFFCODECODE]"
+                          name="TARIFFCODECODE"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[TARIFFCODELONGDESCRIPTION]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[TARIFFCODELONGDESCRIPTION]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[TARIFFCODELONGDESCRIPTION]"
+                          name="TARIFFCODELONGDESCRIPTION"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[TARIFFCODESHORTDESCRIPTION]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[TARIFFCODESHORTDESCRIPTION]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[TARIFFCODESHORTDESCRIPTION]"
+                          name="TARIFFCODESHORTDESCRIPTION"
+                          truncationRowDisposition="FailComponent" />
+                      </outputColumns>
+                      <externalMetadataColumns
+                        isUsed="True">
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[TARIFFCODEID]"
+                          dataType="wstr"
+                          length="40"
+                          name="TARIFFCODEID" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[TARIFFCODE]"
+                          dataType="wstr"
+                          length="4000"
+                          name="TARIFFCODE" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[TARIFFCODECA]"
+                          dataType="wstr"
+                          length="4000"
+                          name="TARIFFCODECA" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[TARIFFCODEUS]"
+                          dataType="wstr"
+                          length="4000"
+                          name="TARIFFCODEUS" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[TARIFFCODECODE]"
+                          dataType="wstr"
+                          length="4000"
+                          name="TARIFFCODECODE" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[TARIFFCODELONGDESCRIPTION]"
+                          dataType="wstr"
+                          length="4000"
+                          name="TARIFFCODELONGDESCRIPTION" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[TARIFFCODESHORTDESCRIPTION]"
+                          dataType="wstr"
+                          length="4000"
+                          name="TARIFFCODESHORTDESCRIPTION" />
+                      </externalMetadataColumns>
+                    </output>
+                    <output
+                      refId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Error Output]"
+                      isErrorOut="true"
+                      name="OLE DB Source Error Output">
+                      <outputColumns>
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[TARIFFCODEID]"
+                          dataType="wstr"
+                          length="40"
+                          lineageId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[TARIFFCODEID]"
+                          name="TARIFFCODEID" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[TARIFFCODE]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[TARIFFCODE]"
+                          name="TARIFFCODE" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[TARIFFCODECA]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[TARIFFCODECA]"
+                          name="TARIFFCODECA" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[TARIFFCODEUS]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[TARIFFCODEUS]"
+                          name="TARIFFCODEUS" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[TARIFFCODECODE]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[TARIFFCODECODE]"
+                          name="TARIFFCODECODE" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[TARIFFCODELONGDESCRIPTION]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[TARIFFCODELONGDESCRIPTION]"
+                          name="TARIFFCODELONGDESCRIPTION" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[TARIFFCODESHORTDESCRIPTION]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[TARIFFCODESHORTDESCRIPTION]"
+                          name="TARIFFCODESHORTDESCRIPTION" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ErrorCode]"
+                          dataType="i4"
+                          lineageId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ErrorCode]"
+                          name="ErrorCode"
+                          specialFlags="1" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ErrorColumn]"
+                          dataType="i4"
+                          lineageId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ErrorColumn]"
+                          name="ErrorColumn"
+                          specialFlags="2" />
+                      </outputColumns>
+                      <externalMetadataColumns />
+                    </output>
+                  </outputs>
+                </component>
+              </components>
+              <paths>
+                <path
+                  refId="Package\Sequence Container\Copy TariffCodeView.Paths[OLE DB Source Output]"
+                  endId="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input]"
+                  name="OLE DB Source Output"
+                  startId="Package\Sequence Container\Copy TariffCodeView\Oracle Query.Outputs[OLE DB Source Output]" />
+              </paths>
+            </pipeline>
+          </DTS:ObjectData>
+        </DTS:Executable>
+        <DTS:Executable
+          DTS:refId="Package\Sequence Container\Setting Oracle Session Varaible"
+          DTS:CreationName="Microsoft.SqlServer.Dts.Tasks.ExecuteSQLTask.ExecuteSQLTask, Microsoft.SqlServer.SQLTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+          DTS:Description="Execute SQL Task"
+          DTS:DTSID="{5E329F7B-A75A-4ED0-A696-CDDDD90116A8}"
+          DTS:ExecutableType="Microsoft.SqlServer.Dts.Tasks.ExecuteSQLTask.ExecuteSQLTask, Microsoft.SqlServer.SQLTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+          DTS:LocaleID="-1"
+          DTS:ObjectName="Setting Oracle Session Varaible"
+          DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2012; © 2007 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+          DTS:ThreadHint="0">
+          <DTS:Variables />
+          <DTS:ObjectData>
+            <SQLTask:SqlTaskData
+              SQLTask:Connection="{6280328F-A55F-40D7-8D5A-6BA9BE0BC938}"
+              SQLTask:BypassPrepare="False"
+              SQLTask:SqlStatementSource="begin pimviewapipck.setviewcontext('Context1','Approved') ; end;" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+          </DTS:ObjectData>
+        </DTS:Executable>
+      </DTS:Executables>
+      <DTS:PrecedenceConstraints>
+        <DTS:PrecedenceConstraint
+          DTS:refId="Package\Sequence Container.PrecedenceConstraints[Constraint]"
+          DTS:CreationName=""
+          DTS:DTSID="{547398D8-B180-40BB-8D3D-57CF1CC214B2}"
+          DTS:From="Package\Sequence Container\Setting Oracle Session Varaible"
+          DTS:LogicalAnd="True"
+          DTS:ObjectName="Constraint"
+          DTS:To="Package\Sequence Container\Copy TariffCodeView" />
+      </DTS:PrecedenceConstraints>
+    </DTS:Executable>
+    <DTS:Executable
+      DTS:refId="Package\Truncate TariffCodeView"
+      DTS:CreationName="Microsoft.SqlServer.Dts.Tasks.ExecuteSQLTask.ExecuteSQLTask, Microsoft.SqlServer.SQLTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+      DTS:Description="Execute SQL Task"
+      DTS:DTSID="{21C7CFB5-CDCA-4F06-A709-D4893B4D30C7}"
+      DTS:ExecutableType="Microsoft.SqlServer.Dts.Tasks.ExecuteSQLTask.ExecuteSQLTask, Microsoft.SqlServer.SQLTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Truncate TariffCodeView"
+      DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2012; © 2007 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{8D6DB1AA-86B9-44CA-AAC3-F419A009453B}"
+          SQLTask:BypassPrepare="False"
+          SQLTask:SqlStatementSource="TRUNCATE TABLE dbo.TariffCodeView" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+  </DTS:Executables>
+  <DTS:PrecedenceConstraints>
+    <DTS:PrecedenceConstraint
+      DTS:refId="Package.PrecedenceConstraints[Constraint]"
+      DTS:CreationName=""
+      DTS:DTSID="{1A431120-0DDB-47BD-9FCE-626E4681006E}"
+      DTS:From="Package\Truncate TariffCodeView"
+      DTS:LogicalAnd="True"
+      DTS:ObjectName="Constraint"
+      DTS:To="Package\Sequence Container" />
+  </DTS:PrecedenceConstraints>
+  <DTS:DesignTimeProperties><![CDATA[<?xml version="1.0"?>
+<!--This CDATA section contains the layout information of the package. The section includes information such as (x,y) coordinates, width, and height.-->
+<!--If you manually edit this section and make a mistake, you can delete it. -->
+<!--The package will still be able to load normally but the previous layout information will be lost and the designer will automatically re-arrange the elements on the design surface.-->
+<Objects
+  Version="sql11">
+  <!--Each node below will contain properties that do not affect runtime behavior.-->
+  <Package
+    design-time-name="Package">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="8" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
+        <NodeLayout
+          Size="177.6,41.6"
+          Id="Package\Sequence Container\Copy TariffCodeView"
+          TopLeft="58.5142885363833,124.564709940583" />
+        <NodeLayout
+          Size="225.6,41.6"
+          Id="Package\Sequence Container\Setting Oracle Session Varaible"
+          TopLeft="34.5142881276657,30.3529439134169" />
+        <EdgeLayout
+          Id="Package\Sequence Container.PrecedenceConstraints[Constraint]"
+          TopLeft="147.314288332024,71.9529439134169">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,52.6117660271662"
+              Start="0,0"
+              End="0,45.1117660271662">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,45.1117660271662" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+        <ContainerLayout
+          HeaderHeight="43"
+          IsExpanded="True"
+          PanelSize="281.6,218.4"
+          Size="281.6,261.6"
+          Id="Package\Sequence Container"
+          TopLeft="107.428573258069,127.247060608122" />
+        <NodeLayout
+          Size="196.8,41.6"
+          Id="Package\Truncate TariffCodeView"
+          TopLeft="146.857145358105,30.4000004375683" />
+        <EdgeLayout
+          Id="Package.PrecedenceConstraints[Constraint]"
+          TopLeft="246.742859308087,72.0000004375683">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,55.2470601705537"
+              Start="0,0"
+              End="0,47.7470601705537">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,47.7470601705537" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+      </GraphLayout>
+    </LayoutInfo>
+  </Package>
+  <TaskHost
+    design-time-name="Package\Sequence Container\Copy TariffCodeView">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="4" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
+        <NodeLayout
+          Size="142.4,41.6"
+          Id="Package\Sequence Container\Copy TariffCodeView\Oracle Query"
+          TopLeft="276.799999591282,59.3882352855379" />
+        <NodeLayout
+          Size="176,41.6"
+          Id="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM"
+          TopLeft="261.371428104323,191.2" />
+        <EdgeLayout
+          Id="Package\Sequence Container\Copy TariffCodeView.Paths[OLE DB Source Output]"
+          TopLeft="348.685713847803,100.988235285538">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,90.211764714462"
+              Start="0,0"
+              End="0,82.711764714462">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,82.711764714462" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+      </GraphLayout>
+    </LayoutInfo>
+  </TaskHost>
+  <PipelineComponentMetadata
+    design-time-name="Package\Sequence Container\Copy TariffCodeView\DataWarehouse PIM">
+    <Properties>
+      <Property>
+        <Name>DataSourceViewID</Name>
+      </Property>
+      <Property>
+        <Name>TableInfoObjectType</Name>
+        <Value
+          type="q2:string">Table</Value>
+      </Property>
+    </Properties>
+  </PipelineComponentMetadata>
+  <PipelineComponentMetadata
+    design-time-name="Package\Sequence Container\Copy TariffCodeView\Oracle Query">
+    <Properties>
+      <Property>
+        <Name>DataSourceViewID</Name>
+      </Property>
+    </Properties>
+  </PipelineComponentMetadata>
+</Objects>]]></DTS:DesignTimeProperties>
+</DTS:Executable>

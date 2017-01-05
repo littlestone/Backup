@@ -1,0 +1,30 @@
+﻿**************************************************************************                                                          
+* SHIP AND DEBIT - PHASE 2                                                                                                          
+* Ship & Debit Claim Approval Request Process - SLA Level 1                                                                         
+* Modifications:                                                                                                                    
+*                                                                                                                                   
+*  2014/09/22 juntan SOP381D.12 - Add previous level approver's response message for request email.                                 
+*  2014/04/03 juntan SOP381D.11 - Inital creation                                                                                   
+*                                                                                                                                   
+**************************************************************************                                                          
+LOCAL INPUT_PARAMS,OUTPUT_PARAMS                                                                                                    
+INPUT_PARAMS = ""                                                                                                                   
+OUTPUT_PARAMS = ""                                                                                                                  
+                                                                                                                                    
+INPUT_PARAMS<1> = @PARAM<1>        ;* SDCAUDIT KEY                                                                                  
+INPUT_PARAMS<2> = @WORK<116,@CNT>  ;* CLAIM DATE                                                                                    
+INPUT_PARAMS<3> = 1                ;* SLA LEVEL 1 CNT                                                                               
+INPUT_PARAMS<4> = @USER.ID         ;* REQUESTOR USERID                                                                              
+*** juntan \/ SOP381D.22 - 2014/09/25                                                                                               
+INPUT_PARAMS<5> = ""               ;* APPROVER RESPONSE MESSAGE                                                                     
+INPUT_PARAMS<6> = 0                ;* SLA APPROVAL COMPLETED FLAG                                                                   
+INPUT_PARAMS<7> = 0                ;* SLA APPROVAL RESEND FLAG                                                                      
+*** juntan /\ SOP381D.22 - 2014/09/25
+CALL SOPS3090.1(INPUT_PARAMS,OUTPUT_PARAMS)                                                                                         
+IF OUTPUT_PARAMS<1,1> # "" THEN                                                                                                     
+   EXEC 'SYS0061,IP3000\':OCONV(@TIME,"MTS"):@VM:OUTPUT_PARAMS<1,1>:@VM:OUTPUT_PARAMS<1,2>:@VM:OUTPUT_PARAMS<1,3>                   
+   EXIT                                                                                                                             
+END                                                                                                                                 
+                                                                                                                                    
+@WORK<113,@CNT> = "W" ;* refresh status                                                                                             
+@REFRESH = -2

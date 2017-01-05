@@ -1,0 +1,7 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<parameters>
+  <parameter name="IIS Web Application Name" description="" value="K2InfofloService" tags="IisApp">
+    <parameterEntry kind="ProviderPath" scope="IisApp" match="^C:\\Users\\juntan\.CORP\\Documents\\Visual\ Studio\ 2010\\Projects\\K2\ Infoflo\ Service\\K2InfofloService\\obj\\Release\\Package\\PackageTmp$" />
+    <parameterEntry kind="ProviderPath" scope="setAcl" match="^C:\\Users\\juntan\.CORP\\Documents\\Visual\ Studio\ 2010\\Projects\\K2\ Infoflo\ Service\\K2InfofloService\\obj\\Release\\Package\\PackageTmp$" />
+  </parameter>
+</parameters>

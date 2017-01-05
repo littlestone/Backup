@@ -1,0 +1,17 @@
+c:\users\juntan\documents\visual studio 2010\Projects\IpexChequeImageDisplay\IpexChequeImageDisplay\obj\x86\Debug\ResolveAssemblyReference.cache
+c:\users\juntan\documents\visual studio 2010\Projects\IpexChequeImageDisplay\IpexChequeImageDisplay\obj\x86\Debug\MainWindow.baml
+c:\users\juntan\documents\visual studio 2010\Projects\IpexChequeImageDisplay\IpexChequeImageDisplay\obj\x86\Debug\MainWindow.g.cs
+c:\users\juntan\documents\visual studio 2010\Projects\IpexChequeImageDisplay\IpexChequeImageDisplay\obj\x86\Debug\App.g.cs
+c:\users\juntan\documents\visual studio 2010\Projects\IpexChequeImageDisplay\IpexChequeImageDisplay\obj\x86\Debug\IpexChequeImageDisplay_MarkupCompile.cache
+c:\users\juntan\documents\visual studio 2010\Projects\IpexChequeImageDisplay\IpexChequeImageDisplay\obj\x86\Debug\IpexChequeImageDisplay.g.resources
+c:\users\juntan\documents\visual studio 2010\Projects\IpexChequeImageDisplay\IpexChequeImageDisplay\obj\x86\Debug\IpexChequeImageDisplay.Properties.Resources.resources
+c:\users\juntan\documents\visual studio 2010\Projects\IpexChequeImageDisplay\IpexChequeImageDisplay\obj\x86\Debug\GenerateResource.read.1.tlog
+c:\users\juntan\documents\visual studio 2010\Projects\IpexChequeImageDisplay\IpexChequeImageDisplay\obj\x86\Debug\GenerateResource.write.1.tlog
+c:\users\juntan\documents\visual studio 2010\Projects\IpexChequeImageDisplay\IpexChequeImageDisplay\bin\Debug\IpexChequeImageDisplay.exe
+c:\users\juntan\documents\visual studio 2010\Projects\IpexChequeImageDisplay\IpexChequeImageDisplay\bin\Debug\IpexChequeImageDisplay.pdb
+c:\users\juntan\documents\visual studio 2010\Projects\IpexChequeImageDisplay\IpexChequeImageDisplay\obj\x86\Debug\IpexChequeImageDisplay.exe
+c:\users\juntan\documents\visual studio 2010\Projects\IpexChequeImageDisplay\IpexChequeImageDisplay\obj\x86\Debug\IpexChequeImageDisplay.pdb
+c:\users\juntan\documents\visual studio 2010\Projects\IpexChequeImageDisplay\IpexChequeImageDisplay\bin\Debug\IpexChequeImageDisplay.exe.config
+C:\Users\juntan\My Workbench\My Project\Projects\IpexChequeImageDisplay\IpexChequeImageDisplay\bin\Debug\IpexChequeImageDisplay.exe.config
+C:\Users\juntan\My Workbench\My Project\Projects\IpexChequeImageDisplay\IpexChequeImageDisplay\obj\x86\Debug\IpexChequeImageDisplay.exe
+C:\Users\juntan\My Workbench\My Project\Projects\IpexChequeImageDisplay\IpexChequeImageDisplay\obj\x86\Debug\IpexChequeImageDisplay.pdb

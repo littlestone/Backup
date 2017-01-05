@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<html>
+<head>
+<style>
+  body
+  {
+    font-size:75%;
+    font-family:verdana,arial,'sans serif';
+    background-repeat:repeat-x;
+    background-color:#FFFFF0;
+    color:#000080;
+  }
+</style>
+<title>PO # L_PO_NBR approval request / Demande d'approbation du BC # L_PO_NBR (L_TIME_STAMP)</title>
+</head>
+<body>
+  <h5>PO # L_PO_NBR approval request / Demande d'approbation du BC # L_PO_NBR (L_TIME_STAMP)</h5>
+  <table border="5" bordercolor="#8080cc" bordercolorlight="#8080cc" bordercolordark="#8080cc" bgcolor="#ffffcc">
+    <tr> <td>PO # / BC #: &nbsp</td> <td width="70%">L_PO_NBR</td> </tr>
+    <tr> <td>PO type / Type BC: &nbsp</td> <td>L_PO_TYPE PO_TYPE_DESC</td> </tr>
+    <tr> <td>PO class / Classe BC: &nbsp</td> <td>L_PO_CLASS PO_CLASS_DESC</td> </tr>
+    <tr> <td>Company / Compagnie: &nbsp</td> <td>L_COMPANY COMPANY_NAME</td> </tr>
+    <tr> <td>Creator / Cr&eacute;ateur: &nbsp</td> <td>CREATOR_NAME</td> </tr>
+    <tr> <td>Requester / Demandeur: &nbsp</td> <td>REQUESTER_NAME</td> </tr>
+    <tr> <td>Buyer / Acheteur: &nbsp</td> <td>BUYER_NAME</td> </tr>
+    <tr> <td>Approver / Approbateur: &nbsp</td> <td>APPROVER_NAME</td> </tr>
+    <tr> <td>Supplier / Fournisseur: &nbsp</td> <td>L_SUPPLIER SUPPLIER_NAME</td> </tr>
+    <tr> <td>Currency / Devise: &nbsp</td> <td>L_CURRENCY_CODE</td> </tr>
+    <tr> <td>Amount / Montant: &nbsp</td> <td>L_TOTAL_AMT</td> </tr>
+  </table>
+  LEVEL_MSG
+  <p><br>
+  <a href="L_URL_APPROVE">Approve / Approuver</a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="L_URL_REJECT">Reject / Rejeter</a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="L_URL_RETURN">Return / Retour</a>
+  <hr><br>
+  <p>Thanks / Merci<br>
+</body>
+</html>

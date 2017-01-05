@@ -1,0 +1,1 @@
+End User or Developer will use "UOMergeModule.msm" merge module file along with their Application Deployment.

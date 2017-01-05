@@ -1,0 +1,262 @@
+     SUBROUTINE SYSS9220.1(ARGS_IN,ARGS_OUT)
+* UniData Standard Encrypt/Decrypt Function
+* VERSION 8.2.3
+*
+* 04 MAR 13 8.2.3 juntan PRJ*PUR083D.2-(Sub #2) PO INTERNAL CONTROLS
+*
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+
+     PROGRAM='SYSS9220.1'
+
+**************************************************************************
+ *
+* DESCRIPTION:
+* ============
+*              This program is used to encrypt or decrypt certain text
+*              string by using the native UniData ENCRYPT() function based
+*              on the setup in SYSCON SYS.ENCRYPTION and SYS.DECRIPTION
+*              tables.
+*
+*              <<<NOTE>>>
+*              a). Input parameters (delimited by @FM):
+*                  ARGS_IN<1> -> Raw or encrypted data string
+*                  ARGS_IN<2> -> Encrypt or Decrypt action code (E or D)
+*              b). Output parameter:
+*                  ARGS_OUT<1> -> Encrypted or raw string
+*                  ARGS_OUT<2> -> Error message if there is any
+*
+* MODIFICATIONS:
+* ==============
+*              2013/02/27 juntan PUR083D.2 - Initial creation.
+*
+**************************************************************************
+
+
+A100_MAIN:
+
+   GOSUB A200_INITIALIZATION
+   IF L_RTN_FLAG # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF L_RTN_FLAG "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF L_RTN_FLAG # "" THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+   GO A500_CONCLUSION
+
+
+****************************************
+* Definition of local variables & initialization of other variables.
+****************************************
+A200_INITIALIZATION:
+
+   ARGS_OUT = ""
+
+   RTN.FLAG = 0
+   L_RTN_FLAG = ""
+
+   L_DATA = ""         ;* Data string to encrypt or decrypt
+   L_ACTION_CODE = ""  ;* Encrypt or Decrypt (E/D)
+   L_SYSCON_KEY = ""
+   L_SYSCON_REC = ""
+
+   L_ALG = ""
+   L_DLOC = ""
+   L_KLOC = ""
+   L_KEYACTION = ""
+   L_RLOC = ""
+   L_KEY = ""
+   L_SALT = ""
+   L_IV = ""
+   L_ACTION = ""
+   L_STATUS = ""
+   L_RESULT = ""
+
+   L_ERROR_MSG = ""
+
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open the files needed in this subroutine.
+****************************************
+A300_OPEN_FILES:
+
+   OPEN "SYSCON" TO SYSCON ELSE
+      L_RTN_FLAG = "A300-ERROR-1"
+      L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> Cannot open file SYSCON."
+      GO A300_EXIT
+   END
+
+A300_EXIT:
+   RETURN
+
+
+****************************************
+* Main process logic structure.
+****************************************
+A400_MAIN_PROCESS:
+
+   GOSUB B100_PARSE_INPUT_ARGUMENTS
+   IF L_RTN_FLAG # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B200_READ_SYSCON_SETUP
+   IF L_RTN_FLAG # "" THEN
+      GO A400_EXIT
+   END
+
+A400_EXIT:
+   RETURN
+
+
+****************************************
+* Parse input arguments
+****************************************
+B100_PARSE_INPUT_ARGUMENTS:
+
+   IF ARGS_IN<1> = "" THEN
+      L_RTN_FLAG = "B100-ERROR-1"
+      L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> No input parameters found."
+      GO B100_EXIT
+   END
+
+   IF ARGS_IN<2> # "E" AND ARGS_IN<2> # "D" THEN
+      L_RTN_FLAG = "B100-ERROR-2"
+      L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> Invalid action code ":ARGS_IN<2>:"."
+      GO B100_EXIT
+   END
+
+   IF ARGS_IN<2> = "D" THEN
+      *** Note that encrypted string is delimited by a CHAR(10) at the end for some reason ***
+      L_DATA = ARGS_IN<1>:CHAR(10)    ;* Append CHAR(10) at the end of the encrypted string is requried to decrypt
+   END ELSE
+      L_DATA = ARGS_IN<1>
+   END
+   L_ACTION_CODE = ARGS_IN<2>
+
+B100_EXIT:
+   RETURN
+
+
+****************************************
+* Read SYSCON setup for encrytion or decryption
+****************************************
+B200_READ_SYSCON_SETUP:
+
+   IF L_ACTION_CODE = "E" THEN
+      L_SYSCON_KEY = "SYS.ENCRYPTION"
+   END ELSE
+      L_SYSCON_KEY = "SYS.DECRYPTION"
+   END
+
+   READ L_SYSCON_REC FROM SYSCON, L_SYSCON_KEY
+   ON ERROR
+      L_RTN_FLAG = "B200-ERROR-1"
+      L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> Cannot read SYSCON record ":L_SYSCON_KEY:"."
+   END THEN
+      GOSUB B300_ENCRYPT_OR_DECRYPT
+   END ELSE
+      L_RTN_FLAG = "B200-ERROR-2"
+      L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> SYSCON record ":L_SYSCON_KEY:" does not exist."
+   END
+
+B200_EXIT:
+   RETURN
+
+
+****************************************
+* Encrypt or decrypt according to the input arguments
+****************************************
+B300_ENCRYPT_OR_DECRYPT:
+
+   L_ALG = TRIM(FIELD(L_SYSCON_REC<1>,';',1))        ;* cypher algorithm
+   L_ACTION = TRIM(FIELD(L_SYSCON_REC<2>,';',1))     ;* encryption or decryption
+   L_DLOC = TRIM(FIELD(L_SYSCON_REC<3>,';',1))       ;* data passed directly flag
+   L_KEY = TRIM(FIELD(L_SYSCON_REC<4>,';',1))        ;* actual key
+   L_KLOC = TRIM(FIELD(L_SYSCON_REC<5>,';',1))       ;* key passed directly flag
+   L_KEYACTION = TRIM(FIELD(L_SYSCON_REC<6>,';',1))  ;* derive key from key text flag
+   L_SALT = TRIM(FIELD(L_SYSCON_REC<7>,';',1))       ;* salt
+   L_IV = TRIM(FIELD(L_SYSCON_REC<8>,';',1))         ;* initialization vector
+   L_RLOC = TRIM(FIELD(L_SYSCON_REC<9>,';',1))       ;* result in a string flag
+
+   L_STATUS = ENCRYPT(L_ALG,L_ACTION,L_DATA,L_DLOC,L_KEY,L_KLOC,L_KEYACTION,L_SALT,L_IV,L_RESULT,L_RLOC)
+   IF L_STATUS # 0 THEN
+      BEGIN CASE
+         CASE L_STATUS = 1
+            L_RTN_FLAG = "B300-ERROR-1"
+            L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> Invalid cipher."
+         CASE L_STATUS = 2
+            L_RTN_FLAG = "B300-ERROR-2"
+            L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> Invalid parameters (location/action value is out of range, etc.)."
+         CASE L_STATUS = 3
+            L_RTN_FLAG = "B300-ERROR-3"
+            L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> The data cannot be read."
+         CASE L_STATUS = 4
+            L_RTN_FLAG = "B300-ERROR-4"
+            L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> The key cannot be derived."
+         CASE L_STATUS = 5
+            L_RTN_FLAG = "B300-ERROR-5"
+            L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> Base 64 encoding/decoding error."
+         CASE L_STATUS = 6
+            L_RTN_FLAG = "B300-ERROR-6"
+            IF L_ACTION_CODE = "E" THEN
+               L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> Encryption error."
+            END ELSE
+               L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> Decryption error."
+            END
+      END CASE
+   END ELSE
+      IF L_ACTION_CODE = "E" THEN
+         *** Note that encrypted string is delimited by a CHAR(10) at the end for some reason ***
+         SWAP CHAR(10) WITH "" IN L_RESULT  ;* strip off the CHAR(10)
+      END
+      ARGS_OUT<1> = L_RESULT
+   END
+
+B300_EXIT:
+   RETURN
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+   IF L_RTN_FLAG # "" THEN
+      ARGS_OUT = ""
+      ARGS_OUT<2> = L_ERROR_MSG
+   END ELSE
+      RTN.FLAG = 0
+   END
+
+A500_EXIT:
+   REFRESH = -2
+
+****************************************
+* Exit  
+****************************************
+
+END

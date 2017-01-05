@@ -1,0 +1,850 @@
+   SUBROUTINE SOPS3090.1(INPUT_PARAMS,OUTPUT_PARAMS)
+* Ship & Debit Claims Approval Request Process - Request Module
+* VERSION 8.2.3
+*
+* 25 SEP 14 8.2.3 juntan PRJ*SOP381D.22-(Sub #22) SHIP AND DEBIT - PHASE 2
+* 28 JUL 14 8.2.3 juntan PRJ*SOP381D.15-(Sub #15) SHIP AND DEBIT - PHASE 2
+* 01 APR 14 8.2.3 juntan PRJ*SOP381D.11-(Sub #11) SHIP AND DEBIT - PHASE 2
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+
+   PROGRAM = 'SOPS3090.1'
+
+   $INCLUDE IIPLUS.TOP
+   $INCLUDE IIPLUS.TEXTLOAD
+   $INCLUDE IIPLUS.DEBUG
+
+   $INCLUDE EQU_SDCSLA
+   $INCLUDE EQU_SDCHDR
+   $INCLUDE EQU_SDCDET
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*
+*              This program is used to:
+*                1. Determine the next applicable approver based on SDC SLA setup.
+*                2. Call SOPS3080.10 API to generate HTML email for per approval request.
+*                3. Call SOPS3080.11 API to generate the Excel extract report for the claim.
+*                4. Email SDC approval request to the approver with the Excel report attached.
+*                5. Update SDCHDR and SDCAUDIT fiels if all above steps succeed.
+*
+*              <<<NOTE>>>
+*
+*              Input Parameters:
+*                 INPUT_PARAMS<1> -> SDCAUDIT key
+*                 INPUT_PARAMS<2> -> Claim date
+*                 INPUT_PARAMS<3> -> SLA level CNT
+*                 INPUT_PARAMS<4> -> Requestor userid
+*                 INPUT_PARAMS<5> -> Approver's response message (English @VM French)
+*                 INPUT_PARAMS<6> -> SLA approval completed flag
+*                 INPUT_PARAMS<7> -> Approval request resend flag
+*
+*              Output Parameters:
+*                 OUTPUT_PARAMS<1.M> -> Program Name / Error Code / Error Message if applicable
+*
+* MODIFICATIONS:
+* ==============
+*              2014/09/25 juntan SOP381D.22 - Add previous level approver's response message for request email.
+*              2014/04/01 juntan SOP381D.11 - Initial creation.
+*
+**************************************************************************
+
+
+A100_MAIN:
+
+   GOSUB A200_INITIALIZATION
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+   GO A500_CONCLUSION
+
+
+****************************************
+* Define & initialize variables.
+****************************************
+A200_INITIALIZATION:
+
+   RTN.FLAG                = 0
+   L_CNT                   = 0
+   L_INC                   = 0
+   L_TTL                   = 0
+   L_TTL2                  = 0
+   L_SLA_FOUND             = 0
+   L_SLA_LEVEL_CNT         = 0
+   L_SDC_SECURITY_FLAG     = 0
+   L_CONTRACTOR_AMT        = 0
+   L_CONTRACTOR_AMT_LIST   = 0
+   L_CONTRACTOR_AMT_TTLS   = 0
+
+   OUTPUT_PARAMS           = ""
+   ARGS_IN                 = ""
+   ARGS_OUT                = ""
+   L_IN                    = ""
+   L_OUT                   = ""
+   L_ERR_CODE              = ""
+   L_ERR_MSG               = ""
+   L_DISP_MSG              = ""
+   L_KEY                   = ""
+   L_REC                   = ""
+   L_DETAILS_EXECL_REPORT  = ""
+   L_REJECTS_EXCEL_REPORT  = ""
+   L_DATE                  = ""
+   L_TIME                  = ""
+   L_TIMESTAMP             = ""
+
+   L_HTML_EMAIL            = ""
+   L_EMAIL_MSG             = ""
+   L_IT_EMAIL              = ""
+   L_SUBJECT               = ""
+   L_SLA_LIST              = ""
+   L_SLA_ADMIN_EMAIL       = ""
+   L_SDCHDR_KEY            = ""
+   L_SDCDET_KEY            = ""
+
+   L_SDCAUDIT_KEY          = INPUT_PARAMS<1>
+   L_CLAIM_DT              = INPUT_PARAMS<2>
+   L_SLA_LEVEL_CNT         = INPUT_PARAMS<3>
+   L_REQUESTOR_USERID      = INPUT_PARAMS<4>
+   *** juntan \/ SOP381D.22 - 2014/09/25
+   L_APPROVAL_RESPONSE_MSG = INPUT_PARAMS<5>
+   L_SLA_APPROVED_FLAG     = INPUT_PARAMS<6>
+   L_RESEND_FLAG           = INPUT_PARAMS<7>
+   *** juntan /\ SOP381D.22 - 2014/09/25
+   L_COMPANY_NBR           = L_SDCAUDIT_KEY"G0*1"
+   L_CUSTOMER_NBR          = L_SDCAUDIT_KEY"G1*1"
+   L_CLAIM_NBR             = L_SDCAUDIT_KEY"G2*1"
+   L_CUST_REF              = ""
+   L_FISCAL_PERIOD         = ""
+   L_SLS_OFF               = ""
+   L_SLS_OFF_CODE          = ""
+   L_SLS_OFF_NAME          = ""
+   L_REQUESTOR_NAME        = ""
+   L_REQUESTOR_EMAIL       = ""
+   L_APPROVER_USERID       = ""
+   L_APPROVER_NAME         = ""
+   L_APPROVER_EMAIL        = ""
+   L_COLLECTOR_CODE        = ""
+   L_COLLECTOR_USERID      = ""
+   L_COLLECTOR_NAME        = ""
+   L_COLLECTOR_EMAIL       = ""
+   L_CONTRACTOR_CODES      = ""
+   L_CONTRACTOR_NAMES      = ""
+   L_CONTRACTOR_NAME       = ""
+   L_INFOFLO_ACCOUNT       = ""
+
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open any data files requried.
+****************************************
+A300_OPEN_FILES:
+
+   FILE.ERR = 0
+
+   CALL SB.OPEN.FILE("CUSTMST",CUSTMST,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-OPEN-FILES-1"
+      L_ERR_MSG = "Open file CUSTMST failed."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("ADDRESSBOOK",ADDRESSBOOK,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-OPEN-FILES-2"
+      L_ERR_MSG = "Open file ADDRESSBOOK failed."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("SDCSLA",SDCSLA,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-OPEN-FILES-3"
+      L_ERR_MSG = "Open file SDCSLA failed."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("SDCMST",SDCMST,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-OPEN-FILES-4"
+      L_ERR_MSG = "Open file SDCMST failed."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("SDCHDR",SDCHDR,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-OPEN-FILES-5"
+      L_ERR_MSG = "Open file SDCHDR failed."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("SDCDET",SDCDET,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-OPEN-FILES-6"
+      L_ERR_MSG = "Open file SDCDET failed."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("SDCAUDIT",SDCAUDIT,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-OPEN-FILES-7"
+      L_ERR_MSG = "Open file SDCAUDIT failed."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("SYSCON",SYSCON,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-OPEN-FILES-8"
+      L_ERR_MSG = "Open file SYSCON failed."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("SYSTBL",SYSTBL,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-OPEN-FILES-9"
+      L_ERR_MSG = "Open file SYSTBL failed."
+      GO A300_EXIT
+   END
+
+A300_EXIT:
+   RETURN
+
+
+****************************************
+* Main process logic structure.
+****************************************
+A400_MAIN_PROCESS:
+
+   CALL SB.DISP(7,"Now processing your request, please wait...")
+
+   GOSUB B100_VALIDATE_PARAMS
+   IF L_ERR_MSG # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B200_READ_DATA_SOURCE
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B300_PROCESS_SDC_APPROVAL_REQUEST
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B400_UPDATE_DATA_FILES
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+A400_EXIT:
+   RETURN
+
+
+****************************************
+* Internal subroutine section.
+****************************************
+B100_VALIDATE_PARAMS:
+
+   BEGIN CASE
+      CASE INPUT_PARAMS<1> = ""
+         L_ERR_CODE = "B100-VALIDATE-PARAMS-1"
+         L_ERR_MSG = "Missing SDCAUDIT key."
+      CASE INPUT_PARAMS<2> = ""
+         L_ERR_CODE = "B100-VALIDATE-PARAMS-2"
+         L_ERR_MSG = "Missing claim date."
+      CASE INPUT_PARAMS<3> = ""
+         L_ERR_CODE = "B100-VALIDATE-PARAMS-3"
+         L_ERR_MSG = "Missing SLA level."
+      CASE INPUT_PARAMS<4> = ""
+         L_ERR_CODE = "B100-VALIDATE-PARAMS-4"
+         L_ERR_MSG = "Missing requestor userid."
+   *** juntan \/ SOP381D.22 - 2014/09/25
+      CASE INPUT_PARAMS<6> = ""
+         L_ERR_CODE = "B100-VALIDATE-PARAMS-6"
+         L_ERR_MSG = "Missing SLA approval completed flag."
+      CASE INPUT_PARAMS<7> = ""
+         L_ERR_CODE = "B100-VALIDATE-PARAMS-7"
+         L_ERR_MSG = "Missing SDC approval request resend flag."
+   *** juntan /\ SOP381D.22 - 2014/09/25
+   END CASE
+
+B100_EXIT:
+   RETURN
+
+
+B200_READ_DATA_SOURCE:
+
+   *** Retrieve Infoflo Account Information ****
+   READV L_INFOFLO_ACCOUNT FROM SYSCON, "HDD", 2 THEN
+      L_INFOFLO_ACCOUNT = TRIM(FIELD(L_INFOFLO_ACCOUNT,";",1))[1,1]
+   END ELSE
+      L_ERR_CODE = "B200-READ-DATA-SOURCE-1"
+      L_ERR_MSG = "Unable to retrieve Infoflo account from SYSCON table HDD."
+      GO B200_EXIT
+   END
+
+   *** Retrieve SDC Security Information ***
+   READV L_SDC_SECURITY_FLAG FROM SYSCON, "SDC.CONSTANT", 11 THEN
+      L_SDC_SECURITY_FLAG = TRIM(FIELD(L_SDC_SECURITY_FLAG,";",1))
+   END ELSE
+      L_ERR_CODE = "B200-READ-DATA-SOURCE-2"
+      L_ERR_MSG = "Unable to retrieve SDC security flag in SYSCON table SDC.CONSTANT."
+      GO B200_EXIT
+   END
+
+   *** Retrieve IT Email Address Information****
+   READV L_IT_EMAIL FROM SYSCON, "SDC.CONSTANT", 3 THEN
+      L_IT_EMAIL = TRIM(FIELD(L_IT_EMAIL,";",1))  ;* multiple user emails should be seperated by ,
+   END ELSE
+      L_ERR_CODE = "B200-READ-DATA-SOURCE-3"
+      L_ERR_MSG = "Unable to retrieve IT email address from SYSCON table SDC.CONSTANT."
+      GO B200_EXIT
+   END
+
+   *** Retrieve SLA Administrator Email Address ****
+   READV L_SLA_ADMIN_EMAIL FROM SYSCON, "SDC.CONSTANT", 2 THEN
+      L_SLA_ADMIN_EMAIL = TRIM(FIELD(L_SLA_ADMIN_EMAIL,";",1))  ;* multiple user emails should be seperated by ,
+   END ELSE
+      L_ERR_CODE = "B200-READ-DATA-SOURCE-4"
+      L_ERR_MSG = "Unable to retrieve SLA administrator email address from SYSCON table SDC.CONSTANT."
+      GO B200_EXIT
+   END
+
+   *** Retrieve Requestor Information ***
+   READ L_REC FROM ADDRESSBOOK, L_REQUESTOR_USERID THEN
+       L_REQUESTOR_NAME = L_REC<1>
+       L_REQUESTOR_EMAIL = L_REC<13>
+   END ELSE
+      L_ERR_CODE = "B200-READ-DATA-SOURCE-5"
+      L_ERR_MSG = "Unable to retrieve requestor name in ADDRESSBOOK for userid ":L_REQUESTOR_USERID:"."
+      GO B200_EXIT
+   END
+
+   *** Retrieve Contractor Claim Information ***
+   L_SDCHDR_KEY = L_SDCAUDIT_KEY
+   READ SDCHDR_REC FROM SDCHDR, L_SDCHDR_KEY THEN
+      L_SLS_OFF_CODE = SDC3_SALES_OFFICE
+      L_CONTRACTOR_CODES = SDC3_CONTRACTOR_ID
+      L_TTL = DCOUNT(L_CONTRACTOR_CODES,@VM)
+      FOR L_CNT = 1 TO L_TTL
+         L_KEY = L_COMPANY_NBR:"*":L_CUSTOMER_NBR:"*":L_CONTRACTOR_CODES<1,L_CNT>
+         READV L_CONTRACTOR_NAME FROM SDCMST, L_KEY, 1 ELSE L_CONTRACTOR_NAME = ""
+         L_CONTRACTOR_NAMES<1,L_CNT> = L_CONTRACTOR_NAME
+
+         *** Calculate total claim amount by contractor ***
+         L_TTL2 = DCOUNT(SDC3_DETAIL_LINE_NUMBERS<1,L_CNT>,@SM)
+         FOR L_INC = 1 TO L_TTL2
+            L_SDCDET_KEY = L_SDCHDR_KEY:"*":SDC3_DETAIL_LINE_NUMBERS<1,L_CNT,L_INC>
+            READ SDCDET_REC FROM SDCDET, L_SDCDET_KEY THEN
+               L_CONTRACTOR_AMT += SDC4_CLAIM_AMT_PAYABLE
+            END ELSE
+               L_ERR_CODE = "B200-READ-DATA-SOURCE-6-1"
+               L_ERR_MSG = "Unable to read record ":L_SDCDET_KEY:" in SDCDET file."
+               GO B200_EXIT
+            END
+         NEXT L_INC
+         L_CONTRACTOR_AMT_LIST<1,L_CNT> = OCONV(L_CONTRACTOR_AMT,"MD2,$")
+         L_CONTRACTOR_AMT_TTLS += L_CONTRACTOR_AMT
+         L_CONTRACTOR_AMT = 0
+      NEXT L_CNT
+   END ELSE
+      L_ERR_CODE = "B200-READ-DATA-SOURCE-6-2"
+      L_ERR_MSG = "Unable to read record ":L_SDCHDR_KEY:" in SDCHDR file."
+      GO B200_EXIT
+   END
+
+   *** Retrieve Sales Office Information ***
+   READV L_SLS_OFF_NAME FROM ADDRESSBOOK, "SO":L_SLS_OFF_CODE, 3 THEN
+      L_SLS_OFF = L_SLS_OFF_NAME:" (":L_SLS_OFF_CODE:")"
+   END ELSE
+      L_ERR_CODE = "B200-READ-DATA-SOURCE-7"
+      L_ERR_MSG = "Unable to retrieve the city name in ADDRESSBOOK for sales offcie code ":L_SLS_OFF_CODE:"."
+      GO B200_EXIT
+   END
+
+   *** Retrieve Fiscal Period Range ***
+   IF SDC3_MIN_FISCAL_PERIOD # "" AND SDC3_MAX_FISCAL_PERIOD # "" THEN
+      IF SDC3_MIN_FISCAL_PERIOD # SDC3_MAX_FISCAL_PERIOD THEN
+         L_FISCAL_PERIOD = SDC3_MIN_FISCAL_PERIOD:" ~ ":SDC3_MAX_FISCAL_PERIOD
+      END ELSE
+         L_FISCAL_PERIOD = SDC3_MIN_FISCAL_PERIOD
+      END
+   END ELSE
+      L_ERR_CODE = "B200-READ-DATA-SOURCE-8"
+      L_ERR_MSG = "Error retrieving fiscal period range in SDCHDR file (":L_FISCAL_PERIOD:")."
+      GO B200_EXIT
+   END
+
+   *** Retrieve Collector's Infomation for AR ***
+   READV L_COLLECTOR_CODE FROM CUSTMST, L_COMPANY_NBR:"*":L_CUSTOMER_NBR, 68 THEN
+      READV L_COLLECTOR_USERID FROM SYSTBL, "COL*":L_COLLECTOR_CODE, 1 THEN
+         READV L_COLLECTOR_NAME FROM ADDRESSBOOK, L_COLLECTOR_USERID, 1 ELSE
+            L_ERR_CODE = "B200-READ-DATA-SOURCE-9-1"
+            L_ERR_MSG = "Unable to retrieve collector name for the collector code ":L_COLLECTOR_CODE:" in SYSTBL file."
+         END
+         READV L_COLLECTOR_EMAIL FROM ADDRESSBOOK, L_COLLECTOR_USERID, 13 ELSE
+            L_ERR_CODE = "B200-READ-DATA-SOURCE-9-2"
+            L_ERR_MSG = "Unable to retrieve collector email for the collector code ":L_COLLECTOR_CODE:" in SYSTBL file."
+         END
+      END ELSE
+         L_ERR_CODE = "B200-READ-DATA-SOURCE-9-3"
+         L_ERR_MSG = "Unable to retrieve userid of collector ":L_COLLECTOR_CODE:" for the customer ":L_CUSTOMER_NBR:" of company ":L_COMPANY_NBR:" from CUSTMST file."
+         GO B200_EXIT
+      END
+   END ELSE
+      L_ERR_CODE = "B200-READ-DATA-SOURCE-9-4"
+      L_ERR_MSG = "Unable to retrieve collector code for the customer ":L_CUSTOMER_NBR:" of company ":L_COMPANY_NBR:" from CUSTMST file."
+      GO B200_EXIT
+   END
+
+   *** Retrieve SLA Approver's Infomation ***
+   READ SDCSLA_REC FROM SDCSLA, L_SLS_OFF_CODE THEN
+      *** Find next applicable SLA approver ***
+      L_TTL = DCOUNT(SDC1_LEVEL<1>,@VM)
+      FOR L_CNT = L_SLA_LEVEL_CNT TO L_TTL
+         L_SLA_LEVEL = SDC1_LEVEL<1,L_CNT>
+         L_APPROVER_USERID = SDC1_APPROVER<1,L_CNT>
+         READ L_REC FROM ADDRESSBOOK, L_APPROVER_USERID THEN
+            L_APPROVER_NAME = L_REC<1>
+            L_APPROVER_EMAIL = L_REC<13>
+
+            *** Check Completion of The Approval Process ***
+            IF L_SLA_APPROVED_FLAG THEN
+               L_SLA_LEVEL = SDC1_LEVEL<1,L_CNT>
+               L_DATE = DATE()
+               L_TIME = TIME()
+               L_TIMESTAMP = OCONV(L_DATE,"D2/"):"-":OCONV(L_TIME,"MTS")
+
+               L_SLA_LIST<1,-1>  = L_SLA_LEVEL
+               L_SLA_LIST<2,-1>  = L_CNT
+               L_SLA_LIST<3,-1>  = L_COLLECTOR_USERID
+               L_SLA_LIST<4,-1>  = L_COLLECTOR_EMAIL
+               L_SLA_LIST<5,-1>  = L_REQUESTOR_USERID
+               L_SLA_LIST<6,-1>  = L_SLS_OFF_CODE
+               L_SLA_LIST<7,-1>  = L_CONTRACTOR_AMT_TTLS
+               L_SLA_LIST<8,-1>  = "WAR"
+               IF L_RESEND_FLAG THEN
+                  L_SLA_LIST<9,-1> = "Resent"
+               END ELSE
+                  L_SLA_LIST<9,-1> = "Waiting for AR Approval"
+               END
+               L_SLA_LIST<10,-1> = L_DATE
+               L_SLA_LIST<11,-1> = L_TIME
+               L_SLA_LIST<12,-1> = SDC1_FROM_AMOUNT<1,L_CNT>
+               L_SLA_LIST<13,-1> = SDC1_TO_AMOUNT<1,L_CNT>
+               EXIT
+            END
+
+            *** Next Applicable Level SLA Approver Infomation ***
+            L_DATE = DATE()
+            L_TIME = TIME()
+            L_TIMESTAMP = OCONV(L_DATE,"D2/"):"-":OCONV(L_TIME,"MTS")
+
+            L_SLA_LIST<1,-1> = L_SLA_LEVEL
+            L_SLA_LIST<2,-1> = L_CNT
+            L_SLA_LIST<3,-1> = L_APPROVER_USERID
+            L_SLA_LIST<4,-1> = L_APPROVER_EMAIL
+            L_SLA_LIST<5,-1> = L_REQUESTOR_USERID
+            L_SLA_LIST<6,-1> = L_SLS_OFF_CODE
+            L_SLA_LIST<7,-1> = L_CONTRACTOR_AMT_TTLS
+            L_SLA_LIST<8,-1> = "W"
+            IF L_RESEND_FLAG THEN
+               L_SLA_LIST<9,-1> = "Resent"
+            END ELSE
+               L_SLA_LIST<9,-1> = "Waiting for SLA Approval"
+            END
+            L_SLA_LIST<10,-1> = L_DATE
+            L_SLA_LIST<11,-1> = L_TIME
+            L_SLA_LIST<12,-1> = SDC1_FROM_AMOUNT<1,L_CNT>
+            L_SLA_LIST<13,-1> = SDC1_TO_AMOUNT<1,L_CNT>
+            L_SLA_FOUND = 1
+            EXIT
+         END ELSE
+            L_ERR_CODE = "B200-READ-DATA-SOURCE-10-1"
+            L_ERR_MSG = "Unable to retrieve SLA approver name in ADDRESSBOOK for userid ":L_APPROVER_USERID:", please update it ASAP!"
+            GOSUB B210_EMAIL_SLA_ADMIN
+            GO B200_EXIT
+         END
+      NEXT L_CNT
+   END ELSE
+      L_ERR_CODE = "B200-READ-DATA-SOURCE-10-2"
+      L_ERR_MSG = "Missing SLA setup for sales office ":L_SLS_OFF_CODE:", please update it ASAP!"
+      GOSUB B210_EMAIL_SLA_ADMIN
+   END
+
+   IF NOT(L_SLA_FOUND) AND NOT(L_SLA_APPROVED_FLAG) THEN
+      L_ERR_CODE = "B200-READ-DATA-SOURCE-11"
+      L_ERR_MSG = "Unable to find SLA approver userid ":L_APPROVER_USERID:" in SLA setup for sales office ":L_SLS_OFF_CODE:", please contact SLA admin to update it ASAP!"
+      GOSUB B210_EMAIL_SLA_ADMIN
+   END
+
+B200_EXIT:
+   RETURN
+
+
+B210_EMAIL_SLA_ADMIN:
+
+   ARGS_IN<1>   = L_COMPANY_NBR
+   ARGS_IN<2>   = L_CUSTOMER_NBR
+   ARGS_IN<3>   = L_CLAIM_NBR
+   ARGS_IN<4>   = L_CLAIM_DT
+   ARGS_IN<5>   = L_FISCAL_PERIOD
+   ARGS_IN<6,1> = L_SLS_OFF_CODE
+   ARGS_IN<6,2> = L_SLS_OFF
+   ARGS_IN<7>   = L_REQUESTOR_NAME
+   ARGS_IN<8>   = L_CONTRACTOR_CODES
+   ARGS_IN<9>   = L_CONTRACTOR_NAMES
+   ARGS_IN<10>  = L_CONTRACTOR_AMT_LIST
+   ARGS_IN<11>  = OCONV(L_CONTRACTOR_AMT_TTLS,"MD2,$")
+   ARGS_IN<12>  = L_APPROVER_USERID
+   ARGS_IN<13>  = L_SLA_LEVEL_CNT
+   ARGS_IN<14>  = L_INFOFLO_ACCOUNT
+   ARGS_IN<15>  = L_SDC_SECURITY_FLAG
+   ARGS_IN<16>  = "SLAERROR"
+   ARGS_IN<17>  = L_TIMESTAMP
+   ARGS_IN<18>  = L_ERR_MSG
+
+   CALL SOPS3080.10(ARGS_IN,ARGS_OUT) ;* Infoflo API to generate SDC approval request HTML Email
+   IF ARGS_OUT<1> = "" THEN
+      PROGRAM = ARGS_OUT<2,1>
+      L_ERR_CODE = ARGS_OUT<2,2>
+      L_ERR_MSG = ARGS_OUT<2,3>
+   END ELSE
+      IF L_RESEND_FLAG THEN
+         IF L_SLS_OFF_CODE = "50" THEN
+            L_SUBJECT = "Demande d'approbation Ship & Debit de la r‚clamation # ":L_CLAIM_NBR:" - Erreur SLA (RENVOYER)"
+         END ELSE
+            L_SUBJECT = "Ship & Debit Claim # ":L_CLAIM_NBR:" Approval Request - SLA Error (RESEND)"
+         END
+      END ELSE
+         IF L_SLS_OFF_CODE = "50" THEN
+            L_SUBJECT = "Demande d'approbation Ship & Debit de la r‚clamation # ":L_CLAIM_NBR:" - Erreur SLA"
+         END ELSE
+            L_SUBJECT = "Ship & Debit Claim # ":L_CLAIM_NBR:" Approval Request - SLA Error"
+         END
+      END
+      L_TO_EMAIL = L_SLA_ADMIN_EMAIL
+      L_HTML_EMAIL = TRIM(ARGS_OUT<1>)
+      ARGS_IN = ""
+      ARGS_OUT = ""
+      ARGS_IN<1> = L_HTML_EMAIL                                   ;* HTML email
+      ARGS_IN<2> = L_SUBJECT                                      ;* Email subject
+      ARGS_IN<3> = L_TO_EMAIL                                     ;* To email address
+      ARGS_IN<4> = "do-not-reply-internal-control@itinfonet.com"  ;* From email address
+      ARGS_IN<5> = 1                                              ;* HTML email flag
+      ARGS_IN<6> = 0                                              ;* Email attachment flag
+      ARGS_IN<7> = ""                                             ;* Attachment
+      ARGS_IN<8> = L_REQUESTOR_EMAIL:",":L_IT_EMAIL               ;* CC
+      CALL SYSS9060.5(ARGS_IN,ARGS_OUT)
+      IF ARGS_OUT<1,1> # "" THEN
+         PROGRAM = ARGS_OUT<1,1>
+         L_ERR_CODE = ARGS_OUT<1,2>
+         L_ERR_MSG = ARGS_OUT<1,3>
+      END ELSE
+         L_DISP_MSG = "Your SDC approval request error message has been emailed to SLA admin ":L_TO_EMAIL:" successfully."
+         CALL SB.DISP(7,"[":OCONV(TIME(),"MTS"):"] ":L_DISP_MSG)
+      END
+   END
+
+B210_EXIT:
+   RETURN
+
+
+B300_PROCESS_SDC_APPROVAL_REQUEST:
+
+   *** Generate SDC approval request HTML email for each SLA approver found + AR collector ***
+   L_TTL = DCOUNT(L_SLA_LIST<1>,@VM)
+   FOR L_INC = 1 TO L_TTL
+      IF L_SLA_LIST<8,L_INC> # "W" AND L_SLA_LIST<8,L_INC> # "WAR" THEN CONTINUE  ;* send approval email only for waiting status
+
+      L_SLA_LEVEL = L_SLA_LIST<1,L_INC>
+      L_SLA_LEVEL_CNT = L_SLA_LIST<2,L_INC>
+      L_APPROVER_USERID = L_SLA_LIST<3,L_INC>
+      L_APPROVER_EMAIL = L_SLA_LIST<4,L_INC>
+
+      IF L_SLA_APPROVED_FLAG THEN
+         CALL SB.DISP(7,"Preparing SDC approval request HTML email for AR collector ":L_COLLECTOR_NAME:", please wait...")
+      END ELSE
+         CALL SB.DISP(7,"Preparing SDC approval request HTML email for level ":L_SLA_LEVEL:" approver ":L_APPROVER_NAME:", please wait...")
+      END
+
+      ARGS_IN<1>   = L_COMPANY_NBR
+      ARGS_IN<2>   = L_CUSTOMER_NBR
+      ARGS_IN<3>   = L_CLAIM_NBR
+      ARGS_IN<4>   = L_CLAIM_DT
+      ARGS_IN<5>   = L_FISCAL_PERIOD
+      ARGS_IN<6,1> = L_SLS_OFF_CODE
+      ARGS_IN<6,2> = L_SLS_OFF
+      ARGS_IN<7>   = L_REQUESTOR_NAME
+      ARGS_IN<8>   = L_CONTRACTOR_CODES
+      ARGS_IN<9>   = L_CONTRACTOR_NAMES
+      ARGS_IN<10>  = L_CONTRACTOR_AMT_LIST
+      ARGS_IN<11>  = OCONV(L_CONTRACTOR_AMT_TTLS,"MD2,$")
+      ARGS_IN<12>  = L_APPROVER_USERID
+      ARGS_IN<13>  = L_SLA_LEVEL_CNT
+      ARGS_IN<14>  = L_INFOFLO_ACCOUNT
+      ARGS_IN<15>  = L_SDC_SECURITY_FLAG
+      IF L_SLA_APPROVED_FLAG THEN
+         ARGS_IN<16> = "AR"
+      END ELSE
+         ARGS_IN<16> = "REQUEST"
+      END
+      ARGS_IN<17> = L_TIMESTAMP
+      *** juntan \/ SOP381D.22 - 2014/09/25
+      ARGS_IN<18> = L_APPROVAL_RESPONSE_MSG
+      *** juntan /\ SOP381D.22 - 2014/09/25
+
+      CALL SOPS3080.10(ARGS_IN,ARGS_OUT) ;* Infoflo API to generate SDC approval request HTML Email
+      IF ARGS_OUT<1> = "" THEN
+         PROGRAM = ARGS_OUT<2,1>
+         L_ERR_CODE = ARGS_OUT<2,2>
+         L_ERR_MSG = ARGS_OUT<2,3>
+      END ELSE
+         IF NOT(L_SLA_APPROVED_FLAG) THEN
+            GOSUB B310_GENERATE_DETAIL_EXCEL_REPORT
+            IF L_ERR_CODE # "" THEN
+               GO B300_EXIT
+            END
+         END
+         GOSUB B320_EMAIL_SDC_APPROVAL_REQUEST
+         IF L_ERR_CODE # "" THEN
+            GO B300_EXIT
+         END
+      END
+   NEXT L_INC
+
+B300_EXIT:
+   RETURN
+
+
+B310_GENERATE_DETAIL_EXCEL_REPORT:
+
+   L_IN<1> = L_SDCHDR_KEY
+   L_IN<2> = "I"  ;* Internal report
+   CALL SOPS3080.11(L_IN,L_OUT)
+   IF L_OUT<1> = "" THEN
+      PROGRAM = L_OUT<2,1>
+      L_ERR_CODE = L_OUT<2,2>
+      L_ERR_MSG = L_OUT<2,3>
+   END ELSE
+      L_DETAILS_EXECL_REPORT = L_OUT<1,1>
+      L_REJECTS_EXCEL_REPORT = L_OUT<1,2>
+   END
+
+B310_EXIT:
+   RETURN
+
+
+B320_EMAIL_SDC_APPROVAL_REQUEST:
+
+   IF L_SLA_APPROVED_FLAG THEN
+      IF L_RESEND_FLAG THEN
+         IF L_SLS_OFF_CODE = "50" THEN
+            L_SUBJECT = "Demande d'approbation Ship & Debit de la r‚clamation # ":L_CLAIM_NBR:" - Collecteur CR (RENVOYER)"
+         END ELSE
+            L_SUBJECT = "Ship & Debit Claim # ":L_CLAIM_NBR:" Approval Request - AR Collector (RESEND)"
+         END
+      END ELSE
+         IF L_SLS_OFF_CODE = "50" THEN
+            L_SUBJECT = "Demande d'approbation Ship & Debit de la r‚clamation # ":L_CLAIM_NBR:" - Collecteur CR"
+         END ELSE
+            L_SUBJECT = "Ship & Debit Claim # ":L_CLAIM_NBR:" Approval Request - AR Collector"
+         END
+      END
+   END ELSE
+      IF L_RESEND_FLAG THEN
+         IF L_SLS_OFF_CODE = "50" THEN
+            L_SUBJECT = "Demande d'approbation Ship & Debit de la r‚clamation # ":L_CLAIM_NBR:" - Niveau ":L_SLA_LEVEL:" (RENVOYER)"
+         END ELSE
+            L_SUBJECT = "Ship & Debit Claim # ":L_CLAIM_NBR:" Approval Request - Level ":L_SLA_LEVEL:" (RESEND)"
+         END
+      END ELSE
+         IF L_SLS_OFF_CODE = "50" THEN
+            L_SUBJECT = "Demande d'approbation Ship & Debit de la r‚clamation # ":L_CLAIM_NBR:" - Niveau ":L_SLA_LEVEL
+         END ELSE
+            L_SUBJECT = "Ship & Debit Claim # ":L_CLAIM_NBR:" Approval Request - Level ":L_SLA_LEVEL
+         END
+      END
+   END
+
+   IF L_SLA_APPROVED_FLAG THEN
+      L_TO_EMAIL = L_COLLECTOR_EMAIL
+   END ELSE
+      L_TO_EMAIL = L_APPROVER_EMAIL
+   END
+   L_HTML_EMAIL = TRIM(ARGS_OUT<1>)
+   ARGS_IN = ""
+   ARGS_OUT = ""
+   ARGS_IN<1> = L_HTML_EMAIL              ;* HTML email
+   ARGS_IN<2> = L_SUBJECT                 ;* Email subject
+   ARGS_IN<3> = L_TO_EMAIL                ;* To email address
+   ARGS_IN<4> = "do-not-reply-internal-control@itinfonet.com"  ;* From email address
+   ARGS_IN<5> = 1                         ;* HTML email flag
+   IF L_SLA_APPROVED_FLAG THEN
+      ARGS_IN<6> = 0                      ;* Email attachment flag
+   END ELSE
+      ARGS_IN<6> = 1
+   END
+   ARGS_IN<7,1> = L_DETAILS_EXECL_REPORT  ;* Attachment
+   IF L_REJECTS_EXCEL_REPORT # "" THEN
+      ARGS_IN<7,2> = L_REJECTS_EXCEL_REPORT  ;* Attachment
+   END
+   ARGS_IN<8> = ""                        ;* CC
+
+   CALL SYSS9060.5(ARGS_IN,ARGS_OUT)
+   IF ARGS_OUT<1,1> # "" THEN
+      PROGRAM = ARGS_OUT<1,1>
+      L_ERR_CODE = ARGS_OUT<1,2>
+      L_ERR_MSG = ARGS_OUT<1,3>
+   END ELSE
+      IF L_SLA_APPROVED_FLAG THEN
+         L_DISP_MSG = "AR collector approval request for Ship & Debit Claim # ":L_CLAIM_NBR:" has been emailed to ":L_TO_EMAIL:" successfully."
+      END ELSE
+         L_DISP_MSG = "Level ":L_SLA_LEVEL:" approval request for Ship & Debit Claim # ":L_CLAIM_NBR:" has been emailed to ":L_TO_EMAIL:" successfully."
+      END
+      CALL SB.DISP(7,"[":OCONV(TIME(),"MTS"):"] ":L_DISP_MSG)
+   END
+
+B320_EXIT:
+   RETURN
+
+
+B400_UPDATE_DATA_FILES:
+
+   L_TTL = DCOUNT(L_SLA_LIST<1>,@VM)
+   FOR L_INC = 1 TO L_TTL
+      *** Update Ship & Debit Header File for Most Recent SLA Information ***
+      READ L_REC FROM SDCHDR, L_SDCHDR_KEY
+      ON ERROR
+         L_ERR_CODE = "B400-UPDATE-DATA-FILES-1"
+         L_ERR_MSG = "Unable to read SDCHDR record ":L_SDCHDR_KEY:", status code returned is ":STATUS():"."
+      END THEN
+         ;* no operation
+      END ELSE
+         L_REC = ""
+      END
+
+      L_REC<6>  = L_SLA_LIST<2,L_INC>    ;* SLA Level CNT
+      L_REC<7>  = L_COLLECTOR_USERID     ;* AR Collector Userid
+      L_REC<8>  = L_SLA_LIST<1,L_INC>    ;* SLA Level Approved
+      L_REC<9>  = L_SLA_LIST<10,L_INC>   ;* Action Date
+      L_REC<10> = L_SLA_LIST<11,L_INC>   ;* Action Time
+      L_REC<11> = L_SLA_LIST<3,L_INC>    ;* Approver Userid
+      L_REC<12> = L_SLA_LIST<12,L_INC>   ;* Approval From Amount
+      L_REC<13> = L_SLA_LIST<13,L_INC>   ;* Approval To Amount
+      L_REC<14> = L_SLA_LIST<8,L_INC>    ;* Most Recent Approval Status
+      L_REC<15> = L_SLA_LIST<6,L_INC>    ;* SLA Key - Sales Office code
+
+      *** Update SDC Workbench Status ***
+      IF L_REC<14> = "AR" THEN
+         L_REC<2> = "W"
+      END ELSE
+         L_REC<2> = L_REC<14>
+      END
+
+      WRITE L_REC TO SDCHDR, L_SDCHDR_KEY ON ERROR
+         L_ERR_CODE = "B400-UPDATE-DATA-FILES-2"
+         L_ERR_MSG = "Unable to write SDCHDR record ":L_SDCHDR_KEY:", status code returned is ":STATUS():"."
+      END
+
+      *** Update Ship & Debit Audit File for All Trace Log ***
+      READ L_REC FROM SDCAUDIT, L_SDCAUDIT_KEY
+      ON ERROR
+         L_ERR_CODE = "B400-UPDATE-DATA-FILES-3"
+         L_ERR_MSG = "Unable to read SDCAUDIT record ":L_SDCAUDIT_KEY:", status code returned is ":STATUS():"."
+      END THEN
+         ;* no operation
+      END ELSE
+         L_REC = ""
+      END
+
+      *** juntan \/ SOP381D.22 - 2014/09/25
+      IF L_SLA_LIST<8,L_INC> = "WAR" THEN
+         L_SLA_LIST<1,L_INC> = ""  ;* AR has no SLA level
+      END
+      *** juntan /\ SOP381D.22 - 2014/09/25
+
+      L_REC<1>  = L_SLA_LIST<9,L_INC>:@VM:L_REC<1>     ;* Approval Action Message
+      L_REC<2>  = L_SLA_LIST<10,L_INC>:@VM:L_REC<2>    ;* Action Date
+      L_REC<3>  = L_SLA_LIST<11,L_INC>:@VM:L_REC<3>    ;* Action Time
+      L_REC<4>  = L_SLA_LIST<5,L_INC>:@VM:L_REC<4>     ;* Requestor Userid
+      L_REC<5>  = L_SLA_LIST<3,L_INC>:@VM:L_REC<5>     ;* Approver Userid
+      L_REC<6>  = L_SLA_LIST<8,L_INC>:@VM:L_REC<6>     ;* Approval Status Flag
+      L_REC<7>  = L_SLA_LIST<1,L_INC>:@VM:L_REC<7>     ;* SLA Level
+      L_REC<8>  = L_SLA_LIST<7,L_INC>:@VM:L_REC<8>     ;* Claim Amount
+      L_REC<9>  = L_SLA_LIST<6,L_INC>:@VM:L_REC<9>     ;* SLA Key - Sales Office code
+      L_REC<10> = L_SLA_LIST<2,L_INC>:@VM:L_REC<10>    ;* SLA Level Cnt
+      L_REC<11> = "":@VM:L_REC<11>                     ;* Reference
+      IF L_RESEND_FLAG THEN
+         L_REC<12> += 1                                ;* Resend count
+      END ELSE
+         IF L_REC<12> = "" THEN
+            L_REC<12> = 0
+         END
+      END
+
+      WRITE L_REC TO SDCAUDIT, L_SDCAUDIT_KEY ON ERROR
+         L_ERR_CODE = "B400-UPDATE-DATA-FILES-4"
+         L_ERR_MSG = "Unable to write SDCAUDIT record ":L_SDCAUDIT_KEY:", status code returned is ":STATUS():"."
+      END
+      IF L_RESEND_FLAG THEN
+         RECORD = L_REC
+      END
+   NEXT L_INC
+
+B400_EXIT:
+   RETURN
+
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+   IF L_ERR_CODE # "" THEN
+      OUTPUT_PARAMS<1> = PROGRAM:@VM:L_ERR_CODE:@VM:L_ERR_MSG
+   END
+
+   RTN.FLAG = 0
+   REFRESH = -2
+
+A500_EXIT:
+   GO 9999
+
+
+****************************************
+* Exit
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END
+*
+*

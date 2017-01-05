@@ -1,0 +1,609 @@
+   SUBROUTINE SOPS3080.11(ARGS_IN,ARGS_OUT)
+* Ship & Debit Claims Excel Extract
+* VERSION 8.2.3
+*
+* 06 OCT 14 8.2.3 juntan PRJ*SOP381D.22-(Sub #22) SHIP AND DEBIT - PHASE 2
+* 28 JUL 14 8.2.3 juntan PRJ*SOP381D.15-(Sub #15) SHIP AND DEBIT - PHASE 2
+* 17 JUL 14 8.2.3 andgui PRJ*SOP381D.14-(Sub #14) SHIP AND DEBIT - PHASE 2
+* 26 FEB 14 8.2.3 juntan PRJ*SOP381D.10-(Sub #10) SHIP AND DEBIT - PHASE 2
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+
+   PROGRAM = 'SOPS3080.11'
+
+   $INCLUDE IIPLUS.TOP
+   $INCLUDE IIPLUS.TEXTLOAD
+   $INCLUDE IIPLUS.DEBUG
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*              This program is used to extract ship & debit claims info to Excel.
+*
+*              <<<NOTE>>>
+*              a) Input parameters (delimited by @FM):
+*                 ARGS_IN<1> -> SDCHDR KEY
+*                 ARGS_IN<2> -> Report Type (I = Internal report, O = External customer report)
+*
+*              b) Output parameters (delimited by @FM):
+*                 ARGS_OUT<1.M> -> Excel report file(s) name
+*                 ARGS_OUT<2.M> -> Program Name / Error Code / Error Message if applicable
+*
+* MODIFICATIONS:
+* ==============
+*              2014/02/26 juntan SOP381D - Initial creation.
+*
+**************************************************************************
+
+
+A100_MAIN:
+
+   GOSUB A200_INITIALIZATION
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+   GO A500_CONCLUSION
+
+
+****************************************
+* Define & initialize variables.
+****************************************
+A200_INITIALIZATION:
+
+   RTN.FLAG                        = 0
+   L_CNT                           = 0
+   L_INC                           = 0
+   L_TTL                           = 0
+   L_TTL2                          = 0
+   L_EOF                           = 0
+   L_REJECTS_FOUND                 = 0
+
+   ARGS_OUT                        = ""
+   L_ERR_CODE                      = ""
+   L_ERR_MSG                       = ""
+   L_PART_NBR                      = ""
+   L_PART_NBR_DESC                 = ""
+   L_SDCHDR_KEY                    = ARGS_IN<1>
+   L_SDCDET_KEY                    = ""
+   L_SDCHDR_REC                    = ""
+   L_SDCDET_REC                    = ""
+   L_REPORT_TYPE                   = ARGS_IN<2>
+   L_COMPANY_NBR                   = L_SDCHDR_KEY"G0*1"
+   L_CUSTOMER_NBR                  = L_SDCHDR_KEY"G1*1"
+   L_CLAIM_NBR                     = L_SDCHDR_KEY"G2*1"
+   L_CONTRACTOR_NBR                = ""
+   L_CONTRACTOR_NAME               = ""
+   L_DIR_PATH                      = "AWFORMSFILES"
+   L_DETAILS_FILE_NAME             = DATE():"_":TIME():"_SDC_DETAILS_":L_COMPANY_NBR:"_":L_CUSTOMER_NBR:"_":L_CLAIM_NBR:".xls"
+   L_REJECTS_FILE_NAME             = DATE():"_":TIME():"_SDC_REJECTS_":L_COMPANY_NBR:"_":L_CUSTOMER_NBR:"_":L_CLAIM_NBR:".xls"
+   L_SDC_DETAILS_EXCEL_REPORT_FILE = ""
+   L_SDC_REJECTS_EXCEL_REPORT_FILE = ""
+   L_DETAILS_DATA_LINES            = ""
+   L_REJECTS_DATA_LINES            = ""
+   L_EMPTY_DATA                    = ""
+
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open any data files requried.
+****************************************
+A300_OPEN_FILES:
+
+   FILE.ERR = 0
+
+   CALL SB.OPEN.FILE("VOC",VOC,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-1"
+      L_ERR_MSG = "Open file VOC failed."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("SDCHDR",SDCHDR,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-2"
+      L_ERR_MSG = "Open file SDCHDR failed."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("SDCDET",SDCDET,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-3"
+      L_ERR_MSG = "Open file SDCDET failed."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("SDCMST",SDCMST,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-4"
+      L_ERR_MSG = "Open file SDCMST failed."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("ITMMST",ITMMST,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-5"
+      L_ERR_MSG = "Open file ITMMST failed."
+      GO A300_EXIT
+   END
+
+A300_EXIT:
+   RETURN
+
+
+****************************************
+* Main process logic structure.
+****************************************
+A400_MAIN_PROCESS:
+
+   GOSUB B100_READ_SOURCE_DATA
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B200_GENERATE_SDC_EXCEL_REPORT_FILE
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+A400_EXIT:
+   RETURN
+
+
+****************************************
+* Read Ship & Debit Claims Source Data
+****************************************
+B100_READ_SOURCE_DATA:
+
+   *** Validate Report Type Code ***
+   IF L_REPORT_TYPE # "I" AND L_REPORT_TYPE # "O" THEN
+      L_ERR_CODE = "B100-ERROR-0"
+      L_ERR_MSG = "Invalid report type code <":L_REPORT_TYPE:"> found."
+      GO B100_EXIT
+   END
+
+   *** Read Ship & Debit Claims Header and Detail Information ***
+   READ L_SDCHDR_REC FROM SDCHDR, L_SDCHDR_KEY
+   ON ERROR
+      L_ERR_CODE = "B100-ERROR-1"
+      L_ERR_MSG = "Cannot read record ":L_SDCHDR_KEY:" in SDCHDR file."
+   END THEN
+      GOSUB B110_BUILD_EXCEL_HEADER_LINE
+      L_TTL = DCOUNT(L_SDCHDR_REC<1>,@VM)
+      FOR L_CNT = 1 TO L_TTL
+         L_CONTRACTOR_NBR = L_SDCHDR_REC<1,L_CNT>
+         L_TTL2 = DCOUNT(L_SDCHDR_REC<26,L_CNT>,@SM)
+         FOR L_INC = 1 TO L_TTL2
+            L_SDCDET_KEY = L_SDCHDR_KEY:"*":L_SDCHDR_REC<26,L_CNT,L_INC>
+            READ L_SDCDET_REC FROM SDCDET, L_SDCDET_KEY
+            ON ERROR
+               L_ERR_CODE = "B100-ERROR-3"
+               L_ERR_MSG = "Cannot read record ":L_SDCDET_KEY:" in SDCDET file."
+            END THEN
+               IF L_SDCDET_REC<12> # "R" THEN
+                  GOSUB B120_BUILD_EXCEL_DETAIL_LINES
+               END ELSE
+                  L_REJECTS_FOUND = 1
+                  GOSUB B121_BUILD_REJECTS_EXCEL_DETAIL_LINES
+               END
+            END ELSE
+               L_ERR_CODE = "B100-ERROR-4"
+               L_ERR_MSG = "SDCDET record ":L_SDCDET_KEY:" does not exist."
+            END
+         NEXT L_INC
+      NEXT L_CNT
+   END ELSE
+      L_ERR_CODE = "B100-ERROR-2"
+      L_ERR_MSG = "SDCHDR record ":L_SDCHDR_KEY:" does not exist."
+   END
+
+B100_EXIT:
+   RETURN
+
+
+B110_BUILD_EXCEL_HEADER_LINE:
+
+   *** Generate Header Line for Details Report ***
+   IF L_REPORT_TYPE = "I" THEN
+      L_DETAILS_DATA_LINES  = "Company #"
+      L_DETAILS_DATA_LINES := CHAR(9):"Customer #"
+      L_DETAILS_DATA_LINES := CHAR(9):"Claim #"
+   END ELSE
+      L_DETAILS_DATA_LINES  = "Claim #"
+   END
+   L_DETAILS_DATA_LINES := CHAR(9):"Contractor #"
+   L_DETAILS_DATA_LINES := CHAR(9):"Contractor Name"
+   IF L_REPORT_TYPE = "I" THEN
+      L_DETAILS_DATA_LINES := CHAR(9):"Status"
+   END
+   L_DETAILS_DATA_LINES := CHAR(9):"Claim Date"
+   IF L_REPORT_TYPE = "I" THEN
+      L_DETAILS_DATA_LINES := CHAR(9):"Userid"
+   END
+   L_DETAILS_DATA_LINES := CHAR(9):"Invoice #"
+   L_DETAILS_DATA_LINES := CHAR(9):"Invoice Date"
+   L_DETAILS_DATA_LINES := CHAR(9):"Part Nbr"
+   L_DETAILS_DATA_LINES := CHAR(9):"Part Desc"
+   L_DETAILS_DATA_LINES := CHAR(9):"Claim Qty"
+   IF L_REPORT_TYPE = "I" THEN
+      L_DETAILS_DATA_LINES := CHAR(9):"List Price"
+      L_DETAILS_DATA_LINES := CHAR(9):"Multiplier"
+      L_DETAILS_DATA_LINES := CHAR(9):"Ext Price"
+      L_DETAILS_DATA_LINES := CHAR(9):"Claim List Price"
+      L_DETAILS_DATA_LINES := CHAR(9):"Claim Multiplier"
+      L_DETAILS_DATA_LINES := CHAR(9):"Claim Ext"
+   END
+   L_DETAILS_DATA_LINES := CHAR(9):"Claim Amount"
+   IF L_REPORT_TYPE = "I" THEN
+      L_DETAILS_DATA_LINES := CHAR(9):"Ipex List Price"
+      L_DETAILS_DATA_LINES := CHAR(9):"Ipex Multiplier"
+      L_DETAILS_DATA_LINES := CHAR(9):"Ipex Ext Price"
+      L_DETAILS_DATA_LINES := CHAR(9):"Ipex Claim List Price"
+      L_DETAILS_DATA_LINES := CHAR(9):"Ipex Claim Multiplier"
+      L_DETAILS_DATA_LINES := CHAR(9):"Ipex Claim Ext"
+      L_DETAILS_DATA_LINES := CHAR(9):"Ipex Claim Amount"
+      L_DETAILS_DATA_LINES := CHAR(9):"Ipex Difference"
+   END
+   L_DETAILS_DATA_LINES := CHAR(9):"Claim Amount Payable"
+   L_DETAILS_DATA_LINES := CHAR(9):"Difference"
+   IF L_REPORT_TYPE = "I" THEN
+      L_DETAILS_DATA_LINES := CHAR(9):"Claim Line Status"
+   END
+   L_DETAILS_DATA_LINES := CHAR(9):"Verify Msg"
+   IF L_REPORT_TYPE = "I" THEN
+      L_DETAILS_DATA_LINES := CHAR(9):"Trade Price List"
+      L_DETAILS_DATA_LINES := CHAR(9):"Branch #"
+      L_DETAILS_DATA_LINES := CHAR(9):"Ship To #"
+   END
+   L_DETAILS_DATA_LINES := CHAR(9):"Comments"
+   L_DETAILS_DATA_LINES := CHAR(10)
+
+   *** Generate Header Line for Rejects Report ***
+   IF L_REPORT_TYPE = "I" THEN
+      L_REJECTS_DATA_LINES  = "Company #"
+      L_REJECTS_DATA_LINES := CHAR(9):"Customer #"
+      L_REJECTS_DATA_LINES := CHAR(9):"Claim #"
+   END ELSE
+      L_REJECTS_DATA_LINES  = "Claim #"
+   END
+   L_REJECTS_DATA_LINES := CHAR(9):"Contractor #"
+   L_REJECTS_DATA_LINES := CHAR(9):"Contractor Name"
+   IF L_REPORT_TYPE = "I" THEN
+      L_REJECTS_DATA_LINES := CHAR(9):"Status"
+   END
+   L_REJECTS_DATA_LINES := CHAR(9):"Claim Date"
+   IF L_REPORT_TYPE = "I" THEN
+      L_REJECTS_DATA_LINES := CHAR(9):"Userid"
+   END
+   L_REJECTS_DATA_LINES := CHAR(9):"Invoice #"
+   L_REJECTS_DATA_LINES := CHAR(9):"Invoice Date"
+   L_REJECTS_DATA_LINES := CHAR(9):"Part Nbr"
+   L_REJECTS_DATA_LINES := CHAR(9):"Part Desc"
+   L_REJECTS_DATA_LINES := CHAR(9):"Claim Qty"
+   IF L_REPORT_TYPE = "I" THEN
+      L_REJECTS_DATA_LINES := CHAR(9):"List Price"
+      L_REJECTS_DATA_LINES := CHAR(9):"Multiplier"
+      L_REJECTS_DATA_LINES := CHAR(9):"Ext Price"
+      L_REJECTS_DATA_LINES := CHAR(9):"Claim List Price"
+      L_REJECTS_DATA_LINES := CHAR(9):"Claim Multiplier"
+      L_REJECTS_DATA_LINES := CHAR(9):"Claim Ext"
+   END
+   L_REJECTS_DATA_LINES := CHAR(9):"Claim Amount"
+   IF L_REPORT_TYPE = "I" THEN
+      L_REJECTS_DATA_LINES := CHAR(9):"Ipex List Price"
+      L_REJECTS_DATA_LINES := CHAR(9):"Ipex Multiplier"
+      L_REJECTS_DATA_LINES := CHAR(9):"Ipex Ext Price"
+      L_REJECTS_DATA_LINES := CHAR(9):"Ipex Claim List Price"
+      L_REJECTS_DATA_LINES := CHAR(9):"Ipex Claim Multiplier"
+      L_REJECTS_DATA_LINES := CHAR(9):"Ipex Claim Ext"
+      L_REJECTS_DATA_LINES := CHAR(9):"Ipex Claim Amount"
+      L_REJECTS_DATA_LINES := CHAR(9):"Ipex Difference"
+   END
+   L_REJECTS_DATA_LINES := CHAR(9):"Claim Amount Payable"
+   L_REJECTS_DATA_LINES := CHAR(9):"Difference"
+   IF L_REPORT_TYPE = "I" THEN
+      L_REJECTS_DATA_LINES := CHAR(9):"Claim Line Status"
+   END
+   L_REJECTS_DATA_LINES := CHAR(9):"Verify Msg"
+   IF L_REPORT_TYPE = "I" THEN
+      L_REJECTS_DATA_LINES := CHAR(9):"Trade Price List"
+      L_REJECTS_DATA_LINES := CHAR(9):"Branch #"
+      L_REJECTS_DATA_LINES := CHAR(9):"Ship To #"
+   END
+   L_REJECTS_DATA_LINES := CHAR(9):"Comments"
+   L_REJECTS_DATA_LINES := CHAR(10)
+
+B110_EXIT:
+   RETURN
+
+
+B120_BUILD_EXCEL_DETAIL_LINES:
+
+   *** Generate Detail Lines ***
+   IF L_REPORT_TYPE = "I" THEN
+      L_DETAILS_DATA_LINES := '="':L_COMPANY_NBR:'"'                       ;* Company #
+      L_DETAILS_DATA_LINES := CHAR(9):'="':L_CUSTOMER_NBR:'"'              ;* Customer #
+      L_DETAILS_DATA_LINES := CHAR(9):'="':L_CLAIM_NBR:'"'                 ;* Claim #
+   END ELSE
+      L_DETAILS_DATA_LINES := '="':L_CLAIM_NBR:'"'                         ;* Claim #
+   END
+   L_DETAILS_DATA_LINES := CHAR(9):'="':L_CONTRACTOR_NBR:'"'               ;* Contractor #
+   READV L_CONTRACTOR_NAME FROM SDCMST, L_COMPANY_NBR:"*":L_CUSTOMER_NBR:"*":L_CONTRACTOR_NBR, 1 ELSE L_CONTRACTOR_NAME = ""
+   L_DETAILS_DATA_LINES := CHAR(9):L_CONTRACTOR_NAME                       ;* Contractor Name
+   IF L_REPORT_TYPE = "I" THEN
+      L_DETAILS_DATA_LINES := CHAR(9):L_SDCHDR_REC<2>                      ;* Status
+   END
+   L_DETAILS_DATA_LINES := CHAR(9):'="':OCONV(L_SDCHDR_REC<4>,"D4/"):'"'   ;* Claim Date
+   IF L_REPORT_TYPE = "I" THEN
+      L_DETAILS_DATA_LINES := CHAR(9):L_SDCHDR_REC<5>                      ;* Userid
+   END
+   L_DETAILS_DATA_LINES := CHAR(9):'="':L_SDCDET_REC<1>:'"'                ;* Invoice #
+   L_DETAILS_DATA_LINES := CHAR(9):'="':OCONV(L_SDCDET_REC<2>,"D2/"):'"'   ;* Invoice Date
+
+   READV L_PART_NBR FROM ITMMST, L_SDCDET_REC<3>, 1 ELSE L_PART_NBR = ""
+   L_DETAILS_DATA_LINES := CHAR(9):'="':L_PART_NBR:'"'                     ;* Product Code
+   READV L_PART_NBR_DESC FROM ITMMST, L_SDCDET_REC<3>, 2 ELSE L_PART_NBR_DESC = ""
+   L_DETAILS_DATA_LINES := CHAR(9):L_PART_NBR_DESC                         ;* Product Description
+   L_DETAILS_DATA_LINES := CHAR(9):L_SDCDET_REC<4>                         ;* Claim Quantity
+   IF L_REPORT_TYPE = "I" THEN
+      L_DETAILS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<5>,"MD2")         ;* List Price
+      L_DETAILS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<6>,"MD4")         ;* Multiplier
+      L_DETAILS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<7>,"MD2")         ;* Ext Price
+      L_DETAILS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<8>,"MD2")         ;* Claim List Price
+      L_DETAILS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<9>,"MD4")         ;* Claim Multiplier
+      L_DETAILS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<10>,"MD2")        ;* Claim Ext
+   END
+   L_DETAILS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<11>,"MD2")           ;* Claim Amount
+   IF L_REPORT_TYPE = "I" THEN
+      L_DETAILS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<24>,"MD2")        ;* Ipex List Price
+      L_DETAILS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<25>,"MD4")        ;* Ipex Multiplier
+      L_DETAILS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<26>,"MD2")        ;* Ipex Ext Price
+      L_DETAILS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<27>,"MD2")        ;* Ipex Claim List Price
+      L_DETAILS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<28>,"MD4")        ;* Ipex Claim Multiplier
+      L_DETAILS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<29>,"MD2")        ;* Ipex Claim Ext
+      L_DETAILS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<30>,"MD2")        ;* Ipex Claim Amount
+      L_DETAILS_DATA_LINES := CHAR(9):OCONV((L_SDCDET_REC<11>-L_SDCDET_REC<30>),"MD2")      ;* Claim Amount Difference
+   END
+   L_DETAILS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<31>,"MD2")           ;* Claim Amount Payable
+   L_DETAILS_DATA_LINES := CHAR(9):OCONV((L_SDCDET_REC<11>-L_SDCDET_REC<31>),"MD2")         ;* Claim Amount Payable Difference
+   IF L_REPORT_TYPE = "I" THEN
+      L_DETAILS_DATA_LINES := CHAR(9):L_SDCDET_REC<12>                     ;* Claim Line Status
+   END
+   IF L_SDCDET_REC<12> = "C" OR L_SDCDET_REC<12> = "R" THEN
+      L_DETAILS_DATA_LINES := CHAR(9):L_SDCDET_REC<13>                     ;* Verify Message
+   END ELSE
+      L_DETAILS_DATA_LINES := CHAR(9):""
+   END
+   IF L_REPORT_TYPE = "I" THEN
+      L_DETAILS_DATA_LINES := CHAR(9):L_SDCDET_REC<15>                     ;* Trade Price List
+      L_DETAILS_DATA_LINES := CHAR(9):L_SDCDET_REC<16>                     ;* Branch #
+      L_DETAILS_DATA_LINES := CHAR(9):L_SDCDET_REC<17>                     ;* Ship To #
+   END
+
+   IF L_SDCDET_REC<12> = "C" OR L_SDCDET_REC<12> = "R" THEN                ;* Comments
+      L_DETAILS_DATA_LINES := CHAR(9)
+      IF L_SDCDET_REC<14> # "" THEN
+         FOR L_COMMENT_SUB = 1 TO DCOUNT(L_SDCDET_REC<14>,VM)
+           L_DETAILS_DATA_LINES := "[" : L_SDCDET_REC<18,L_COMMENT_SUB> : " - " : OCONV(L_SDCDET_REC<19,L_COMMENT_SUB>,"D2/") : " - " : L_SDCDET_REC<14,L_COMMENT_SUB> : "]"
+         NEXT L_COMMENT_SUB
+      END
+   END ELSE
+      L_DETAILS_DATA_LINES := CHAR(9):""
+   END
+   L_DETAILS_DATA_LINES := CHAR(10)
+
+B120_EXIT:
+   RETURN
+
+
+B121_BUILD_REJECTS_EXCEL_DETAIL_LINES:
+
+   *** Generate Detail Lines ***
+   IF L_REPORT_TYPE = "I" THEN
+      L_REJECTS_DATA_LINES := '="':L_COMPANY_NBR:'"'                       ;* Company #
+      L_REJECTS_DATA_LINES := CHAR(9):'="':L_CUSTOMER_NBR:'"'              ;* Customer #
+      L_REJECTS_DATA_LINES := CHAR(9):'="':L_CLAIM_NBR:'"'                 ;* Claim #
+   END ELSE
+      L_REJECTS_DATA_LINES := '="':L_CLAIM_NBR:'"'                         ;* Claim #
+   END
+   L_REJECTS_DATA_LINES := CHAR(9):'="':L_CONTRACTOR_NBR:'"'               ;* Contractor #
+   READV L_CONTRACTOR_NAME FROM SDCMST, L_COMPANY_NBR:"*":L_CUSTOMER_NBR:"*":L_CONTRACTOR_NBR, 1 ELSE L_CONTRACTOR_NAME = ""
+   L_REJECTS_DATA_LINES := CHAR(9):L_CONTRACTOR_NAME                       ;* Contractor Name
+   IF L_REPORT_TYPE = "I" THEN
+      L_REJECTS_DATA_LINES := CHAR(9):L_SDCHDR_REC<2>                      ;* Status
+   END
+   L_REJECTS_DATA_LINES := CHAR(9):'="':OCONV(L_SDCHDR_REC<4>,"D4/"):'"'   ;* Claim Date
+   IF L_REPORT_TYPE = "I" THEN
+      L_REJECTS_DATA_LINES := CHAR(9):L_SDCHDR_REC<5>                      ;* Userid
+   END
+   L_REJECTS_DATA_LINES := CHAR(9):'="':L_SDCDET_REC<1>:'"'                ;* Invoice #
+   L_REJECTS_DATA_LINES := CHAR(9):'="':OCONV(L_SDCDET_REC<2>,"D2/"):'"'   ;* Invoice Date
+
+   READV L_PART_NBR FROM ITMMST, L_SDCDET_REC<3>,1 ELSE L_PART_NBR = ""
+   L_REJECTS_DATA_LINES := CHAR(9):'="':L_PART_NBR:'"'                     ;* Product Code
+   READV L_PART_NBR_DESC FROM ITMMST, L_SDCDET_REC<3>, 2 ELSE L_PART_NBR_DESC = ""
+   L_REJECTS_DATA_LINES := CHAR(9):L_PART_NBR_DESC                         ;* Product Description
+   L_REJECTS_DATA_LINES := CHAR(9):L_SDCDET_REC<4>                         ;* Claim Quantity
+   IF L_REPORT_TYPE = "I" THEN
+      L_REJECTS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<5>,"MD2")         ;* List Price
+      L_REJECTS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<6>,"MD4")         ;* Multiplier
+      L_REJECTS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<7>,"MD2")         ;* Ext Price
+      L_REJECTS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<8>,"MD2")         ;* Claim List Price
+      L_REJECTS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<9>,"MD4")         ;* Claim Multiplier
+      L_REJECTS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<10>,"MD2")        ;* Claim Ext
+   END
+   L_REJECTS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<11>,"MD2")           ;* Claim Amount
+   IF L_REPORT_TYPE = "I" THEN
+      L_REJECTS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<24>,"MD2")        ;* Ipex List Price
+      L_REJECTS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<25>,"MD4")        ;* Ipex Multiplier
+      L_REJECTS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<26>,"MD2")        ;* Ipex Ext Price
+      L_REJECTS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<27>,"MD2")        ;* Ipex Claim List Price
+      L_REJECTS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<28>,"MD4")        ;* Ipex Claim Multiplier
+      L_REJECTS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<29>,"MD2")        ;* Ipex Claim Ext
+      L_REJECTS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<30>,"MD2")        ;* Ipex Claim Amount
+      L_REJECTS_DATA_LINES := CHAR(9):OCONV((L_SDCDET_REC<11>-L_SDCDET_REC<30>),"MD2")      ;* Claim Amount Difference
+   END
+   L_REJECTS_DATA_LINES := CHAR(9):OCONV(L_SDCDET_REC<31>,"MD2")           ;* Claim Amount payable
+   L_REJECTS_DATA_LINES := CHAR(9):OCONV((L_SDCDET_REC<11>-L_SDCDET_REC<31>),"MD2")         ;* Claim Amount Payable Difference
+   IF L_REPORT_TYPE = "I" THEN
+      L_REJECTS_DATA_LINES := CHAR(9):L_SDCDET_REC<12>                     ;* Claim Line Status
+   END
+   IF L_SDCDET_REC<12> = "C" OR L_SDCDET_REC<12> = "R" THEN
+      L_REJECTS_DATA_LINES := CHAR(9):L_SDCDET_REC<13>                     ;* Verify Message
+   END ELSE
+      L_REJECTS_DATA_LINES := CHAR(9):""
+   END
+   IF L_REPORT_TYPE = "I" THEN
+      L_REJECTS_DATA_LINES := CHAR(9):L_SDCDET_REC<15>                     ;* Trade Price List
+      L_REJECTS_DATA_LINES := CHAR(9):L_SDCDET_REC<16>                     ;* Branch #
+      L_REJECTS_DATA_LINES := CHAR(9):L_SDCDET_REC<17>                     ;* Ship To #
+   END
+
+   IF L_SDCDET_REC<12> = "C" OR L_SDCDET_REC<12> = "R" THEN                ;* Comments
+      L_REJECTS_DATA_LINES := CHAR(9)
+      IF L_SDCDET_REC<14> # "" THEN
+         FOR L_COMMENT_SUB = 1 TO DCOUNT(L_SDCDET_REC<14>,VM)
+           L_REJECTS_DATA_LINES := "[" : L_SDCDET_REC<18,L_COMMENT_SUB> : " - " : OCONV(L_SDCDET_REC<19,L_COMMENT_SUB>,"D2/") : " - " : L_SDCDET_REC<14,L_COMMENT_SUB> : "]"
+         NEXT L_COMMENT_SUB
+      END
+   END ELSE
+      L_REJECTS_DATA_LINES := CHAR(9):""
+   END
+   L_REJECTS_DATA_LINES := CHAR(10)
+
+B121_EXIT:
+   RETURN
+
+****************************************
+* Generate Ship & Debit Claims Excel Report File
+****************************************
+B200_GENERATE_SDC_EXCEL_REPORT_FILE:
+
+   OPENSEQ L_DIR_PATH, L_DETAILS_FILE_NAME TO L_SDC_DETAILS_EXCEL_REPORT_FILE
+   ON ERROR
+      L_ERR_CODE = "B200-ERROR-FATAL"
+      L_ERR_MSG = "Cannot open file ":L_DETAILS_FILE_NAME:"."
+   END LOCKED
+      L_ERR_CODE = "B200-ERROR-LOCK"
+      L_ERR_MSG = "The SDC Excel report file ":L_DETAILS_FILE_NAME:" is currently locked by ":GETUSERNAME(STATUS()):"."
+   END THEN
+      ;* the SDC Excel report file as per request should not exist before the call
+      ;* overwrite it in case it does exists
+      WRITESEQ L_EMPTY_DATA TO L_SDC_DETAILS_EXCEL_REPORT_FILE ELSE L_ERR_CODE = "B200-ERROR-WRITESEQ"
+      CLOSESEQ L_SDC_DETAILS_EXCEL_REPORT_FILE
+   END ELSE
+      BEGIN CASE
+         CASE STATUS() = 0
+            ;* file not exists, ready to generate SDC Excel report file
+            WRITESEQ L_DETAILS_DATA_LINES TO L_SDC_DETAILS_EXCEL_REPORT_FILE ELSE L_ERR_CODE = "B200-ERROR-WRITESEQ"
+            CLOSESEQ L_SDC_DETAILS_EXCEL_REPORT_FILE
+         CASE STATUS() = 1
+            L_ERR_CODE = "B200-ERROR-1"
+            L_ERR_MSG = "The SDC Excel report file ":L_DETAILS_FILE_NAME:" is not a sequential-access file."
+         CASE STATUS() = 2
+            L_ERR_CODE = "B200-ERROR-2"
+            L_ERR_MSG = "The file directory ":L_DIR_PATH:" does not exist."
+         CASE STATUS() = 3
+            L_ERR_CODE = "B200-ERROR-3"
+            L_ERR_MSG = "The READONLY clause was included in the command statement and the html email template file ":L_DETAILS_FILE_NAME:" does not exist."
+         CASE STATUS() = 4
+            L_ERR_CODE = "B200-ERROR-4"
+            L_ERR_MSG = "An unknown error occurred (such as having too many files open or permission problems) while opening sequential html email template file ":L_DETAILS_FILE_NAME:"."
+      END CASE
+   END
+
+   IF L_REJECTS_FOUND THEN
+      OPENSEQ L_DIR_PATH, L_REJECTS_FILE_NAME TO L_SDC_REJECTS_EXCEL_REPORT_FILE
+      ON ERROR
+         L_ERR_CODE = "B200-ERROR-FATAL"
+         L_ERR_MSG = "Cannot open file ":L_REJECTS_FILE_NAME:"."
+      END LOCKED
+         L_ERR_CODE = "B200-ERROR-LOCK"
+         L_ERR_MSG = "The SDC Excel report file ":L_REJECTS_FILE_NAME:" is currently locked by ":GETUSERNAME(STATUS()):"."
+      END THEN
+         ;* the SDC Excel report file as per request should not exist before the call
+         ;* overwrite it in case it does exists
+         WRITESEQ L_EMPTY_DATA TO L_SDC_REJECTS_EXCEL_REPORT_FILE ELSE L_ERR_CODE = "B200-ERROR-WRITESEQ"
+         CLOSESEQ L_SDC_REJECTS_EXCEL_REPORT_FILE
+      END ELSE
+         BEGIN CASE
+            CASE STATUS() = 0
+               ;* file not exists, ready to generate SDC Excel report file
+               WRITESEQ L_REJECTS_DATA_LINES TO L_SDC_REJECTS_EXCEL_REPORT_FILE ELSE L_ERR_CODE = "B200-ERROR-WRITESEQ"
+               CLOSESEQ L_SDC_REJECTS_EXCEL_REPORT_FILE
+            CASE STATUS() = 1
+               L_ERR_CODE = "B200-ERROR-1"
+               L_ERR_MSG = "The SDC Excel report file ":L_REJECTS_FILE_NAME:" is not a sequential-access file."
+            CASE STATUS() = 2
+               L_ERR_CODE = "B200-ERROR-2"
+               L_ERR_MSG = "The file directory ":L_DIR_PATH:" does not exist."
+            CASE STATUS() = 3
+               L_ERR_CODE = "B200-ERROR-3"
+               L_ERR_MSG = "The READONLY clause was included in the command statement and the html email template file ":L_REJECTS_FILE_NAME:" does not exist."
+            CASE STATUS() = 4
+               L_ERR_CODE = "B200-ERROR-4"
+               L_ERR_MSG = "An unknown error occurred (such as having too many files open or permission problems) while opening sequential html email template file ":L_REJECTS_FILE_NAME:"."
+         END CASE
+      END
+   END
+
+B200_EXIT:
+   RETURN
+
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+   IF L_ERR_CODE # "" THEN
+      ARGS_OUT = ""
+      ARGS_OUT<2> = PROGRAM:@VM:L_ERR_CODE:@VM:L_ERR_MSG
+   END ELSE
+      ARGS_OUT<1,1> = L_DETAILS_FILE_NAME
+      IF L_REJECTS_FOUND THEN
+         ARGS_OUT<1,2> = L_REJECTS_FILE_NAME
+      END ELSE
+         ARGS_OUT<1,2> = ""
+      END
+   END
+
+   RTN.FLAG = 0
+   REFRESH = -2
+
+A500_EXIT:
+   GO 9999
+
+
+****************************************
+* Exit
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END

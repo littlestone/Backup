@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<!-- saved from url=(0070)http://www.mail-archive.com/u2-users@listserver.u2ug.org/msg05880.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Unclassified RE: [U2][UV]  ENCRYPT()  Function</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="apple-touch-icon" sizes="114x114" href="http://www.mail-archive.com/apple-touch-icon-114x114.png">
+<link rel="apple-touch-icon" sizes="72x72" href="http://www.mail-archive.com/apple-touch-icon-72x72.png">
+<link rel="apple-touch-icon" sizes="57x57" href="http://www.mail-archive.com/apple-touch-icon-57x57.png">
+<link rel="shortcut icon" href="http://www.mail-archive.com/favicon.ico">
+<link rel="contents" href="http://www.mail-archive.com/u2-users@listserver.u2ug.org/thrd15.html#05880">
+<link rel="index" href="http://www.mail-archive.com/u2-users@listserver.u2ug.org/mail15.html#05880">
+<link rel="prev" href="http://www.mail-archive.com/u2-users@listserver.u2ug.org/msg05878.html">
+<link rel="next" href="http://www.mail-archive.com/u2-users@listserver.u2ug.org/msg05782.html">
+<link rel="alternate" title="u2-users RSS" href="http://www.mail-archive.com/u2-users@listserver.u2ug.org/msg05880.html#" type="application/rss+xml">
+<link rel="canonical" href="./Unclassified RE  [U2][UV] ENCRYPT() Function_files/Unclassified RE  [U2][UV] ENCRYPT() Function.htm">
+<link rel="stylesheet" href="http://www.mail-archive.com/normalize.css" media="screen">
+<link rel="stylesheet" href="http://www.mail-archive.com/master.css" media="screen">
+
+<!--[if lt IE 9]>
+<link rel="stylesheet" href="/ie.css" media="screen">
+<![endif]-->
+<script type="text/javascript" src="chrome-extension://bfbmjmiodbnnpllbbbfblcplfjjepjdn/js/injected.js"></script></head>
+<body>
+<div class="container">
+<div class="skipLink">
+<a href="http://www.mail-archive.com/u2-users@listserver.u2ug.org/msg05880.html#nav">Skip to site navigation (Press enter)</a>
+</div>
+<div class="content" role="main">
+<div class="msgHead">
+<h1>
+<span class="subject"><a href="http://www.mail-archive.com/search?l=u2-users@listserver.u2ug.org&q=subject:%22Unclassified+RE%3A+%5BU2%5D%5BUV%5D++ENCRYPT%28%29++Function%22" rel="nofollow">Unclassified RE: [U2][UV]  ENCRYPT()  Function</a></span>
+</h1>
+<p class="darkgray font13">
+<span class="sender pipe"><a href="http://www.mail-archive.com/search?l=u2-users@listserver.u2ug.org&q=from:%22HENDERSON+MIKE%2C+MR%22" rel="nofollow">HENDERSON MIKE, MR</a></span>
+<span class="date"><a href="http://www.mail-archive.com/search?l=u2-users@listserver.u2ug.org&q=date:20041214" rel="nofollow">Tue, 14 Dec 2004 12:36:48 -0800</a></span>
+</p>
+</div>
+<div class="msgBody">
+<!--X-Body-of-Message-->
+<pre>Dean,
+
+I agree the User Guide certainly isn't too clear!</pre><!--X-Square-Bannerad-->
+<div class="bannersquare margintop marginbottom">
+  <h2 class="hidden">
+    Advertising
+  </h2>
+
+  <script type="text/javascript"><!--
+  google_ad_client = "ca-pub-7266757337600734";
+  /* Top of Content Medium Box */
+  google_ad_slot = "9759909619";
+  google_ad_width = 300;
+  google_ad_height = 250;
+  //-->
+  </script>
+  <script type="text/javascript" src="./Unclassified RE  [U2][UV] ENCRYPT() Function_files/show_ads.js">
+  </script>
+
+</div>
+<!--X-Square-Header-End--><pre>
+At the bottom is a little program I wrote to test the functionality.
+
+HTH
+
+
+Mike
+
+
+-----Original Message-----
+&gt; From: [EMAIL PROTECTED]
+[<a href="mailto:[EMAIL">mailto:[EMAIL</a> PROTECTED] On Behalf Of Dean Fox
+&gt; Sent: Wednesday, 15 December 2004 07:18
+&gt; To: '[EMAIL PROTECTED]'
+&gt; Subject: [U2][UV] ENCRYPT() Function
+&gt; 
+&gt; There is a new function starting in UV 10.0 that I have never used,
+&gt; ENCRYPT().  The manual reads like bad stereo instructions.
+&gt; 
+&gt; Has anyone used it or is using it? I'm looking for information on
+practical
+&gt; uses, code samples, usage examples, etc.
+
+
+*  PROGRAM CRYPT.IT
+*
+* Description : UniBasic Encryption
+*      Author : Mike Henderson (CISBR)
+*        Date : 20th September 2004
+*
+*-----------------------------------------------------------------------
+--------
+*     Release Level : 1.0
+*   Standards Level : 13
+* Next Testing Note :
+*-----------------------------------------------------------------------
+--------
+*
+* LAST CHANGE
+*
+*      Reason :
+*      Author :
+*        Date :
+*   Change No :
+*       WR No :
+*
+* PROGRAM PURPOSE/NOTES
+*
+* ENCRYPT Parameters
+*===================
+* Parameter      Description
+*---------------
+----------------------------------------------------------------
+* algorithm      A string containing the cipher name.
+* action         1 - Encrypt
+*                2 - Base64 encode after encryption
+*                3 - Decrypt
+*                4 - Base64 decode before decryption
+* data           Data or the name of the file containing the data to be
+processed.
+* dataLoc        1 - Data in a string
+*                2 - Data in a file
+* key            The actual key (password) or file name containing the
+key.
+* keyLoc         1 - Key in data
+*                2 - Key in file
+* keyAction      1 - Use actual key
+*                2 - Derive key from pass phrase
+* Salt           A string containing the Salt value.
+* IV             A string containing IV.
+* result         The result buffer or the name of the file storing the
+result.
+* resultLoc      1 - Result in a string
+*                2 - Result in a file.
+
+!-----------------------------------------------------------------------
+---
+      IN.DEBUG.MODE = @FALSE
+
+*****      IF @LOGNAME = '*****' THEN IN.DEBUG.MODE = @TRUE
+
+      IF IN.DEBUG.MODE THEN
+         HUSH OFF
+         PROMPT '?'
+         CRT 'DEBUG mode is on for "CRYPT.IT" ... '
+      END
+
+!-----------------------------------------------------------------------
+---
+! Start of program
+!-----------------------------------------------------------------------
+---
+
+      STATUS.ARRAY = ''
+      STATUS.ARRAY&lt;1,1&gt; = '0'
+      STATUS.ARRAY&lt;2,1&gt; = 'Success.'
+      STATUS.ARRAY&lt;1,2&gt; = '1'
+      STATUS.ARRAY&lt;2,2&gt; = 'Invalid cipher.'
+      STATUS.ARRAY&lt;1,3&gt; = '2'
+      STATUS.ARRAY&lt;2,3&gt; = 'Invalid parameters (location/action value is
+out of range, etc.).'
+      STATUS.ARRAY&lt;1,4&gt; = '3'
+      STATUS.ARRAY&lt;2,4&gt; = 'The data cannot be read.'
+      STATUS.ARRAY&lt;1,5&gt; = '4'
+      STATUS.ARRAY&lt;2,5&gt; = 'The key cannot be derived.'
+      STATUS.ARRAY&lt;1,6&gt; = '5'
+      STATUS.ARRAY&lt;2,6&gt; = 'Base 64 encoding/decoding error.'
+      STATUS.ARRAY&lt;1,7&gt; = '6'
+      STATUS.ARRAY&lt;2,7&gt; = 'Encryption/decryption error.'
+
+      VALID.ALGORITHMS = ''
+      VALID.ALGORITHMS&lt;1&gt; = 'RC5'  ; * 128-BIT RC5 in CBC mode
+      VALID.ALGORITHMS&lt;2&gt; = 'RC4'  ; * 128-bit RC4
+      VALID.ALGORITHMS&lt;3&gt; = 'RC2'  ; * 128-bit RC2 in CBC mode
+      VALID.ALGORITHMS&lt;4&gt; = 'DES3' ; * 168-BIT Triple DES EDE in CBC
+mode
+      VALID.ALGORITHMS&lt;5&gt; = 'DES'  ; * 56-BIT DES in CBC mode
+
+
+MAIN.START:
+*==========
+
+      E.DLOC = '1'         ; * data passed directly
+      E.KLOC = '1'         ; * key passed directly
+      E.KEYACTION = '2'    ; * Derive key from Key Text
+      E.SALT = ''          ; * no salt
+      E.IV = ''            ; * no Initialisation Vector
+      E.RLOC = '1'         ; * result in a string
+
+      PROG.ACTION = '?'
+      
+
+      PROMPT ''
+      CRT @(-1)
+     
+
+      LOOP
+
+         CRT
+         CRT 'Which Algorithm? : ': ; INPUT THE.ALG
+         IF THE.ALG = 'X' THEN EXIT
+         LOCATE TRIM(UPCASE(THE.ALG)) IN VALID.ALGORITHMS&lt;1&gt; SETTING
+ALG.POS ELSE
+            CRT QUOTE(THE.ALG):' is not a valid ENCRYPT algorithm name!'
+            EXIT
+         END
+         E.ALG = VALID.ALGORITHMS&lt;ALG.POS&gt;
+
+         E.ACTION = ''
+         E.DATA = ''
+         E.KEY = ''
+         E.RESULT = ''
+
+         CRT 'We are encrypting ...'
+         E.ACTION = '2'       ; * Base64 encode after encryption
+         CRT 'Enter Plain Text : ': ; INPUT E.DATA
+         CRT 'Enter Key Text   : ': ; INPUT E.KEY
+         IF IN.DEBUG.MODE THEN GOSUB DISPLAY.INPUT.PARAMETERS
+         E.STATUS = ENCRYPT(E.ALG, E.ACTION, E.DATA, E.DLOC, E.KEY,
+E.KLOC, E.KEYACTION, E.SALT, E.IV, E.RESULT, E.RLOC)
+         GOSUB DISPLAY.ENCRYPT.STATUS
+
+         * Note that E.RESULT is delimited by a CHAR(10) at the end for
+some reason
+         E.DATA = E.RESULT
+         E.RESULT = ''
+         CRT
+         CRT 'We are decrypting ...'
+         E.ACTION = '4'       ; * Base64 decode before decryption
+         IF IN.DEBUG.MODE THEN GOSUB DISPLAY.INPUT.PARAMETERS
+         E.STATUS = ENCRYPT(E.ALG, E.ACTION, E.DATA, E.DLOC, E.KEY,
+E.KLOC, E.KEYACTION, E.SALT, E.IV, E.RESULT, E.RLOC)
+         CRT ' Plain Text ':QUOTE(E.RESULT)
+         GOSUB DISPLAY.ENCRYPT.STATUS
+         INPUT PAWS
+
+
+      UNTIL @TRUE EQ @FALSE
+      REPEAT
+
+
+      RETURN
+
+*-----------------------------------------------------------------------
+---
+DISPLAY.INPUT.PARAMETERS:
+*=======================
+
+      CRT
+      CRT '"ENCRYPT" input parameters:-'
+      CRT ' E.ALG       ':QUOTE(E.ALG)
+      CRT ' E.ACTION    ':QUOTE(E.ACTION)
+      CRT ' E.DATA      ':QUOTE(E.DATA)
+      CRT ' E.DLOC      ':QUOTE(E.DLOC)
+      CRT ' E.KEY       ':QUOTE(E.KEY)
+      CRT ' E.KLOC      ':QUOTE(E.KLOC)
+      CRT ' E.KEYACTION ':QUOTE(E.KEYACTION)
+      CRT ' E.SALT      ':QUOTE(E.SALT)
+      CRT ' E.IV        ':QUOTE(E.IV)
+      CRT ' E.RESULT    ':QUOTE(E.RESULT)
+      CRT ' E.RLOC      ':QUOTE(E.RLOC)
+
+
+      RETURN
+
+*-----------------------------------------------------------------------
+---
+DISPLAY.ENCRYPT.STATUS:
+*======================
+
+      LOCATE E.STATUS IN STATUS.ARRAY&lt;1,1&gt; SETTING STATUS.POS THEN
+         STATUS.MESSAGE = STATUS.ARRAY&lt;2,STATUS.POS&gt;
+      END ELSE
+         STATUS.MESSAGE = '*** Unknown STATUS CODE ***'
+      END
+
+      CRT '"ENCRYPT" returned status ':QUOTE(E.STATUS):' --
+':QUOTE(STATUS.MESSAGE)
+
+
+      RETURN
+
+
+*-----------------------------------------------------------------------
+---
+*   T H E   E N D
+*-----------------------------------------------------------------------
+---
+THE.END:
+*=======
+
+   END
+The information contained in this Internet Email message is intended
+for the addressee only and may contain privileged information, but not
+necessarily the official views or opinions of the New Zealand Defence Force.
+If you are not the intended recipient you must not use, disclose, copy or 
+distribute this message or the information in it.
+
+If you have received this message in error, please Email or telephone
+the sender immediately.
+-------
+u2-users mailing list
+[EMAIL PROTECTED]
+To unsubscribe please visit <a href="http://listserver.u2ug.org/">http://listserver.u2ug.org/</a>
+</pre>
+
+</div>
+<div class="msgButtons margintopdouble">
+<h2 class="hidden">
+				Navigate to other messages
+</h2>
+<ul class="overflow">
+<li class="msgButtonItems"><a class="button buttonleft " accesskey="p" href="http://www.mail-archive.com/u2-users@listserver.u2ug.org/msg05878.html">Previous message</a></li>
+<li class="msgButtonItems textaligncenter"><a class="button" accesskey="c" href="http://www.mail-archive.com/u2-users@listserver.u2ug.org/thrd15.html#05880">View by thread</a></li>
+<li class="msgButtonItems textaligncenter"><a class="button" accesskey="i" href="http://www.mail-archive.com/u2-users@listserver.u2ug.org/mail15.html#05880">View by date</a></li>
+<li class="msgButtonItems textalignright"><a class="button buttonright " accesskey="n" href="http://www.mail-archive.com/u2-users@listserver.u2ug.org/msg05782.html">Next message</a></li>
+</ul>
+</div>
+<a name="tslice"></a>
+<div class="tSliceLiset margintopdouble">
+<h2 class="hidden">
+				Navigate to other messages within this thread
+</h2>
+<ul class="icons monospace">
+
+</ul>
+</div>
+<div class="overflow msgActions margintopdouble">
+<div class="msgReply">
+<h2>
+					Reply via email to
+</h2>
+<form method="POST" action="http://www.mail-archive.com/mailto.php">
+<input type="HIDDEN" name="subject" value="Unclassified RE: [U2][UV]  ENCRYPT()  Function">
+<input type="HIDDEN" name="msgid" value="9EE5256656A74B4889E85DE8228A3B0E0462F405@epormta1.nzdf.dixs.mil.nz">
+<input type="submit" value=" HENDERSON MIKE, MR ">
+</form>
+</div>
+</div>
+</div>
+<div class="aside" role="complementary">
+<div class="logo">
+<a href="http://www.mail-archive.com/"><img src="./Unclassified RE  [U2][UV] ENCRYPT() Function_files/logo.png" width="247" height="88" alt="The Mail Archive"></a>
+</div>
+<form class="overflow" action="http://www.mail-archive.com/search" method="get">
+<input type="hidden" name="l" value="u2-users@listserver.u2ug.org">
+<label class="hidden" for="q">Search the site</label>
+<input class="submittext" type="text" id="q" name="q" placeholder="Search u2-users">
+<input class="submitbutton" name="submit" type="image" src="./Unclassified RE  [U2][UV] ENCRYPT() Function_files/submit.png" alt="Submit">
+</form>
+<div class="nav margintop" id="nav" role="navigation">
+<h2 class="hidden">
+				Site navigation
+</h2>
+<ul class="icons font16">
+<li class="icons-home"><a href="http://www.mail-archive.com/">The Mail Archive home</a></li>
+<li class="icons-list"><a href="http://www.mail-archive.com/u2-users@listserver.u2ug.org/">u2-users - all messages</a></li>
+<li class="icons-about"><a href="http://www.mail-archive.com/u2-users@listserver.u2ug.org/info.html">u2-users - about the list</a></li>
+<li class="icons-prev"><a href="http://www.mail-archive.com/u2-users@listserver.u2ug.org/msg05878.html">Previous message</a></li>
+<li class="icons-next"><a href="http://www.mail-archive.com/u2-users@listserver.u2ug.org/msg05782.html">Next message</a></li>
+</ul>
+</div>
+<div class="listlogo margintopdouble">
+<h2 class="hidden">
+				Mail list logo
+</h2>
+
+</div>
+<div class="bannertower margintopdouble">
+<h2 class="hidden">
+				Advertising banner
+</h2>
+<script type="text/javascript"><!--
+google_ad_client = "ca-pub-7266757337600734";
+/* Side Skyscraper */
+google_ad_slot = "6234696194";
+google_ad_width = 160;
+google_ad_height = 600;
+//-->
+</script>
+<script type="text/javascript" src="./Unclassified RE  [U2][UV] ENCRYPT() Function_files/show_ads.js">
+</script>
+</div>
+</div>
+</div>
+<div class="footer" role="contentinfo">
+<h2 class="hidden">
+		Footer information
+</h2>
+<ul>
+<li><a href="http://www.mail-archive.com/">The Mail Archive home</a></li>
+<li><a href="http://www.mail-archive.com/faq.html#newlist">Add your mailing list</a></li>
+<li><a href="http://www.mail-archive.com/faq.html">FAQ</a></li>
+<li><a href="http://www.mail-archive.com/faq.html#support">Support</a></li>
+<li><a href="http://www.mail-archive.com/faq.html#privacy">Privacy</a></li>
+</ul>
+</div>
+
+
+</body></html>

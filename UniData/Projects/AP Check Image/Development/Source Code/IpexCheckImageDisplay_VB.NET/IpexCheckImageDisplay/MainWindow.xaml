@@ -1,0 +1,45 @@
+﻿<Window x:Class="IpexCheckImageDisplay.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:myRes="clr-namespace:IpexCheckImageDisplay.My.Resources"
+    Title="{x:Static myRes:Resources.Title}" Height="605" Width="974" ResizeMode="CanMinimize" WindowStartupLocation="CenterScreen" Loaded="Window_Loaded">
+    <DockPanel LastChildFill="True">
+        <StatusBar DockPanel.Dock="Bottom" Name="statusBar" >
+            <TextBlock Name="statusTextBlock" Text="{x:Static myRes:Resources.stbSearch}" />
+        </StatusBar>
+        <TabControl Name="tcCheckSearchDisplay" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <TabItem Header="{x:Static myRes:Resources.tabSearch}" Name="tabSearch" Loaded="tabSearch_Loaded">
+                <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+                    <Label Content="{x:Static myRes:Resources.lblCheckDate}" Height="28" HorizontalAlignment="Left" Margin="7,8,0,0" Name="lbCheckDate" VerticalAlignment="Top" Width="134" />
+                    <DatePicker Height="25" HorizontalAlignment="Left" Margin="157,9,0,0" Name="dpFromCheckDate" VerticalAlignment="Top" Width="115" TabIndex="1" ToolTip="{x:Static myRes:Resources.ttFromCheckDate}" />
+                    <Label Content="To" Height="28" Margin="278,11,0,0" Name="lblTo" VerticalAlignment="Top" HorizontalAlignment="Left" Width="27" />
+                    <DatePicker Height="25" HorizontalAlignment="Right" Margin="0,8,516,0" Name="dpToCheckDate" VerticalAlignment="Top" Width="115" TabIndex="2" ToolTip="{x:Static myRes:Resources.ttToCheckDate}" />
+                    <Label Content="{x:Static myRes:Resources.lblCheckNumber}" Height="28" HorizontalAlignment="Left" Margin="7,74,0,0" Name="lbCheckNumber" VerticalAlignment="Top" Width="144" />
+                    <TextBox Height="23" HorizontalAlignment="Left" Margin="157,76,0,0" Name="tbCheckNumber" VerticalAlignment="Top" Width="120" TabIndex="4" />
+                    <Label Content="{x:Static myRes:Resources.lblBankCode}" Height="28" HorizontalAlignment="Left" Margin="6,106,0,0" Name="lbBankCode" VerticalAlignment="Top" Width="135" />
+                    <TextBox Height="23" HorizontalAlignment="Left" Margin="157,108,0,0" Name="tbBankCode" VerticalAlignment="Top" Width="120" TabIndex="5" />
+                    <Label Content="{x:Static myRes:Resources.lblCurrency}" Height="28" HorizontalAlignment="Left" Margin="7,42,0,0" Name="lblCurrency" VerticalAlignment="Top" Width="134" />
+                    <ComboBox Height="23" HorizontalAlignment="Left" Margin="157,42,0,0" Name="cboCurrency" VerticalAlignment="Top" Width="120" TabIndex="3">
+                        <ComboBoxItem Content="CAD" />
+                        <ComboBoxItem Content="USD" />
+                    </ComboBox>
+                    <Label Content="{x:Static myRes:Resources.lblCompanyCode}" Height="28" HorizontalAlignment="Left" Margin="6,139,0,0" Name="lblCompany" VerticalAlignment="Top" Width="135" />
+                    <TextBox Height="23" HorizontalAlignment="Left" Margin="157,141,0,0" Name="tbCompany" VerticalAlignment="Top" Width="120" TabIndex="6" />
+                    <Label Content="{x:Static myRes:Resources.lblSupplierCode}" Height="28" HorizontalAlignment="Left" Margin="6,172,0,0" Name="lbSupplier" VerticalAlignment="Top" Width="135" />
+                    <TextBox Height="23" HorizontalAlignment="Left" Margin="157,174,0,0" Name="tbSupplier" VerticalAlignment="Top" Width="120" TabIndex="7" />
+                    <Label Content="{x:Static myRes:Resources.lblInvoiceNumber}" Height="28" HorizontalAlignment="Left" Margin="6,204,0,0" Name="lbInvoiceNumber" VerticalAlignment="Top" Width="135" />
+                    <TextBox Height="23" HorizontalAlignment="Left" Margin="157,206,0,0" Name="tbInvoiceNumber" VerticalAlignment="Top" Width="120" TabIndex="8" />
+                    <Button Content="{x:Static myRes:Resources.btnSearch}" Height="23" HorizontalAlignment="Left" Margin="8,255,0,0" Name="btnSearch" VerticalAlignment="Top" Width="83" TabIndex="9" Click="btnSearch_Click" />
+                    <Button Content="{x:Static myRes:Resources.btnReset}" Height="23" HorizontalAlignment="Left" Margin="97,255,0,0" Name="btnReset" VerticalAlignment="Top" Width="83" TabIndex="10" Click="btnReset_Click" />
+                    <Button Content="{x:Static myRes:Resources.btnToExcel}" Height="23" HorizontalAlignment="Left" Margin="186,255,0,0" Name="btnExtract" VerticalAlignment="Top" Width="83" TabIndex="11" Click="btnExtract_Click" />
+                </Grid>
+            </TabItem>
+            <TabItem Header="{x:Static myRes:Resources.tabResult}" Name="tabResult">
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                    <DataGrid VerticalAlignment="Stretch" Width="941" Name="dgResult" AutoGenerateColumns="True" IsReadOnly ="True"  ColumnWidth="*" ItemsSource="{Binding}" AlternatingRowBackground="#FFC4B0B0" AutoGeneratedColumns="dgResult_AutoGeneratedColumns">
+                    </DataGrid>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>

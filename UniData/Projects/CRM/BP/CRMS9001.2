@@ -1,0 +1,226 @@
+   SUBROUTINE CRMS9000.2(IN_DATA, STATUS)
+* CRM to Infoflo Gateway Integration Endpoint UniBasic Program Interface
+* VERSION 8.2.3
+*
+* 25 JUL 16 8.2.3 piedes PRJ*SLS086D-ICONNECT - CRM PROJECT - SALES MANAGER AND SALES AGENT 
+*
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+
+   PROGRAM = 'CRMS9000.2'
+
+   $INCLUDE IIPLUS.TOP
+   $INCLUDE IIPLUS.DEBUG
+
+   $INCLUDE TUBP TU.API.H
+   $INCLUDE TUBP ROC.H
+*  $INCLUDE /usr/igi/ud/sys/INCLUDE UDO.H   ;* JSON parser available in UniData v7.3
+*  $INCLUDE /usr/igi/ud/sys/INCLUDE XML.H   ;* XML parser
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*              This program is used to send HTTP post request to InfofloWebAPI Web Service
+*              hosted in IIS on Hydra windows server (mes0) to post data to CRM system.
+*
+*              <<<NOTE>>>
+*
+*              1. Input arguments: Vector IN_DATA
+*                   a) Per record is delimited by @AM or @FM.
+*                   b) Per attribute is delimited by @VM.
+*
+*              2. Return status (null or 0 if no error occurred)
+*                 STATUS<1> -> Error code
+*                 STATUS<2> -> Error message
+*
+* MODIFICATIONS:
+* ==============
+*              2016/07/13 juntan - Initial creation.
+*
+**************************************************************************
+
+
+A100_MAIN:
+
+   GOSUB A200_INITIALIZATION
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+   GO A500_CONCLUSION
+
+
+****************************************
+* Define & initialize variables.
+****************************************
+A200_INITIALIZATION:
+
+   RTN.FLAG = 0
+   STATUS = ""
+   
+   L_TS = ""
+   L_ERR_CODE = ""
+   L_ERR_MSG = ""
+
+   L_KEY = ""
+   L_REC = ""
+
+   L_CNT = 0
+   L_INC = 0
+   L_TTL = 0
+
+
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open any data files requried.
+****************************************
+A300_OPEN_FILES:
+
+   FILE.ERR = 0
+
+   CALL SB.OPEN.FILE("CONTMST",CONTMST,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-1"
+      L_ERR_MSG = "Open CONTMST file error."
+      GO A300_EXIT
+   END
+
+   L_DATE        = OCONV(DATE(),"D4-")
+   L_MOD_ON      = FIELD(L_DATE,"-",3):"-":FIELD(L_DATE,"-",1):"-":FIELD(L_DATE,"-",2): "T" : OCONV(TIME(),"MTS"):"Z"
+   L_MOD_ON_FILE = FIELD(L_DATE,"-",3):"-":FIELD(L_DATE,"-",1):"-":FIELD(L_DATE,"-",2): "_" : OCONV(TIME(),"MTS")
+   SWAP "-" WITH "" IN L_MOD_ON_FILE
+   SWAP ":" WITH "" IN L_MOD_ON_FILE
+   SWAP " " WITH "" IN L_MOD_ON_FILE
+   L_FILE_DIR  = "CRM.LOG"
+
+*      L_RECORD_KEY_TEMP = L_RECORD_KEY
+*      SWAP @VM WITH "_" IN L_RECORD_KEY_TEMP
+*      L_FILE_NAME = "OUT_":L_IDENTITY:"_":L_RECORD_KEY_TEMP:"_":L_MOD_ON_FILE:"_":USER.ID:'.log'
+   L_FILE_NAME = "IN_":L_MOD_ON_FILE:'.log'
+
+   OPENSEQ L_FILE_DIR, L_FILE_NAME TO L_CRM_LOG_FILE
+   ON ERROR
+      L_ERR_CODE = "A300-ERROR-13-1"
+      L_ERR_MSG = "Cannot open the CRM JSON file ":L_FILE_NAME:" in directory ":L_FILE_DIR:"."
+      GO A300_EXIT
+   END LOCKED
+      L_ERR_CODE = "A300-ERROR-13-2"
+      L_ERR_MSG  = "The CRM log file ":L_FILE_NAME:" in directory ":L_FILE_DIR:" is currently locked by ":L_FILE_DIR:" is currently locked by ":GETUSERNAME(STATUS()):"."
+      GO A300_EXIT
+   END ELSE
+      IF STATUS() # 0 THEN
+         L_ERR_CODE = "A300-ERROR-13-3"
+         L_ERR_MSG  = "Error occurred while opening the CRM log file ":L_FILE_NAME:" in directory ":L_FILE_DIR:" { ":STATUS():" }."
+         GO A300_EXIT
+      END
+   END
+
+
+A300_EXIT:
+   RETURN
+
+
+****************************************
+* Main process logic structure.
+****************************************
+A400_MAIN_PROCESS:
+
+   GOSUB B100_VALIDATE_DATA
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B200_COMMIT_DATA
+   IF L_ERR_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+A400_EXIT:
+   RETURN
+
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+   L_TS = OCONV(DATE(),"D4/"):" ":OCONV(TIME(),"MTS")
+
+   IF L_ERR_CODE # "" THEN
+      STATUS<1> = L_ERR_CODE
+      STATUS<2> = L_ERR_MSG
+   END ELSE
+      STATUS<1> = "[":L_TS:"] Hello Dodo :) from Infoflo."
+      STATUS<2> = " -> {":IN_DATA:"}"
+   END
+
+   RTN.FLAG = 0
+   REFRESH = -2
+
+A500_EXIT:
+   GO 9999
+
+
+****************************************
+* Validate CRM integration request data.
+****************************************
+B100_VALIDATE_DATA:
+
+* TODO: parse CRM data and do validation
+
+B100_EXIT:
+   RETURN
+
+
+****************************************
+* Commit CRM integration request data to DB.
+****************************************
+B200_COMMIT_DATA:
+
+   WRITESEQ " >>>> " : IN_DATA<2> APPEND ON L_CRM_LOG_FILE THEN END
+
+*    BEGIN CASE
+
+*    END CASE
+
+
+B200_EXIT:
+   RETURN
+
+
+****************************************
+* Exit
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END
+*
+*

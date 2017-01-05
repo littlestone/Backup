@@ -1,0 +1,73 @@
+C:\Users\juntan\documents\visual studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\bin\Debug\IpexCheckImageDisplay.exe.config
+C:\Users\juntan\documents\visual studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\bin\Debug\IpexCheckImageDisplay.exe.manifest
+C:\Users\juntan\documents\visual studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\bin\Debug\IpexCheckImageDisplay.application
+C:\Users\juntan\documents\visual studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\bin\Debug\IpexCheckImageDisplay.exe
+C:\Users\juntan\documents\visual studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\bin\Debug\IpexCheckImageDisplay.pdb
+C:\Users\juntan\documents\visual studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\bin\Debug\IpexCheckImageDisplay.xml
+C:\Users\juntan\documents\visual studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\ResolveAssemblyReference.cache
+C:\Users\juntan\documents\visual studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\MainWindow.baml
+C:\Users\juntan\documents\visual studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\MainWindow.g.vb
+C:\Users\juntan\documents\visual studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\Application.g.vb
+C:\Users\juntan\documents\visual studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay_MarkupCompile.cache
+C:\Users\juntan\documents\visual studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.g.resources
+C:\Users\juntan\documents\visual studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.Resources.resources
+C:\Users\juntan\documents\visual studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\GenerateResource.read.1.tlog
+C:\Users\juntan\documents\visual studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\GenerateResource.write.1.tlog
+C:\Users\juntan\documents\visual studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.TrustInfo.xml
+C:\Users\juntan\documents\visual studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.exe.manifest
+C:\Users\juntan\documents\visual studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.application
+C:\Users\juntan\documents\visual studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.exe
+C:\Users\juntan\documents\visual studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.xml
+C:\Users\juntan\documents\visual studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.pdb
+C:\Users\juntan.CORP\Desktop\IpexCheckImageDisplay\IpexCheckImageDisplay\bin\Debug\IpexCheckImageDisplay.exe.config
+C:\Users\juntan.CORP\Desktop\IpexCheckImageDisplay\IpexCheckImageDisplay\bin\Debug\IpexCheckImageDisplay.exe.manifest
+C:\Users\juntan.CORP\Desktop\IpexCheckImageDisplay\IpexCheckImageDisplay\bin\Debug\IpexCheckImageDisplay.application
+C:\Users\juntan.CORP\Desktop\IpexCheckImageDisplay\IpexCheckImageDisplay\bin\Debug\IpexCheckImageDisplay.exe
+C:\Users\juntan.CORP\Desktop\IpexCheckImageDisplay\IpexCheckImageDisplay\bin\Debug\IpexCheckImageDisplay.pdb
+C:\Users\juntan.CORP\Desktop\IpexCheckImageDisplay\IpexCheckImageDisplay\bin\Debug\IpexCheckImageDisplay.xml
+C:\Users\juntan.CORP\Desktop\IpexCheckImageDisplay\IpexCheckImageDisplay\bin\Debug\fr\IpexCheckImageDisplay.resources.dll
+C:\Users\juntan.CORP\Desktop\IpexCheckImageDisplay\IpexCheckImageDisplay\bin\Debug\fr-CA\IpexCheckImageDisplay.resources.dll
+C:\Users\juntan.CORP\Desktop\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\MainWindow.g.vb
+C:\Users\juntan.CORP\Desktop\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\Application.g.vb
+C:\Users\juntan.CORP\Desktop\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay_MarkupCompile.cache
+C:\Users\juntan.CORP\Desktop\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay_MarkupCompile.lref
+C:\Users\juntan.CORP\Desktop\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\MainWindow.baml
+C:\Users\juntan.CORP\Desktop\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.g.resources
+C:\Users\juntan.CORP\Desktop\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.Resources.resources
+C:\Users\juntan.CORP\Desktop\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.Resources.fr.resources
+C:\Users\juntan.CORP\Desktop\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.Resources.fr-CA.resources
+C:\Users\juntan.CORP\Desktop\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.vbproj.GenerateResource.Cache
+C:\Users\juntan.CORP\Desktop\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\fr\IpexCheckImageDisplay.resources.dll
+C:\Users\juntan.CORP\Desktop\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\fr-CA\IpexCheckImageDisplay.resources.dll
+C:\Users\juntan.CORP\Desktop\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.TrustInfo.xml
+C:\Users\juntan.CORP\Desktop\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.exe.manifest
+C:\Users\juntan.CORP\Desktop\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.application
+C:\Users\juntan.CORP\Desktop\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.exe
+C:\Users\juntan.CORP\Desktop\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.xml
+C:\Users\juntan.CORP\Desktop\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.pdb
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\bin\Debug\IpexCheckImageDisplay.exe.config
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.exe
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.xml
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.pdb
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\bin\Debug\IpexCheckImageDisplay.exe.manifest
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\bin\Debug\IpexCheckImageDisplay.application
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\bin\Debug\IpexCheckImageDisplay.exe
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\bin\Debug\IpexCheckImageDisplay.pdb
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\bin\Debug\IpexCheckImageDisplay.xml
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\bin\Debug\fr\IpexCheckImageDisplay.resources.dll
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\bin\Debug\fr-CA\IpexCheckImageDisplay.resources.dll
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\MainWindow.g.vb
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\Application.g.vb
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay_MarkupCompile.cache
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay_MarkupCompile.lref
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\MainWindow.baml
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.g.resources
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.Resources.resources
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.Resources.fr.resources
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.Resources.fr-CA.resources
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.vbproj.GenerateResource.Cache
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\fr\IpexCheckImageDisplay.resources.dll
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\fr-CA\IpexCheckImageDisplay.resources.dll
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.TrustInfo.xml
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.exe.manifest
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\IpexCheckImageDisplay\IpexCheckImageDisplay\obj\x86\Debug\IpexCheckImageDisplay.application

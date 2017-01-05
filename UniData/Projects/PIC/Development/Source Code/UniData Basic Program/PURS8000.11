@@ -1,0 +1,191 @@
+     SUBROUTINE PURS8000.11(ARG_OUT)
+* Purging PIC Approval Request/Response HTML Email Files
+* VERSION 8.2.3
+*
+* 04 MAR 13 8.2.3 juntan PRJ*PUR083D.2-(Sub #2) PO INTERNAL CONTROLS
+*
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+
+     PROGRAM='PURS8000.11'
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*              This program is used to purge html emails generated as per
+*              PIC approval request, those emails are located in DOM_HTML
+*              directory. The purge process will be executed once per day
+*              during the first PIC request based on the last purging date
+*              which is set in SYSCON table PIC.CONSTANT, all emails prior
+*              to today's date will be purged.
+*
+*              <<<NOTE>>>
+*              Output Parameter:
+*              ARG_OUT -> Return error message if there is any.
+*
+* MODIFICATIONS:
+* ==============
+*              2013/04/09 juntan PUR083D.2 - Initial creation.
+*
+**************************************************************************
+
+
+A100_MAIN:
+
+   GOSUB A200_INITIALIZATION
+   IF L_RTN_FLAG # '' THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF L_RTN_FLAG '' THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF L_RTN_FLAG #  '' THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+   GO A500_CONCLUSION
+
+
+****************************************
+* Definition of local variables & initialization of other variables.
+****************************************
+A200_INITIALIZATION:
+
+   ARG_OUT = ""
+
+   RTN.FLAG = 0
+   L_RTN_FLAG = ""
+   L_SYSCON_KEY = ""
+   L_SYSCON_REC = ""
+   L_LAST_PURGE_DT = ""
+   L_LAST_PURGE_DT_DESC = ""
+   L_RESERVE_DAYS = ""
+   L_DIR_EMAIL = ""
+   L_CMD = ""
+   L_JUNK = ""
+
+   L_DATE_OCONV = OCONV(DATE(),"D2/")
+
+   L_ERROR_MSG = ""
+
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open the files needed in this subroutine.
+****************************************
+A300_OPEN_FILES:
+
+   OPEN "SYSCON" TO SYSCON ELSE
+      L_RTN_FLAG = "A300-ERROR-1"
+      L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> Cannot open file SYSCON."
+      GO A300_EXIT
+   END
+
+A300_EXIT:
+   RETURN
+
+
+****************************************
+* Main process logic structure.
+****************************************
+A400_MAIN_PROCESS:
+
+   GOSUB B100_READ_SYSCON_TABLE_SETUP
+   IF L_RTN_FLAG # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B200_PURGE_PIC_HTML_EMAIL_FILES
+   IF L_RTN_FLAG # "" THEN
+      GO A400_EXIT
+   END
+
+A400_EXIT:
+   RETURN
+
+
+****************************************
+* Read SYSCON table setup for PIC html email template setup
+****************************************
+B100_READ_SYSCON_TABLE_SETUP:
+
+   L_SYSCON_KEY = "PIC.CONSTANT"
+   READ L_SYSCON_REC FROM SYSCON,L_SYSCON_KEY ELSE L_SYSCON_REC = ""
+   IF L_SYSCON_REC # "" THEN
+      L_DIR_EMAIL = TRIM(FIELD(L_SYSCON_REC<7>,';',1))<1,2>
+      L_LAST_PURGE_DT = TRIM(FIELD(L_SYSCON_REC<14>,';',1))
+      L_LAST_PURGE_DT_DESC = TRIM(FIELD(L_SYSCON_REC<14>,'*',2))
+      L_RESERVE_DAYS = TRIM(FIELD(L_SYSCON_REC<15>,';',1))
+   END ELSE
+      L_RTN_FLAG = "B100-ERROR-1"
+      L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> SYSCON record ":L_SYSCON_KEY:" does not exist."
+   END
+    
+B100_EXIT:
+   RETURN
+
+
+****************************************
+* Purge PIC html email files
+****************************************
+B200_PURGE_PIC_HTML_EMAIL_FILES:
+
+   *** Purge PIC Emails Older Than The Reserved Days ***
+   SWAP "/" WITH "" IN L_LAST_PURGE_DT
+   IF ICONV(L_DATE_OCONV,"D2/") >= ICONV(L_LAST_PURGE_DT,"D2") + L_RESERVE_DAYS THEN
+      L_CMD = "!find ":L_DIR_EMAIL:" -type f -mtime +":L_RESERVE_DAYS:" -exec rm -f {} \;"
+      EXECUTE L_CMD CAPTURING L_JUNK
+      IF L_JUNK # "" THEN
+         L_RTN_FLAG = "B200-ERROR-1"
+         L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> An error occurred while trying to execute unix command ":L_CMD:" (":L_JUNK:")."
+      END ELSE
+         *** Update The Last Purging Date ***
+         L_SYSCON_REC<14> = L_DATE_OCONV:"  ;* ":L_LAST_PURGE_DT_DESC
+         WRITEV L_SYSCON_REC<14> ON SYSCON, L_SYSCON_KEY, 14
+      END
+   END
+
+B200_EXIT:
+   RETURN
+
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+   IF L_RTN_FLAG # "" THEN
+      ARG_OUT = L_ERROR_MSG
+   END ELSE
+      RTN.FLAG = 0
+   END
+
+A500_EXIT:
+   REFRESH = -2
+
+
+****************************************
+* Exit  
+****************************************
+
+END

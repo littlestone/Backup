@@ -1,0 +1,242 @@
+   SUBROUTINE SOPS3085.4(ARGS_IN,STATUS)
+* Email Details SD Claim Excel Reports
+* VERSION 8.2.3
+*
+* 30 SEP 14 8.2.3 juntan PRJ*SOP381D.22-(Sub #22) SHIP AND DEBIT - PHASE 2
+*
+*
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+
+   PROGRAM = 'SOPS3085.4'
+
+   $INCLUDE IIPLUS.TOP
+   $INCLUDE IIPLUS.TEXTLOAD
+   $INCLUDE IIPLUS.DEBUG
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*              This program is used to ...
+*
+*              <<<NOTE>>>
+*
+*              1. Input arguments (delimited by @FM):
+*                 ARGS_IN<1> -> Company Number
+*                 ARGS_IN<2> -> Distributor Number
+*                 ARGS_IN<3> -> Claim Number
+*                 ARGS_IN<4> -> Report Type Code (I = Internal Report, O = Customer Report)
+*
+*              2. Return status (null if no error occurred)
+*                 STATUS<1> -> Error code
+*                 STATUS<2> -> Error message
+*                 STATUS<3> -> Program name
+*
+* MODIFICATIONS:
+* ==============
+*              2014/09/30 juntan SOP381D. - Initial creation.
+*
+**************************************************************************
+
+
+A100_MAIN:
+
+   GOSUB A200_INITIALIZATION
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+   GO A500_CONCLUSION
+
+
+****************************************
+* Define & initialize variables.
+****************************************
+A200_INITIALIZATION:
+
+   RTN.FLAG               = 0
+   STATUS                 = ""
+   L_ERR_CODE             = ""
+   L_ERR_MSG              = ""
+   L_IN                   = ""
+   L_OUT                  = ""
+   L_SUBJECT              = ""
+   L_FROM_EMAIL           = ""
+   L_TO_EMAIL             = ""
+   L_DETAILS_EXECL_REPORT = ""
+   L_REJECTS_EXCEL_REPORT = ""
+
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open any data files requried.
+****************************************
+A300_OPEN_FILES:
+
+
+A300_EXIT:
+   RETURN
+
+
+****************************************
+* Main process logic structure.
+****************************************
+A400_MAIN_PROCESS:
+
+   GOSUB B100_VALIDATE_INPUT_ARGUMENTS
+   IF L_ERR_MSG # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B200_GENERATE_DETAIL_CLAIM_EXCEL_REPORTS
+   IF L_ERR_MSG # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B300_EMAIL_REPORTS
+   IF L_ERR_MSG # "" THEN
+      GO A400_EXIT
+   END
+
+A400_EXIT:
+   RETURN
+
+
+****************************************
+* Internal Subroutine(s).
+****************************************
+B100_VALIDATE_INPUT_ARGUMENTS:
+
+   BEGIN CASE
+      CASE ARGS_IN<1> = ""
+         L_ERR_CODE = "B100-VALIDATE-ARGUMENTS-1"
+         L_ERR_MSG = "Missing company number"
+      CASE ARGS_IN<2> = ""
+         L_ERR_CODE = "B100-VALIDATE-ARGUMENTS-2"
+         L_ERR_MSG = "Missing distributor number."
+      CASE ARGS_IN<3> = ""
+         L_ERR_CODE = "B100-VALIDATE-ARGUMENTS-3"
+         L_ERR_MSG = "Missing claim number."
+      CASE ARGS_IN<4> = ""
+         L_ERR_CODE = "B100-VALIDATE-ARGUMENTS-4"
+         L_ERR_MSG = "Missing report type code."
+   END CASE
+
+   IF ARGS_IN<4> # "I" AND ARGS_IN<4> # "O" THEN
+      L_ERR_CODE = "B100-VALIDATE-ARGUMENTS-5"
+      L_ERR_MSG = "Invalid report type code <":ARGS_IN<4>:"> found."
+   END
+
+B100_EXIT:
+   RETURN
+
+
+B200_GENERATE_DETAIL_CLAIM_EXCEL_REPORTS:
+
+   L_IN<1> = ARGS_IN<1>:"*":ARGS_IN<2>:"*":ARGS_IN<3>
+   L_IN<2> = ARGS_IN<4>
+   CALL SOPS3080.11(L_IN,L_OUT)
+   IF L_OUT<1> = "" THEN
+      PROGRAM = L_OUT<2,1>
+      L_ERR_CODE = L_OUT<2,2>
+      L_ERR_MSG = L_OUT<2,3>
+   END ELSE
+      L_DETAILS_EXECL_REPORT = L_OUT<1,1>
+      L_REJECTS_EXCEL_REPORT = L_OUT<1,2>
+   END
+
+B200_EXIT:
+   RETURN
+
+
+B300_EMAIL_REPORTS:
+
+   L_IN = ""
+   L_OUT = ""
+   IF ARGS_IN<4> = "I" THEN
+      L_SUBJECT = "Internal Details Claim Excel Report - ":ARGS_IN<3>
+   END ELSE
+      L_SUBJECT = "Customer Details Claim Excel Report - ":ARGS_IN<3>
+   END
+   L_FROM_EMAIL = "do-not-reply-internal-control@itinfonet.com"
+   CALL SYSS9300.1(L_TO_EMAIL,USER.ID)
+
+   L_IN<1> = ""                        ;* HTML email
+   L_IN<2> = L_SUBJECT                 ;* Email subject
+   L_IN<3> = L_TO_EMAIL                ;* To email address
+   L_IN<4> = L_FROM_EMAIL              ;* From email address
+   L_IN<5> = 0                         ;* HTML email flag
+   L_IN<6> = 1                         ;* Email attachment flag
+   L_IN<7,1> = L_DETAILS_EXECL_REPORT  ;* Attachment
+   IF L_REJECTS_EXCEL_REPORT # "" THEN
+      L_IN<7,2> = L_REJECTS_EXCEL_REPORT  ;* Attachment
+   END
+   L_IN<8> = ""                        ;* CC
+
+   CALL SYSS9060.5(L_IN,L_OUT)
+   IF L_OUT<1,1> # "" THEN
+      PROGRAM = L_OUT<1,1>
+      L_ERR_CODE = L_OUT<1,2>
+      L_ERR_MSG = L_OUT<1,3>
+   END ELSE
+   
+B300_EXIT:
+   RETURN
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+   IF L_ERR_CODE # "" THEN
+      STATUS<1> = L_ERR_CODE
+      STATUS<2> = L_ERR_MSG
+      STATUS<3> = PROGRAM
+   END ELSE
+      IF ARGS_IN<4> = "I" THEN
+         CALL SB.PROCESS("SYS0061,IP3050\":OCONV(TIME(),"MTS"):@VM:"The internal details claim Excel report for claim # ":ARGS_IN<3>:" has been sent to ":L_TO_EMAIL:" successfuly.")
+      END ELSE
+         CALL SB.PROCESS("SYS0061,IP3050\":OCONV(TIME(),"MTS"):@VM:"The customer details claim Excel report for claim # ":ARGS_IN<3>:" has been sent to ":L_TO_EMAIL:" successfuly.")
+      END
+   END
+
+   RTN.FLAG = 0
+   REFRESH = -2
+
+A500_EXIT:
+   GO 9999
+
+
+****************************************
+* Exit
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END

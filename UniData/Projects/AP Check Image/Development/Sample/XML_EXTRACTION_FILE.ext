@@ -1,0 +1,19 @@
+<?xml version = "1.0"?>
+<U2xml_extraction xmlns:U2xml="http://www.ibm.com/U2-xml">
+<U2xml:file_extraction start="/control_file" dictionary = "JUNTAN_TEST_FILE" null = "EMPTY" />
+<U2xml:field_extraction field="version" path="version/text()" />
+<U2xml:field_extraction field="banner" path="banner/text()" />
+<U2xml:field_extraction field="file_source" path="file_source/text()" />
+<U2xml:field_extraction field="customer_name" path="customer_information/customer_name/text()" />
+<U2xml:field_extraction field="todo_group_name" path="customer_information/todo_group_name/text()" />
+<U2xml:field_extraction field="scheduled_date" path="customer_information/scheduled_date/text()" />
+<U2xml:field_extraction field="contact_name" path="contact/contact_name/text()" />
+<U2xml:field_extraction field="contact_number" path="contact/contact_number/text()" />
+<U2xml:field_extraction field="xml_index_file" path="delivery_files/file_pair/xml_index_file/text()" />
+<U2xml:field_extraction field="xml_index_file_size" path="delivery_files/file_pair/xml_index_file_size/text()" />
+<U2xml:field_extraction field="xml_index_file_crc" path="delivery_files/file_pair/xml_index_file_crc/text()" />
+<U2xml:field_extraction field="data_file" path="delivery_files/file_pair/data_file/text()" />
+<U2xml:field_extraction field="data_file_size" path="delivery_files/file_pair/data_file_size/text()" />
+<U2xml:field_extraction field="data_file_crc" path="delivery_files/file_pair/data_file_crc/text()" />
+<U2xml:field_extraction field="file_pair_count" path="file_pair_count/text()" />
+</U2xml_extraction>

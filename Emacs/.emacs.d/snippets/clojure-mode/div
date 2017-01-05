@@ -1,0 +1,6 @@
+﻿# -*- mode: snippet -*-
+# name: div
+# key: d
+# --
+(d/div {}
+  $0)

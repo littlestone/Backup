@@ -1,0 +1,197 @@
+   SUBROUTINE CRMS9000.4
+* Infoflo to CRM Build Market Segment Sls Rep Matrix
+* VERSION 8.2.3
+*
+* 25 SEP 16 8.2.3 piedes PRJ*SLS086D-ICONNECT - CRM PROJECT - SALES MANAGER AND SALES AGENT 
+*
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+
+   PROGRAM = 'CRMS9000.4'
+
+   $INCLUDE IIPLUS.TOP
+   $INCLUDE IIPLUS.TEXTLOAD
+   $INCLUDE IIPLUS.DEBUG
+
+   $INCLUDE TUBP TU.API.H
+   $INCLUDE TUBP ROC.H
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*
+* MODIFICATIONS:
+* ==============
+*              2016/09/25 piedes - Initial creation.
+*
+**************************************************************************
+
+A100_MAIN:
+
+   GOSUB A200_INITIALIZATION
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_SLS_FLAG
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A500_MAIN_PROCESS
+   IF L_ERR_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+   GO 9999
+
+
+****************************************
+* Define & initialize variables.
+****************************************
+A200_INITIALIZATION:
+* DEBUG
+   L_CRM_KEY      = ACNT.NAME:"*":PARAM<2>
+   L_COMPANY_CODE = FIELD(PARAM<2>, "*", 1)
+   L_ERR_CODE     = ""
+   RTN.FLAG       = 0
+   TERMINATE      = 0
+   L_AGENT_CODE   = RECORD<112>
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open any data files requried.
+****************************************
+A300_OPEN_FILES:
+
+   FILE.ERR = 0
+
+   CALL SB.OPEN.FILE("CRMMATRIXGUID",CRMMATRIXGUID,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-1"
+      L_ERR_MSG = "Unable to open file CRMMATRIXGUID."
+      GO A300_EXIT
+   END
+
+
+   CALL SB.OPEN.FILE("SYSCON",SYSCON,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-2"
+      L_ERR_MSG = "Unable to open file SYSCON."
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("AGENTMST",AGENTMST,FILE.ERR)
+   IF FILE.ERR THEN
+      L_ERR_CODE = "A300-ERROR-3"
+      L_ERR_MSG = "Unable to open file AGENTMST"
+      GO A300_EXIT
+   END
+
+A300_EXIT:
+   RETURN
+
+****************************************
+* Open any data files requried.
+****************************************
+A400_SLS_FLAG:
+
+    L_SLS_FLAG = ""
+
+    READ L_REC FROM SYSCON, "QUO_SALESREP_COMPANY" THEN
+       L_USD_CIE = TRIM(FIELD(L_REC<2>, ";",1))
+       LOCATE L_COMPANY_CODE:"01" IN L_USD_CIE<1> SETTING POS THEN
+       L_SLS_FLAG = 0
+       ATT        = 112
+    END ELSE
+       L_SLS_FLAG = 1
+       ATT        = 10
+    END
+
+A400_SLS_FLAG_EXIT:
+    RETURN
+****************************************
+* Main process logic structure.
+****************************************
+A500_MAIN_PROCESS:
+
+     IF ORIG.REC<ATT> # RECORD<ATT> THEN
+
+        L_STMT = 'SELECT CRMMATRIXGUID WITH @ID = "':L_CRM_KEY:'*':ORIG.REC<ATT>:']"'
+        EXECUTE L_STMT CAPTURING GARB
+        IF @SYSTEM.RETURN.CODE > 0 THEN
+          LOOP
+             READNEXT L_ID ELSE TERMINATE = 1
+          UNTIL TERMINATE
+             READV L_GUID FROM CRMMATRIXGUID, L_ID, 2 THEN
+                PARAM<12,-1> = L_GUID
+                DELETE CRMMATRIXGUID , L_ID
+             END
+          REPEAT
+        END
+        IF L_SLS_FLAG = 1 THEN
+          PARAM<10,-1> = "0":SVM:RECORD<10>
+        END ELSE
+          READ L_REC FROM AGENTMST, L_AGENT_CODE THEN
+*****************************
+* DEFAULT MGR
+*****************************
+*             PARAM<10,-1> = "0":SVM:L_REC<1>:SVM:L_AGENT_CODE
+             PARAM<10,-1> = "0":SVM:L_AGENT_CODE
+
+***************************************
+* OTHER MGR RELEATED TO THE DEFAULT MGR
+***************************************
+             L_MK_CODE   = L_REC<2>
+             L_MGR_MK_ID = L_REC<3>
+***************************************
+             L_NB_MGR = DCOUNT(L_MGR_MK_ID<1>,VM)
+             FOR L_MGR_MK_ID_IND = 1 TO L_NB_MGR
+*                PARAM<10,-1> = L_MK_CODE<1,L_MGR_MK_ID_IND>:SVM:L_MGR_MK_ID<1,L_MGR_MK_ID_IND>:SVM:L_AGENT_CODE
+                PARAM<10,-1> = L_MK_CODE<1,L_MGR_MK_ID_IND>:SVM:L_AGENT_CODE
+             NEXT L_MGR_MK_ID_IND
+******************************
+          END
+
+        END
+
+     END
+
+A500_EXIT:
+
+   RETURN
+
+
+****************************************
+* Exit
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END
+*
+*
+*
+*
+*

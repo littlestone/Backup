@@ -1,0 +1,21 @@
+Microsoft Visual Studio Solution File, Format Version 8.00
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "Walkthrough_WebAppl_VB", "http://localhost/Walkthrough_WebAppl_VB/Walkthrough_WebAppl_VB.vbproj", "{73396DE2-BF68-4DE0-B9E9-63FC571C40AF}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		Debug = Debug
+		Release = Release
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{73396DE2-BF68-4DE0-B9E9-63FC571C40AF}.Debug.ActiveCfg = Debug|.NET
+		{73396DE2-BF68-4DE0-B9E9-63FC571C40AF}.Debug.Build.0 = Debug|.NET
+		{73396DE2-BF68-4DE0-B9E9-63FC571C40AF}.Release.ActiveCfg = Release|.NET
+		{73396DE2-BF68-4DE0-B9E9-63FC571C40AF}.Release.Build.0 = Release|.NET
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal

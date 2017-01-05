@@ -1,0 +1,4 @@
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\K2 Infoflo Service\K2InfofloService\bin\x86\Debug\K2InfofloService.dll
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\K2 Infoflo Service\K2InfofloService\bin\x86\Debug\K2InfofloService.pdb
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\K2 Infoflo Service\K2InfofloService\obj\x86\Debug\K2InfofloService.dll
+C:\Users\juntan.CORP\Documents\Visual Studio 2010\Projects\K2 Infoflo Service\K2InfofloService\obj\x86\Debug\K2InfofloService.pdb

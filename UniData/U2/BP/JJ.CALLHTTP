@@ -1,0 +1,150 @@
+     SUBROUTINE JJ.CALLHTTP
+* Infoflo Web API Programmatic Interfaces
+* VERSION 8.2.3
+*
+* 24 SEP 13 8.2.3 juntan PRJ*JUNTAN.2-JUNTAN TEST
+*
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+     $INCLUDE IIPLUS.TOP
+     PROGRAM='JJ.CALLHTTP'
+     $INCLUDE IIPLUS.TEXTLOAD
+     $INCLUDE IIPLUS.DEBUG
+*     $INCLUDE /usr/igi/ud/sys/INCLUDE UDO.H   ;* JSON parser available in UniData v7.3
+     $INCLUDE /usr/igi/ud/sys/INCLUDE XML.H    ;* XML parser
+
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*              This program is used to call various function interfaces
+*              supported in InfofloWebAPI web appliction which is hosted
+*              in IIS on windows server web4stl (dev), and parse the return
+*              data which is in JSON or XML format.
+*
+* MODIFICATIONS:
+* ==============
+*              2013/24/09 juntan - Initial creation.
+*
+**************************************************************************
+
+*** Getting the Current HTTP Default Settings ***
+OPTION = "HEADERS" ;* PROXY_NAME, PROXY_PORT, VERSION, BUFSIZE, AUTHENTICATE, HEADERS
+X.RTN.CODE = getHTTPDefault(OPTION,VALUE)
+IF X.RTN.CODE = 1 THEN
+   STOP 'getHTTPDefault: ':X.RTN.CODE
+END
+*CRT OPTION:" = ":VALUE
+
+*** Configuring the Default HTTP Settings
+*** HTTP Header Field Name/Value Delimiter -> @VM
+*** HTTP Header Field Name/Value Pair Delimiter -> @FM
+HTTP_HEADER = "Accept":@VM:"application/json"  ;* Content-Types that are acceptable for the response -> application/xml | application/json | text/plain (default encoding for JSON is UTF-8)
+HTTP_HEADER = "Content-Type":@VM:"application/json":@FM
+X.RTN.CODE = setHTTPDefault(OPTION,HTTP_HEADER)
+*CRT X.RTN.CODE
+
+**** Setup HTTP Request Parameters for Get Method ***
+*URL="http://10.6.6.14:8080/api/values"  ;* web4stl
+*HTTP.METHOD = "GET"
+
+**** Setup HTTP Request Parameters for Post Method ***
+*URL="http://10.6.6.14:8080/api/request"  ;* web4stl
+URL="http://10.1.6.29/api/request"  ;* mes0dev
+*URL="http://10.1.6.22/api/request"  ;* mes0
+HTTP.METHOD = "POST"
+
+*** Creating an HTTP Request ***
+X.RTN.CODE = createRequest(URL, HTTP.METHOD, X.HANDLE)
+IF X.RTN.CODE = 1 THEN
+   STOP 'createRequest: ':X.RTN.CODE
+END
+
+*** Adding a Parameter to the Request ***
+*addRequestParameter(request_handle, parameter_name, parameter_value, content_handling)
+FOR L_INC2 = 1 TO 1
+FOR L_INC = 0 TO 0
+   BEGIN CASE
+      CASE L_INC = 0
+         * TEST 0 -> Transport Request Type
+*         DATA_BEFORE = '"dataBefore":[["T","HY72_AU_HD_001_A              0000000000000000000000000000000000000802126                              0    091036                                   2.00\" DR21 CT CPLG C/W S                                                                                               9+00.00PCS+00000000000175+0000000000.000                                                             12/10/201300:0012/10/201300:0012/10/201300:0012/10/201300:00V                                                                                                                                                           +0000000000.000+0000000000.000+0000000000.000+0000000000.000+0000000000.000+0000000000.000","juntan_0"],["T","HY72_AG_HD_001_A              0000000000000000000000000000000000000802126010                                                         Operation 010                           091036                                   2.00\" DR21 CT SYSTEM              908470   084-1   M     084-G002-A                                                                                                                                                  1                                                                                                                               +0000000175.000+0000000175.000+0000000000.000+0000000000.000+0000000000.000+0000000000.000+0000000000.000+0000000000.000PCSPCS      +0000000000.000+0000000000.000 +0000000000.000 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 RLFZ        0000000000000000000000000000000000000000     +0000000000.000+0000000000.000+0000000000.000+0000000000.000SYSTEMJJNN0008550000000001+0000000001.000N00000000+001.00+000.250000000100000002","juntan_0"]]'
+*         DATA_AFTER = '"dataAfter":[[]]'
+*         DATA_BEFORE = '"dataBefore":[["T","HY72_AU_HD_001_A              0000000000000000000000000000000000000802126                              0    091036                                   2.00\" DR21 CT CPLG C/W S                                                                                               9+00.00PCS+00000000000175+0000000000.000                                                             12/10/201300:0012/10/201300:0012/10/201300:0012/10/201300:00V                                                                                                                                                           +0000000000.000+0000000000.000+0000000000.000+0000000000.000+0000000000.000+0000000000.000","juntan_0"]]'
+*         DATA_AFTER = '"dataAfter":[[]]'
+          DATA_BEFORE = '"dataBefore":[[]]'
+          DATA_AFTER = '"dataAfter":[["RTG","PRD321","1","08469","MLD123","Cav1","Infoflo Dummy Product for test on LIVE","2","72","1","3","084","juntan_L2","50"]]'
+      CASE L_INC = 1
+         * TEST 1 -> Delete Existing Record
+         DATA_BEFORE = '"dataBefore":[["RTG","093908","1","08469","T133-A","SCEPTER FLOOR BOX BODY","2","72","1","3","084","juntan_1","50"]]'
+         DATA_AFTER = '"dataAfter":[[]]'
+      CASE L_INC = 2
+         * TEST 2 -> Insert New Record
+         DATA_BEFORE = '"dataBefore":[[]]'
+         DATA_AFTER = '"dataAfter":[["RTG","093908","1","08469","T133-A","SCEPTER FLOOR BOX BODY","2","72","1","3","084","juntan_2","50"]]'
+      CASE L_INC = 3
+         * TEST 3 -> Update Existing Record (Non-Key Change)
+         DATA_BEFORE = '"dataBefore":[["RTG","093908","1","08469","T133-A","SCEPTER FLOOR BOX BODY","2","72","1","3","084","juntan_3","50"]]'
+         DATA_AFTER = '"dataAfter":[["RTG","093908","1","08469","T133-A","SCEPTER FLOOR BOX BODY","2","72","1","4","084","juntan_3","50"]]'
+      CASE L_INC = 4
+         * TEST 4 -> Update Existing Record (Key Change)
+         DATA_BEFORE = '"dataBefore":[["RTG","093908","1","08469","T133-A","SCEPTER FLOOR BOX BODY","2","72","1","4","084","juntan_4","50"]]'
+         DATA_AFTER = '"dataAfter":[["RTG","093908","1","08469","T133-B","SCEPTER FLOOR BOX BODY","2","72","1","3","084","juntan_4","50"]]'
+      CASE L_INC = 5
+         * TEST 5 -> Multiple Records (Non-Key Change)
+         DATA_BEFORE = '"dataBefore":[["RTG","076865","4A","07422","T160-A","60070200 2\" PVC FEMALE   ADPT JM EAGLE","2","85.5","8","3.75","074","juntan_5","321"],["RTG","076865","4C","07426","T160-A","60070200 2\" PVC FEMALE   ADPT JM EAGLE","2","85.5","8","3.75","074","@","321"]]'
+         DATA_AFTER = '"dataAfter":[["RTG","076865","4A","07422","T160-A","60070200 2\" PVC FEMALE   ADPT JM EAGLE","3","85.5","8","3.75","074","juntan_5","321"],["RTG","076865","4C","07426","T160-A","60070200 2\" PVC FEMALE   ADPT JM EAGLE","2","85.5","8","4","074","@","321"]]'
+      CASE L_INC = 6
+         * TEST 6 -> Multiple Records (Key Change)
+         DATA_BEFORE = '"dataBefore":[["RTG","076865","4A","07422","T160-A","60070200 2\" PVC FEMALE   ADPT JM EAGLE","3","85.5","8","3.75","074","juntan_6","321"],["RTG","076865","4C","07426","T160-A","60070200 2\" PVC FEMALE   ADPT JM EAGLE","2","85.5","8","4","074","@","321"]]'
+         DATA_AFTER = '"dataAfter":[["RTG","076865","4A","07422","T160-Z","60070200 2\" PVC FEMALE   ADPT JM EAGLE","2","85.5","8","3.75","074","juntan_6","321"],["RTG","076865","4C","07426","T160-X","60070200 2\" PVC FEMAL   ADPT JM EAGLE","2","85.5","8","3.75","074","@","321"]]'
+      CASE L_INC = 7
+         * TEST 7 -> Multiple Records (Key Change) - Reverse TEST 6 Back
+         DATA_BEFORE = '"dataBefore":[["RTG","076865","4A","07422","T160-Z","60070200 2\" PVC FEMALE   ADPT JM EAGLE","2","85.5","8","3.75","074","juntan_7","321"],["RTG","076865","4C","07426","T160-X","60070200 2\" PVC FEMALE   ADPT JM EAGLE","2","85.5","8","3.75","074","@","321"]]'
+         DATA_AFTER = '"dataAfter":[["RTG","076865","4A","07422","T160-A","60070200 2\" PVC FEMALE   ADPT JM EAGLE","2","85.5","8","3.75","074","juntan_7","321"],["RTG","076865","4C","07426","T160-A","60070200 2\" PVC FEMAL   ADPT JM EAGLE","2","85.5","8","3.75","074","@","321"]]'
+      CASE L_INC = 8
+         * TEST 8 -> Big Matrix Test
+         DATA_BEFORE = '"dataBefore":[[],["RTG","043206","4","08465","0673-1","60070200 2\" PVC FEMALE   ADPT JM EAGLE","2","360","1","12.1944444","084","juntan_8","8"],["RTG","094002","3","05613","7415-H","PVC DWV 3201 1-1/2 180D  ","2","45","4","3.5","056","@",""],[],["RTG","098106","2","08454","0683-1","6 T BODY","2","144","1","3","084","@","27"],["RTG","093908","1","08469","T133-B","SCEPTER FLOOR BOX BODY","2","72","1","4","084","juntan","50"],["T","HY72_AU_HD_001_A              0000000000000000000000000000000000000802126                              0    091036                                   2.00\" DR21 CT CPLG C/W S                                                                                               9+00.00PCS+00000000000175+0000000000.000                                                             12/10/201300:0012/10/201300:0012/10/201300:0012/10/201300:00V                                                                                                                                                           +0000000000.000+0000000000.000+0000000000.000+0000000000.000+0000000000.000+0000000000.000","juntan"],["T","HY72_AU_HD_001_A              0000000000000000000000000000000000000802126                              0    091036                                   2.00\" DR21 CT CPLG C/W S                                                                                               9+00.00PCS+00000000000175+0000000000.000                                                             12/10/201300:0012/10/201300:0012/10/201300:0012/10/201300:00V                                                                                                                                                           +0000000000.000+0000000000.000+0000000000.000+0000000000.000+0000000000.000+0000000000.000","juntan"]]'
+         DATA_AFTER = '"dataAfter":[["RTG","Z12345","0","07422","ZM1","\"2\" 3\" 2.8\" 25\" 8\" aaaa","3","85.5","8","3.75","074","juntan_8",""],["RTG","043206","4","08465","0673-1","60070200 2\" PVC FEMALE   ADPT JM EAGLE","2","360","1","10","084","@","8"],[],["RTG","Z12345","0","07423","ZM2","\"2\" 3\" 2.8\" 25\" 8\" aaaa","3","85.5","8","3.75","074","@","1"],[],["RTG","093908","1","08469","T133-Z","SCEPTER FLOOR BOX BODY","2","72","1","4","084","juntan","50"],[],[]]'
+   END CASE
+
+   MATRIX = '{VECTOR-1,VECTOR-2}'  ;* JSON -> 2 Vector objects; each vector object is arrays within an array.
+   SWAP "VECTOR-1" WITH DATA_BEFORE IN MATRIX
+   SWAP "VECTOR-2" WITH DATA_AFTER IN MATRIX
+   *SWAP '"' WITH '\"' IN MATRIX ;* excape double " in any JSON data string
+
+   *** Pass Parameters though HTTP Post Request ***
+   * Instead of the fairly standard key=value encoding that most *
+   * client-and-server-side frameworks expect, Web API model     *
+   * binder expects to find the [FromBody] values in the POST    *
+   * body without a key name at all. In other words, instead of  *
+   * key=value, it's looking for =value.                         *
+   X.POST.DATA = "=":MATRIX   ;* applicable for POST method only as the input parms
+
+   *** Submitting a Request ***
+   X.TIMEOUT = 30000  ;* in milliseconds
+   X.RTN.CODE = submitRequest(X.HANDLE, X.TIMEOUT, X.POST.DATA, X.RESPONSE.HEADERS, X.RESPONSE.DATA, X.HTTP.STATUS)
+   IF X.RTN.CODE = 1 THEN
+      STOP 'submitRequest: ':X.RTN.CODE
+   END
+
+   *** Displying HTTP Response Message ***
+*   CRT 'X.RESPONSE.HEADERS = ':X.RESPONSE.HEADERS
+   CRT 'X.HTTP.STATUS = ':X.HTTP.STATUS<1,1>
+   CRT 'X.HTTP.STATUS = ':X.HTTP.STATUS<1,2>
+   CRT 'X.RESPONSE.DATA = ':X.RESPONSE.DATA
+*   SLEEP 1
+NEXT L_INC
+NEXT L_INC2

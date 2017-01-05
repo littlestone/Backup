@@ -1,0 +1,751 @@
+   SUBROUTINE SYSS9012.1(IN_DATA, OUT_DATA, STATUS)
+* Infoflo API subroutine for ITMMST record validation
+* VERSION 8.2.3
+*
+*
+*
+*
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+
+   PROGRAM = 'SYSS9012.1'
+
+   $INCLUDE IIPLUS.TOP
+   $INCLUDE IIPLUS.TEXTLOAD
+   $INCLUDE IIPLUS.DEBUG
+
+   $INCLUDE TUBP TU.API.H
+   $INCLUDE TUBP ROC.H
+   $INCLUDE TUBP TU.ERRORCODES.H
+   $INCLUDE /usr/igi/ud/sys/INCLUDE XML.H
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*              This Infoflo API program is used to validate new/existing PIM product record
+*              passed through input parameter IN_DATA, and return the validated ITMMST record
+*              with initial values set if
+*
+*              <<<NOTE>>>
+*
+*              1. Input arguments:
+*                 IN_DATA<1>  -> ITMMST record data to validate
+*                 IN_DATA<2>  -> New Manufactured Product Plants if applicable
+*
+*              2. Output arguments (null if any error occurred, else data is delimited by @FM or @AM):
+*                 OUT_DATA<1> -> ITMMST record to commit to DB file (validated with initial values set)
+*                 OUT_DATA<2> -> Item Workbench record to commit to DB file
+*                 ...
+*
+*              3. Return status (null if no error occurred)
+*                 STATUS<1> -> Error code
+*                 STATUS<2> -> Error message
+*                 STATUS<3> -> Program name
+*
+* MODIFICATIONS:
+* ==============
+*              2016/09/06 juntan SPC076D.14 - Initial creation.
+*
+**************************************************************************
+
+
+A100_MAIN:
+
+   GOSUB A200_INITIALIZATION
+   IF RTN_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF RTN_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF RTN_CODE # "" THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+   GO A500_CONCLUSION
+
+
+****************************************
+* Define & initialize variables.
+****************************************
+A200_INITIALIZATION:
+
+   RTN.FLAG                       = 0
+
+   OUT_DATA                       = ""
+   STATUS                         = ""
+
+   TIMESTAMP                      = ""
+   RTN_CODE                       = ""
+   RTN_MSG                        = ""
+   
+   ID                             = ""
+   REC                            = ""
+   PLANTS                         = ""
+   PLANT_CODE                     = ""
+   TEST_VALUE                     = ""
+   
+   PRODUCT_CODE                   = ""
+   PRODUCT_MP_FLAG                = ""
+   PRODUCT_SORT_KEY_NEW           = ""
+   PRODUCT_SORT_KEY_OLD           = ""
+   PRODUCT_ALTERNATE_UPC_CODE     = ""
+   PRODUCT_RETAIL_UPC_CODE        = ""
+   PRODUCT_BASE_UOM               = ""
+   PRODUCT_UOM_STANDARD           = ""
+   PRODUCT_UOM                    = ""
+   PRODUCT_PRICE_PER              = ""
+   PRODUCT_DESCRIPTION_UOM        = ""
+   PRODUCT_DESCRIPTION_LANG       = ""
+   PRODUCT_PURCHASED_FROM_ALIAXIS = ""
+   PRODUCT_LINE_CODE              = ""
+   PRODUCT_ROYALTY_FLAG           = ""
+   DEFAULT_ROYALTY_FLAG           = ""
+   PRODUCT_GROUP_CODE             = ""
+   PRODUCT_SUPER_GROUP_CODE       = ""
+   PRODUCT_INVENTORY_ACCT         = ""
+   PRODUCT_MARKET_SEGMENT_CODE    = ""
+   PRODUCT_TYPE_CODE              = ""
+   PRODUCT_TYPE_CATEGORY_CODE     = ""
+   PRODUCT_REBATE_MATRIX_CODE     = ""
+   PRODUCT_NAFTA_FLAG             = ""
+   PRODUCT_MFG_COLOR              = ""
+   PRODUCT_SCRAP_PERCENT          = ""
+   PRODUCT_SUPERSEDED_BY_PRODUCT  = ""
+   PRODUCT_SUBSTITUTE_BY          = ""
+   PRODUCT_DANGEROUS_GOODS_CODE   = ""
+   PRODUCT_TARIFF_CODE            = ""
+
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open any data files requried.
+****************************************
+A300_OPEN_FILES:
+
+   ;**************************
+   ;* Item Cross Refernce File
+   ;**************************
+   OPEN "ITMXRF" TO ITMXRF
+   ON ERROR
+      RTN_CODE = "A300-ERROR-1-1"
+      RTN_MSG  = "Fatal error occurs while opening file ITMXRF {":STATUS():"}."
+      GO A300_EXIT
+   END THEN
+      ITMXRF_ID  = ""
+      ITMXRF_REC = ""
+   END ELSE
+      RTN_CODE = "A300-ERROR-1-2"
+      RTN_MSG  = "Unable to open file ITMXRF {":STATUS():"}."
+      GO A300_EXIT
+   END
+
+   ;******************
+   ;* Item Master File
+   ;******************
+   OPEN "ITMMST" TO ITMMST
+   ON ERROR
+      RTN_CODE = "A300-ERROR-2-1"
+      RTN_MSG  = "Fatal error occurs while opening file ITMMST {":STATUS():"}."
+      GO A300_EXIT
+   END THEN
+      ITMMST_ID      = ""
+      ITMMST_REC     = ""
+      ITMMST_REC_OLD = ""
+   END ELSE
+      RTN_CODE = "A300-ERROR-2-2"
+      RTN_MSG  = "Unable to open file ITMMST {":STATUS():"}."
+      GO A300_EXIT
+   END
+
+
+   ;*********************
+   ;* Item Workbench File
+   ;*********************
+   OPEN "ITMMSTWRK" TO ITMMSTWRK
+   ON ERROR
+      RTN_CODE = "A300-ERROR-3-1"
+      RTN_MSG  = "Fatal error occurs while opening file ITMMSTWRK {":STATUS():"}."
+      GO A300_EXIT
+   END THEN
+      ITMMSTWRK_ID  = ""
+      ITMMSTWRK_REC = ""
+   END ELSE
+      RTN_CODE = "A300-ERROR-3-2"
+      RTN_MSG  = "Unable to open file ITMMSTWRK {":STATUS():"}."
+      GO A300_EXIT
+   END
+
+   ;*******************
+   ;* System Table File
+   ;*******************
+   OPEN "SYSTBL" TO SYSTBL
+   ON ERROR
+      RTN_CODE = "A300-ERROR-4-1"
+      RTN_MSG  = "Fatal error occurs while opening file SYSTBL {":STATUS():"}."
+      GO A300_EXIT
+   END THEN
+      SYSTBL_ID  = ""
+      SYSTBL_REC = ""
+   END ELSE
+      RTN_CODE = "A300-ERROR-4-2"
+      RTN_MSG  = "Unable to open file SYSTBL {":STATUS():"}."
+      GO A300_EXIT
+   END
+
+   ;*************
+   ;* IIDEFN File
+   ;*************
+   OPEN "IIDEFN" TO IIDEFN
+   ON ERROR
+      RTN_CODE = "A300-ERROR-5-1"
+      RTN_MSG  = "Fatal error occurs while opening file IIDEFN {":STATUS():"}."
+      GO A300_EXIT
+   END THEN
+      IIDEFN_ID  = ""
+      IIDEFN_REC = ""
+   END ELSE
+      RTN_CODE = "A300-ERROR-5-2"
+      RTN_MSG  = "Unable to open file IIDEFN {":STATUS():"}."
+      GO A300_EXIT
+   END
+
+   ;**************
+   ;* STDCOMM File
+   ;**************
+   OPEN "STDCOMM" TO STDCOMM
+   ON ERROR
+      RTN_CODE = "A300-ERROR-6-1"
+      RTN_MSG  = "Fatal error occurs while opening file STDCOMM {":STATUS():"}."
+      GO A300_EXIT
+   END THEN
+      STDCOMM_ID  = ""
+      STDCOMM_REC = ""
+   END ELSE
+      RTN_CODE = "A300-ERROR-6-2"
+      RTN_MSG  = "Unable to open file STDCOMM {":STATUS():"}."
+      GO A300_EXIT
+   END
+
+A300_EXIT:
+   RETURN
+
+
+********************************
+* Main process logic structure *
+********************************
+A400_MAIN_PROCESS:
+
+   GOSUB B100_VALIDATE_INPUT_DATA
+   IF RTN_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B200_BUILD_RETURN_DATA
+   IF RTN_CODE # "" THEN
+      GO A400_EXIT
+   END
+
+A400_EXIT:
+   RETURN
+
+*****************************************************
+* Internal subroutine to build data validation rule *
+*****************************************************
+
+B100_VALIDATE_INPUT_DATA:
+
+   ITMMST_ID         = IN_DATA<1>
+   ITMMST_REC        = RAISE(IN_DATA<2>)
+   PLANTS            = IN_DATA<3>
+   ITMMSTWRK_REC_NEW = RAISE(IN_DATA<4>)
+
+   ;* [TODO] validate input ITMMST record in IN_DATA
+   READ ITMMST_REC_OLD FROM ITMMST, ITMMST_ID
+   ON ERROR
+      RTN_CODE = "B100-ERROR-1"
+      RTN_MSG  = "Unable to read record ":QUOTE(ITMMST_ID):" in file ITMMST {":STATUS():"}."
+      GO B100_EXIT
+   END THEN
+      NEW_PRODUCT = @FALSE
+   END ELSE
+      NEW_PRODUCT = @TRUE
+   END
+
+   ;* Product Code -> <1> -> INVS4001.4
+   PRODUCT_CODE = ITMMST_REC<1>
+   IF INDEX(PRODUCT_CODE, ' ', 1) THEN
+      RTN_CODE = "B100-ERROR-2-1"
+      RTN_MSG  = "Item number should not contain space -> ":PRODUCT_CODE:"."
+      GO B100_EXIT
+   END
+   IF INDEX(PRODUCT_CODE, '"', 1) THEN
+      RTN_CODE = "B100-ERROR-2-2"
+      RTN_MSG  = "Item number should not contain double quote -> ":PRODUCT_CODE:"."
+      GO B100_EXIT
+   END
+   IF LEN(PRODUCT_CODE) # 6 THEN
+      RTN_CODE = "B100-ERROR-2-3"
+      RTN_MSG  = "Item number must be 6 digitis long -> ":PRODUCT_CODE:"."
+      GO B100_EXIT
+   END
+
+   ;* Product sort key (Ipex, Canplas, Naco) -> <13> -> BOMP3000.75A
+   PRODUCT_SORT_KEY_NEW = ITMMST_REC<13>
+   PRODUCT_SORT_KEY_OLD = ITMMST_REC_OLD<13>
+   IF PRODUCT_SORT_KEY_OLD # "" AND PRODUCT_SORT_KEY_OLD # PRODUCT_SORT_KEY_NEW THEN
+      ITMXRF_ID = PRODUCT_SORT_KEY_NEW
+      READV TEST_VALUE FROM ITMXRF, ITMXRF_ID, 1
+      ON ERROR
+         RTN_CODE = "B100-ERROR-3-1"
+         RTN_MSG  = "Unable to read the item part number ":QUOTE(ITMXRF_ID):" in file ITMXRF {":STATUS():"} -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END THEN
+         RTN_CODE = "B100-ERROR-3-2"
+         RTN_MSG  = "The item part number ":QUOTE(ITMXRF_ID):" in file ITMXRF is already associated with item part number ":TEST_VALUE:" -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END
+   END
+
+   ;* Alternate UPC Code -> <196> -> BOMP3000.21
+   PRODUCT_ALTERNATE_UPC_CODE = ITMMST_REC<196>
+   PRODUCT_RETAIL_UPC_CODE    = ITMMST_REC<141>
+   IF PRODUCT_ALTERNATE_UPC_CODE # "" AND PRODUCT_RETAIL_UPC_CODE # "" AND PRODUCT_ALTERNATE_UPC_CODE = PRODUCT_RETAIL_UPC_CODE THEN
+      RTN_CODE = "B100-ERROR-4-1"
+      RTN_MSG  = "The alternate UPC code ":QUOTE(PRODUCT_ALTERNATE_UPC_CODE):" cannot be the same as the retail UPC code -> ":PRODUCT_CODE:"."
+      GO B100_EXIT
+   END
+
+   ;* Base UOM -> <6> -> SYS0031
+   PRODUCT_BASE_UOM = ITMMST_REC<6>
+   IF PRODUCT_BASE_UOM # "" THEN
+      SYSTBL_ID = "UOM*":PRODUCT_BASE_UOM
+      READV TEST_VALUE FROM SYSTBL, SYSTBL_ID, 1
+      ON ERROR
+         RTN_CODE = "B100-ERROR-5-1"
+         RTN_MSG  = "Unable to read the base UOM code ":QUOTE(SYSTBL_ID):" in file SYSTBL {":STATUS():"} -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END ELSE
+         RTN_CODE = "B100-ERROR-5-2"
+         RTN_MSG  = "The base UOM code ":QUOTE(SYSTBL_ID):" does not exist in file SYSTBL -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END
+   END
+
+   ;* UOM Standard -> <263> -> Validated against IIDEFN, PRODUCT.STD.CODE
+   PRODUCT_UOM_STANDARD = ITMMST_REC<263>
+   IIDEFN_ID = "PRODUCT.STD.CODE"
+   READV TEST_VALUE FROM IIDEFN, IIDEFN_ID, 3
+   ON ERROR
+      RTN_CODE = "B100-ERROR-6-1"
+      RTN_MSG  = "Unable to read the product UOM standard code ":QUOTE(IIDEFN_ID):" in file IIDEFN {":STATUS():"} -> ":PRODUCT_CODE:"."
+      GO B100_EXIT
+   END THEN
+      IF NOT(INDEX(TEST_VALUE, PRODUCT_UOM_STANDARD, 1)) THEN
+         RTN_CODE = "B100-ERROR-6-3"
+         RTN_MSG  = "The product UOM standard code ":QUOTE(PRODUCT_UOM_STANDARD):" is invalid -> ":PRODUCT_CODE:" -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END
+   END ELSE
+      RTN_CODE = "B100-ERROR-6-2"
+      RTN_MSG  = "The product UOM standard code ":QUOTE(IIDEFN_ID):" does not exist in file IIDEFN -> ":PRODUCT_CODE:"."
+      GO B100_EXIT
+   END
+
+   ;* Default Price Per -> <175> = "I06" -> SYSP9001, I06; <176> = "MD3 Numeric"
+   TOTAL = DCOUNT(ITMMST_REC<175>, @VM)
+   FOR CNT = 1 TO TOTAL
+      PRODUCT_UOM = ITMMST_REC<175,CNT>
+      SYSTBL_ID = "I06*":PRODUCT_UOM
+      READV TEST_VALUE FROM SYSTBL, SYSTBL_ID, 1
+      ON ERROR
+         RTN_CODE = "B100-ERROR-7-1"
+         RTN_MSG  = "Unable to read the price per code ":QUOTE(SYSTBL_ID):" in file SYSTBL {":STATUS():"} -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END THEN
+         PRODUCT_PRICE_PER = ITMMST_REC<176,CNT>
+         IF NOT(NUM(PRODUCT_PRICE_PER)) THEN
+            RTN_CODE = "B100-ERROR-7-3"
+            RTN_MSG  = "The price per code ":QUOTE(PRODUCT_PRICE_PER):" is invalid, must be numeric -> ":PRODUCT_CODE:"."
+            GO B100_EXIT
+         END
+      END ELSE
+         RTN_CODE = "B100-ERROR-7-2"
+         RTN_MSG  = "The price per code ":SYSTBL_ID:" does not exist in file SYSTBL -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END
+   NEXT CNT
+
+   ;* Description UOM -> <161> -> SYSP9001,I06
+   TOTAL = DCOUNT(ITMMST_REC<175>, @VM)
+   FOR CNT = 1 TO TOTAL
+      PRODUCT_DESCRIPTION_UOM = ITMMST_REC<161,CNT>
+      SYSTBL_ID = "I06*":PRODUCT_DESCRIPTION_UOM
+      READV TEST_VALUE FROM SYSTBL, SYSTBL_ID, 1
+      ON ERROR
+         RTN_CODE = "B100-ERROR-8-1"
+         RTN_MSG  = "Unable to read the description UOM code ":QUOTE(SYSTBL_ID):" in file SYSTBL {":STATUS():"} -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END ELSE
+         RTN_CODE = "B100-ERROR-8-2"
+         RTN_MSG  = "The description UOM code ":QUOTE(SYSTBL_ID):" does not exist in file SYSTBL -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END
+   NEXT CNT
+
+   ;* Description Language -> <162> -> SYSP9001,I20
+   TOTAL = DCOUNT(ITMMST_REC<175>, @VM)
+   FOR CNT = 1 TO TOTAL
+      PRODUCT_DESCRIPTION_LANG = ITMMST_REC<162,CNT>
+      SYSTBL_ID = "I20*":PRODUCT_DESCRIPTION_LANG
+      READV TEST_VALUE FROM SYSTBL, SYSTBL_ID, 1
+      ON ERROR
+         RTN_CODE = "B100-ERROR-9-1"
+         RTN_MSG  = "Unable to read the description language code ":QUOTE(SYSTBL_ID):" in file SYSTBL {":STATUS():"} -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END ELSE
+         RTN_CODE = "B100-ERROR-9-2"
+         RTN_MSG  = "The description language code ":QUOTE(SYSTBL_ID):" does not exist in file SYSTBL -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END
+   NEXT CNT
+
+   ;* Purchased From Aliaxis -> <194> -> BOMP3000.51
+   PRODUCT_PURCHASED_FROM_ALIAXIS = ITMMST_REC<194>
+   IF NOT(PRODUCT_PURCHASED_FROM_ALIAXIS MATCHES "Y":@VM:"N":@VM:"") THEN
+      RTN_CODE = "B100-ERROR-10-1"
+      RTN_MSG  = "The purchased from aliaxis flag ":QUOTE(PRODUCT_PURCHASED_FROM_ALIAXIS):" is invalid -> ":PRODUCT_CODE:"."
+      GO B100_EXIT
+   END
+
+   ;* Infoflo Product Line -> <208> -> SYS0031,I03
+   PRODUCT_LINE_CODE = ITMMST_REC<208>
+   SYSTBL_ID = "I03*":PRODUCT_LINE_CODE
+   READ SYSTBL_REC FROM SYSTBL, SYSTBL_ID
+   ON ERROR
+      RTN_CODE = "B100-ERROR-11-1"
+      RTN_MSG  = "Unable to read the Infoflo product line code ":QUOTE(SYSTBL_ID):" in file SYSTBL {":STATUS():"} -> ":PRODUCT_CODE:"."
+      GO B100_EXIT
+   END THEN
+      ;* Royalty Flag -> <189> -> BOMP3000.76
+      DEFAULT_ROYALTY_FLAG = SYSTBL_REC<6>
+      PRODUCT_ROYALTY_FLAG = ITMMST_REC<189>
+      IF PRODUCT_ROYALTY_FLAG = "N" THEN
+         PRODUCT_ROYALTY_FLAG = ""
+         ITMMST_REC<189> = PRODUCT_ROYALTY_FLAG
+      END
+      IF DEFAULT_ROYALTY_FLAG = "" AND PRODUCT_ROYALTY_FLAG # DEFAULT_ROYALTY_FLAG THEN
+         RTN_CODE = "B100-ERROR-11-2"
+         RTN_MSG  = "The royalty flag ":QUOTE(PRODUCT_ROYALTY_FLAG):" is invalid -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END
+      IF DEFAULT_ROYALTY_FLAG # "X" AND PRODUCT_ROYALTY_FLAG # "" THEN
+         RTN_CODE = "B100-ERROR-11-3"
+         RTN_MSG  = "The royalty flag ":QUOTE(PRODUCT_ROYALTY_FLAG):" is invalid -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END
+
+      ;* Get Infoflo Product Hierarchy
+      PRODUCT_GROUP_CODE = SYSTBL_REC<1>
+      SYSTBL_ID = "I29*":PRODUCT_GROUP_CODE
+      READ SYSTBL_REC FROM SYSTBL, SYSTBL_ID
+      ON ERROR
+         RTN_CODE = "B100-ERROR-11-4"
+         RTN_MSG  = "Unable to read the Infoflo product group code ":QUOTE(SYSTBL_ID):" in file SYSTBL {":STATUS():"} -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END THEN
+         PRODUCT_SUPER_GROUP_CODE    = SYSTBL_REC<1>
+         PRODUCT_INVENTORY_ACCT      = SYSTBL_REC<2>
+         PRODUCT_MARKET_SEGMENT_CODE = PRODUCT_SUPER_GROUP_CODE[1,1]
+         PRODUCT_TYPE_CODE           = PRODUCT_SUPER_GROUP_CODE[1,2]
+         ITMMST_REC<18> = PRODUCT_INVENTORY_ACCT
+
+         ;* product type category
+         SYSTBL_ID = "I42*":PRODUCT_TYPE_CODE
+         READ SYSTBL_REC FROM SYSTBL, SYSTBL_ID
+         ON ERROR
+            RTN_CD  = "B100-ERROR-11-5"
+            RTN_MSG = "Unable to read the Infoflo product type code ":QUOTE(SYSTBL_ID)" in file SYSTBL { ":STATUS():" } -> ":PRODUCT_CODE:"."
+            GO B100_EXIT
+         END THEN
+            PRODUCT_TYPE_CATEGORY_CODE = SYSTBL_REC<1>
+         END ELSE
+            RTN_CD  = "B100-ERROR-11-6"
+            RTN_MSG = "The Infoflo product type code ":QUOTE(SYSTBL_ID):" does not exist in file SYSTBL."
+            GO B100_EXIT
+         END
+      END ELSE
+         RTN_CODE = "B100-ERROR-11-7"
+         RTN_MSG  = "The Infoflo product group code ":QUOTE(SYSTBL_ID):" does not exist in file SYSTBL -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END
+   END ELSE
+      RTN_CODE = "B100-ERROR-11-8"
+      RTN_MSG  = "The Infoflo product line code ":QUOTE(SYSTBL_ID):" does not exist in file SYSTBL -> ":PRODUCT_CODE:"."
+      GO B100_EXIT
+   END
+
+   ;* Rebate Matrix Code -> <191> -> SYS0031, I16
+   PRODUCT_REBATE_MATRIX_CODE = ITMMST_REC<191>
+   IF PRODUCT_REBATE_MATRIX_CODE # "" THEN
+      SYSTBL_ID = "I16*":PRODUCT_REBATE_MATRIX_CODE
+      READV TEST_VALUE FROM SYSTBL, SYSTBL_ID, 1
+      ON ERROR
+         RTN_CODE = "B100-ERROR-12-1"
+         RTN_MSG  = "Unable to read the rebate matrix code ":QUOTE(SYSTBL_ID):" in file SYSTBL {":STATUS():"} -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END ELSE
+         RTN_CODE = "B100-ERROR-12-2"
+         RTN_MSG  = "The rebate matrix code ":QUOTE(SYSTBL_ID):" does not exist in file SYSTBL -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END
+   END
+
+   ;* Nafta Flag -> <341> -> BOMP3000.83
+   PRODUCT_NAFTA_FLAG = ITMMST_REC<341>
+
+   ;* Mfg Color -> <337> -> BOMP3000.54
+   PRODUCT_MFG_COLOR = ITMMST_REC<337>
+   IF PRODUCT_MFG_COLOR # "" THEN
+      SYSTBL_ID = "I296*":PRODUCT_MFG_COLOR
+      READV TEST_VALUE FROM SYSTBL, SYSTBL_ID, 1
+      ON ERROR
+         RTN_CODE = "B100-ERROR-13-1"
+         RTN_MSG  = "Unable to read record ":QUOTE(SYSTBL_ID):" in file SYSTBL {":STATUS():"} -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END ELSE
+         RTN_CODE = "B100-ERROR-13-2"
+         RTN_MSG  = "The MES color option code ":QUOTE(SYSTBL_ID):" does not exist in file SYSTBL -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END
+   END
+
+   ;* Scrap Percent -> <195> -> SYS0045
+   PRODUCT_SCRAP_PERCENT = ITMMST_REC<195>
+   IF PRODUCT_SCRAP_PERCENT # "" THEN
+      IF NOT(NUM(PRODUCT_SCRAP_PERCENT)) OR PRODUCT_SCRAP_PERCENT < 0 THEN
+         RTN_CODE = "B100-ERROR-14-4"
+         RTN_MSG  = "The scrap percent ":QUOTE(PRODUCT_ROYALTY_FLAG):" is invalid -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END
+   END
+
+   ;* Superseded By Product -> <97> -> BOMP3000.82
+   PRODUCT_SUPERSEDED_BY_PRODUCT = ITMMST_REC<97>
+   IF PRODUCT_SUPERSEDED_BY_PRODUCT # "" THEN
+      ITMXRF_ID = PRODUCT_SUPERSEDED_BY_PRODUCT
+      READV TEST_VALUE FROM ITMXRF, ITMXRF_ID, 1
+      ON ERROR
+         RTN_CODE = "B100-ERROR-15-1"
+         RTN_MSG  = "Unable to read superseded by product code ":QUOTE(ITMXRF_ID):" in file ITMXRF {":STATUS():"} -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END THEN
+         IF PRODUCT_SUPERSEDED_BY_PRODUCT = PRODUCT_CODE THEN
+            RTN_CODE = "B100-ERROR-15-3"
+            RTN_MSG  = "A product cannot be superseded by itself -> ":PRODUCT_CODE:"."
+            GO B100_EXIT
+         END
+      END ELSE
+         RTN_CODE = "B100-ERROR-15-2"
+         RTN_MSG  = "The superseded by product code ":QUOTE(ITMXRF_ID):" does not exist in file ITMXRF -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END
+   END
+
+   ;* Substitute -> <125> -> BOM0021
+   PRODUCT_SUBSTITUTE_BY = ITMMST_REC<125>
+   IF PRODUCT_SUBSTITUTE_BY # "" THEN
+      ITMXRF_ID = PRODUCT_SUBSTITUTE_BY
+      READV TEST_VALUE FROM ITMXRF, ITMXRF_ID, 1
+      ON ERROR
+         RTN_CODE = "B100-ERROR-16-1"
+         RTN_MSG  = "Unable to read substitute item number ":QUOTE(ITMXRF_ID):" in file ITMXRF {":STATUS():"} -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END ELSE
+         RTN_CODE = "B100-ERROR-16-2"
+         RTN_MSG  = "The substitute item number ":QUOTE(ITMXRF_ID):" does not exist in file ITMXRF -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END
+   END
+
+   ;* Dangerous Goods Code -> <184> -> BOMP8002.3
+   PRODUCT_DANGEROUS_GOODS_CODE = ITMMST_REC<184>
+   IF PRODUCT_DANGEROUS_GOODS_CODE # "" THEN
+      STDCOMM_ID = PRODUCT_DANGEROUS_GOODS_CODE
+      READV TEST_VALUE FROM STDCOMM, STDCOMM_ID, 1
+      ON ERROR
+         RTN_CODE = "B100-ERROR-17-1"
+         RTN_MSG  = "Unable to read dangerous good code ":QUOTE(STDCOMM_ID):" in file STDCOMM {":STATUS():"} -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END ELSE
+         RTN_CODE = "B100-ERROR-17-2"
+         RTN_MSG  = "The dangerous good code ":QUOTE(STDCOMM_ID):" does not exist in file STDCOMM -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END
+   END
+
+   ;* Tariff Code -> <181> -> SYSP9001,I34
+   PRODUCT_TARIFF_CODE = ITMMST_REC<181>
+   IF PRODUCT_TARIFF_CODE # "" THEN
+      SYSTBL_ID = "I34*":PRODUCT_TARIFF_CODE
+      READV TEST_VALUE FROM SYSTBL, SYSTBL_ID, 1
+      ON ERROR
+         RTN_CODE = "B100-ERROR-18-1"
+         RTN_MSG  = "Unable to read tariff code ":QUOTE(SYSTBL_ID):" in file SYSTBL {":STATUS():"} -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END ELSE
+         RTN_CODE = "B100-ERROR-18-2"
+         RTN_MSG  = "The tariff code ":QUOTE(SYSTBL_ID):" does not exist in file SYSTBL -> ":PRODUCT_CODE:"."
+         GO B100_EXIT
+      END
+   END
+
+B100_EXIT:
+   RETURN
+
+
+**********************************************
+* Internal subroutine to build return record *
+**********************************************
+
+B200_BUILD_RETURN_DATA:
+
+   ;* return product record through OUT_DATA<1>
+   OUT_DATA<1> = LOWER(ITMMST_REC)
+
+   ;* return new product workbench record through OUT_DATA<2> & OUT_DATA<3>
+   IF NEW_PRODUCT THEN
+      ;* determine product type (Purchased or Manufactured)
+      IF PLANTS = "" THEN  ;* purchase product
+         TOTAL = 1
+      END ELSE
+         TOTAL = DCOUNT(PLANTS, @VM)
+      END
+
+      ;* build product workbench record(s)
+      FOR CNT = 1 TO TOTAL
+         ;* get product workbench key and M/P flag
+         IF PLANTS = "" THEN
+            ITMMSTWRK_ID = PRODUCT_CODE
+            PRODUCT_MP_FLAG = "P"  ;* purchased product (value in field 54-58 are passed though IN_DATA<4>)
+         END ELSE            
+            PLANT_CODE   = PLANTS<1,CNT>
+            ITMMSTWRK_ID = PRODUCT_CODE:"*":PLANT_CODE
+            PRODUCT_MP_FLAG = "M"  ;* manufactured product
+         END
+
+         ;* set new product workbench record initial value
+         ITMMSTWRK_REC<1>    = ITMMST_REC<208>              ;* Product Line
+         ITMMSTWRK_REC<2>    = ITMMST_REC<6>                ;* UOM
+         ITMMSTWRK_REC<13>   = ""                           ;* UserID of Initiator
+         ITMMSTWRK_REC<14>   = ITMMST_REC<31>               ;* Creation Date
+         ITMMSTWRK_REC<15>   = ITMMST_REC<263>              ;* Standard (I or M)
+         ITMMSTWRK_REC<16>   = PRODUCT_TYPE_CATEGORY_CODE   ;* Product Type Category
+         ITMMSTWRK_REC<18>   = PRODUCT_MARKET_SEGMENT_CODE  ;* Market Segment
+         ITMMSTWRK_REC<19>   = "O"                          ;* Request Status
+         ITMMSTWRK_REC<20,1> = "C"                          ;* New Request
+         ITMMSTWRK_REC<20,2> = ""                           ;* New PL/PG Status
+         ITMMSTWRK_REC<20,3> = "C"                          ;* Logical Status
+         ITMMSTWRK_REC<20,4> = ""                           ;* New Attribute Status
+         ITMMSTWRK_REC<20,5> = "C"                          ;* Description Status
+         ITMMSTWRK_REC<20,7> = "C"                          ;* Item Master Status
+         IF PRODUCT_MP_FLAG = "M" THEN
+            ITMMSTWRK_REC<20,6> = "O"                       ;* M/P Status
+            ITMMSTWRK_REC<20,8> = ""                        ;* Costing Status
+            ITMMSTWRK_REC<20,9> = ""                        ;* BOM/RTG Status
+         END ELSE
+            ITMMSTWRK_REC<20,6> = "C"                       ;* M/P Status
+            ITMMSTWRK_REC<20,8> = "O"                       ;* Costing Status
+            ITMMSTWRK_REC<20,9> = "C"                       ;* BOM/RTG Status
+         END
+         ITMMSTWRK_REC<21>   = ITMMST_REC<163,1>            ;* Proposed English Desc
+         ITMMSTWRK_REC<22>   = ITMMST_REC<163,1>            ;* Proposed French Desc
+         ITMMSTWRK_REC<48>   = PRODUCT_GROUP_CODE           ;* Product Group
+         ITMMSTWRK_REC<53>   = ITMMST_REC<57>[1,1]          ;* Item Type
+         ITMMSTWRK_REC<73>   = ITMMST_REC<73>               ;* Item Class Code
+         ITMMSTWRK_REC<99>   = ITMMST_REC<99>               ;* Weight
+         ITMMSTWRK_REC<105>  = ""                           ;* Comments
+         ITMMSTWRK_REC<106>  = ""                           ;* Comment Date
+         ITMMSTWRK_REC<107>  = ""                           ;* Comment UserId
+         ITMMSTWRK_REC<117>  = ""                           ;* Requester
+         IF PRODUCT_UOM_STANDARD = "I" THEN
+            ITMMSTWRK_REC<118>  = ITMMST_REC<176,1>         ;* Price Per Imperial
+         END ELSE
+            ITMMSTWRK_REC<118>  = ITMMST_REC<176,2>         ;* Price Per Metric
+         END
+         ITMMSTWRK_REC<119>  = ITMMST_REC<57>[7,1]          ;* Mfg/Pur Flag
+         ITMMSTWRK_REC<120>  = ""                           ;* Planner/Buyer Code -> Planner
+         ITMMSTWRK_REC<121>  = PLANT_CODE                   ;* Plant
+         ITMMSTWRK_REC<122>  = ""                           ;* Reason for New PartNbr
+         ITMMSTWRK_REC<178>  = ITMMST_REC<178>              ;* Package Code
+         ITMMSTWRK_REC<179>  = ITMMST_REC<179>              ;* Package Qty
+         ITMMSTWRK_REC<180>  = ITMMST_REC<180>              ;* CountryOfOrigin
+         ITMMSTWRK_REC<181>  = ITMMST_REC<181>              ;* Tariff Code
+         ITMMSTWRK_REC<200>  = ITMMST_ID                    ;* cpn
+         ITMMSTWRK_REC<225>  = ITMMST_REC<225>              ;* Package Indicator
+         ITMMSTWRK_REC<233>  = ITMMST_REC<233>              ;* Package Length
+         ITMMSTWRK_REC<234>  = ITMMST_REC<234>              ;* Package Width
+         ITMMSTWRK_REC<235>  = ITMMST_REC<235>              ;* Package Height
+         ITMMSTWRK_REC<236>  = ITMMST_REC<236>              ;* Package Weight
+         ITMMSTWRK_REC<301>  = ""                           ;* Product Group
+         ITMMSTWRK_REC<302>  = ""                           ;* Catalog Number
+         ITMMSTWRK_REC<303>  = ""                           ;* OEM Number
+         ITMMSTWRK_REC<304>  = ""                           ;* Duplicate Reason Code
+
+         ;* return new product workbench record(s) through OUT_DATA<2>
+         OUT_DATA<2,CNT> = ITMMSTWRK_ID
+         OUT_DATA<3,CNT> = LOWER(LOWER(ITMMSTWRK_REC))
+      NEXT CNT
+   END
+
+B200_EXIT:
+   RETURN
+
+
+**********************
+* Exception handling *
+**********************
+
+A500_CONCLUSION:
+
+   IF RTN_CODE # "" THEN
+      STATUS<1> = RTN_CODE
+      STATUS<2> = RTN_MSG
+      STATUS<3> = PROGRAM
+      OUT_DATA  = ""
+   END
+
+   RTN.FLAG = 0
+   REFRESH = -2
+
+A500_EXIT:
+   GO 9999
+
+
+****************************************
+* Exit 
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END

@@ -1,0 +1,249 @@
+     SUBROUTINE SYSS9220.2(ARGS_IN,ARGS_OUT)
+* UniData Standard URL Encoding Function
+* VERSION 8.2.3
+*
+* 27 FEB 13 8.2.3 juntan PRJ*PUR083D.2-(Sub #2) PO INTERNAL CONTROLS
+*
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+
+     PROGRAM='SYSS9220.2'
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*
+*              This program is used to encode URL address before it could
+*              be used for the web browser to resolve the address due to
+*              the fact that certain special characters are not allowed in
+*              URL address.
+*
+*              <<<NOTE>>>
+*              a). Input parameter:
+*                  ARGS_IN<1> -> Raw URL string
+*                  ARGS_IN<2> -> Flag to convert space to + for certain schemes
+*              b). Output parameter:
+*                  ARGS_OUT<1> -> Encoded URL string
+*                  ARGS_OUT<2> -> Error message if there is any
+*
+*              Perform standard URL encoding for UV/UD ascii. ISO-8859-1
+*              (ISO-Latin) character set.
+*
+*              Author: Stuart Boydell 17-Dec-2004
+*
+*              Basic example:
+*                 deffun URLEncode(string) ;* calling *URLEncode ;*[use 'calling globID' if you globally catalogue the program]
+*                 encodedString = URLEncode(unencodedString)
+*
+*              Only alphanumerics [0-9a-zA-Z], the special characters
+*              $-_.+!*'(), and reserved characters used for their reserved
+*              purposes may be used unencoded within a URL.
+*
+*              This process encodes unsafe characters to their URL safe
+*              equivalent. eg. char(2) -> "%02"
+*
+*              First encodes char(37) "%" to %25 then loops through other
+*              ASCII.CODES ranges.
+*
+*              Ranges of ascii codes of all characters to be encoded:
+*                 0-31     ASCII Control Characters   Unsafe
+*                 32-47    Reserved Characters  ' '!?#$%&'()*+,-./   Unsafe
+*                 48-57    ASCII Characters and Numbers  0-9   Safe
+*                 58-64    Reserved Characters  :;<=>?@  Unsafe
+*                 65-90    ASCII Characters  A-Z   Safe
+*                 91-96    Reserved Characters  [\]^_`   Unsafe
+*                 97-122   ASCII Characters  a-z   Safe
+*                 123-126  Reserved Characters  {|}~  Unsafe
+*                 127      Control Characters   ' '   Unsafe
+*                 128-255  Non-ASCII Characters    ' '   Unsafe
+*
+* MODIFICATIONS:
+* ==============
+*              2013/02/27 juntan PUR083D.2 - Initial creation.
+*
+**************************************************************************
+
+
+A100_MAIN:
+
+   GOSUB A200_INITIALIZATION
+   IF L_RTN_FLAG # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF L_RTN_FLAG "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF L_RTN_FLAG #  "" THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+   GO A500_CONCLUSION
+
+
+****************************************
+* Definition of local variables & initialization of other variables.
+****************************************
+A200_INITIALIZATION:
+
+   ARGS_OUT = ""
+
+   RTN.FLAG = 0
+   L_RTN_FLAG = ""
+
+   L_RAW_URL = ""
+   L_ACTION_FLAG = ""
+
+   L_PERCENT = ""
+   L_SPACE = ""
+   L_PLUS = ""
+
+   L_ASCII_START = ""
+   L_ASCII_END = ""
+   L_MAXRANGE = ""
+
+   I = 0
+   J = 0
+   L_JCHAR = ""
+
+   L_ERROR_MSG = ""
+   
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open the files needed in this subroutine.
+****************************************
+A300_OPEN_FILES:
+
+   OPEN "SYSCON" TO SYSCON ELSE
+      L_RTN_FLAG = "A300-ERROR-1"
+      GO A300_EXIT
+   END
+
+A300_EXIT:
+   RETURN
+
+
+****************************************
+* Main process logic structure.
+****************************************
+A400_MAIN_PROCESS:
+
+   GOSUB B100_DEFINE_ENCODING_CHARACTER_SET
+   IF L_RTN_FLAG # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B200_ENCODE_URL
+   IF L_RTN_FLAG # "" THEN
+      GO A400_EXIT
+   END
+
+A400_EXIT:
+   RETURN
+
+
+****************************************
+* Define encoding character set (ASCII).
+****************************************
+B100_DEFINE_ENCODING_CHARACTER_SET:
+
+   *** Validate input arguments ***
+   IF ARGS_IN<1> = "" THEN
+      L_RTN_FLAG = "B100-ERROR-1"
+      L_ERROR_MSG = L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> No input URL string found."
+      GO B100_EXIT
+   END
+
+   IF ARGS_IN<2> # "Y" AND ARGS_IN<2> # "N" THEN
+      L_RTN_FLAG = "B100-ERROR-2"
+      L_ERROR_MSG = L_ERROR_MSG = "Infoflo program ":PROGRAM:" aborted at ":L_RTN_FLAG:" ---> Invalid action flag ":ARGS_IN<2>:" found."
+      GO B100_EXIT
+   END
+
+   L_RAW_URL = ARGS_IN<1>
+   L_ACTION_FLAG = ARGS_IN<2>
+
+   *** 'Special' encoding characters ***
+   L_PERCENT = '%'
+   L_SPACE   = ' '
+   L_PLUS    = '+'
+
+   *** 'Normal' encoding start/end characters (decimal ascii) ***
+   L_ASCII_START = '00':@AM:'38':@AM:'47':@AM:'58':@AM:'91':@AM:'96':@AM:'123'
+   L_ASCII_END   = '36':@AM:'44':@AM:'47':@AM:'64':@AM:'94':@AM:'96':@AM:'255'
+   L_MAXRANGE    = '7'
+   
+B100_EXIT:
+   RETURN
+
+
+****************************************
+* Encode URL for web applciation usage.
+****************************************
+B200_ENCODE_URL:
+
+   *** Convert 'special' encoding characters "%+[sp]" ***
+   ARGS_OUT<1> = CHANGE(L_RAW_URL,L_PERCENT,L_PERCENT:'25')
+
+   *** Space may be converted to '+' under some schemes ***
+   IF L_ACTION_FLAG = "Y" THEN
+      ARGS_OUT<1> = CHANGE(ARGS_OUT<1>,L_PLUS,L_PERCENT:'2B')
+      ARGS_OUT<1> = CHANGE(ARGS_OUT<1>,L_SPACE,L_PLUS)
+   END
+
+   *** Now convert 'normal' character ranges ***
+   FOR I = 1 TO L_MAXRANGE
+      FOR J = L_ASCII_START<I> TO L_ASCII_END<I>
+         L_JCHAR = CHAR(J)  ;*// Get CHAR from decimal value
+         *// INDEX() character before CHANGE() - faster
+         IF INDEX(ARGS_OUT<1>,L_JCHAR,1) THEN
+            ARGS_OUT<1> = CHANGE(ARGS_OUT<1>,L_JCHAR,L_PERCENT:DTX(J))
+         END
+      NEXT J
+   NEXT I
+
+B200_EXIT:
+   RETURN
+
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+   IF L_RTN_FLAG # "" THEN
+      ARGS_OUT = ""
+      ARGS_OUT<2> = L_ERROR_MSG
+   END ELSE
+      RTN.FLAG = 0
+   END
+
+A500_EXIT:
+   REFRESH = -2
+
+
+****************************************
+* Exit  
+****************************************
+
+END

@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# name: loop block
+# key: rdn
+# --
+LOOP
+   READNEXT $1 ELSE $2 = 1 
+UNTIL
+   $0
+REPEAT

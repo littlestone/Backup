@@ -1,0 +1,2322 @@
+     SUBROUTINE CRMS9000.1
+* Infoflo to CRM Outbound Integration Endpoint Program
+* VERSION 8.2.3
+* 
+* 12 DEC 16 8.2.3 piedes PRJ*PIEDES.112-Fix somes bugs related to CRM
+* 22 AUG 16 8.2.3 piedes PRJ*SLS086D-ICONNECT - CRM PROJECT - SALES MANAGER AND SALES AGENT 
+* 01 AUG 16 8.2.3 piedes PRJ*QUO064D-CRM INTEGRATION WITH INFOFLO
+*
+* 
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+     PROGRAM = 'CRMS9000.1'
+
+     $INCLUDE IIPLUS.TOP
+     $INCLUDE IIPLUS.DEBUG
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*              This program is used to integrate various CRM business data
+*              model from Infoflo to CRM.
+*
+*              <<<NOTE>>>
+*
+*
+* MODIFICATIONS:
+* ==============
+*              2016/06/07 piedes QUO064D - Initial creation.
+*
+**************************************************************************
+
+
+A100_MAIN: 
+
+     GOSUB A200_INITIALIZATION
+     IF L_ERR_CODE # "" THEN
+        GO A100_EXIT
+     END
+
+     GOSUB A300_OPEN_FILES
+     IF L_ERR_CODE # "" THEN
+        GO A100_EXIT
+     END
+
+     GOSUB A400_MAIN_PROCESS
+     IF L_ERR_CODE # "" THEN
+        GO A100_EXIT
+     END
+
+A100_EXIT: 
+     GO A500_CONCLUSION
+
+
+****************************************
+* Define & initialize variables.
+****************************************
+A200_INITIALIZATION: 
+
+     L_DONOT_SEND = 0
+     L_AGENT_DESC = ""
+     L_STATE_FLAG = 0
+     L_STATE_DESC = ""
+     RTN.FLAG                       = 0
+     L_EOF                          = @FALSE
+
+     LOOKUP_DATA                    = ""
+     ENTITY_DATA                    = ""
+     JSON_DATA_ACCT                 = ""
+     JSON_DATA_SLSREP               = ""
+     JSON_DATA                      = ""
+
+     STATUS                         = ""
+     IN_DATA                        = ""
+     OUT_DATA                       = ""
+
+     L_TS                           = "" 
+     L_KEY                          = ""
+     L_REC                          = ""
+     L_ERR_CODE                     = ""
+     L_ERR_MSG                      = ""
+     L_CNT                          = 0
+     L_TTL                          = 0
+     L_SYSCON_KEYS                  = PARAM<1>
+     L_SYSCON_KEY                   = PARAM<1,3>
+     L_RECORD_KEY                   = PARAM<2>
+     L_IDENTITY                     = PARAM<3>
+     L_CUST_ACCT_TYPE               = PARAM<4>
+     L_CHANGED_FIELD                = PARAM<5>
+     L_PHANTOM_MODE                 = 0 ; * NOT USED !!!! TRIM(FIELD(PARAM<6>,";",1))
+     L_HTTP_METHOD                  = PARAM<7>
+     L_FIELD_UPDATED                = PARAM<8>
+     L_CRM_GUID_LIST                = PARAM<9>
+
+     L_MKT_MATRIX_LIST              = PARAM<10>
+     L_MKT_MATRIX_GUID_PUT          = PARAM<11>
+     L_MKT_MATRIX_GUID_DELETE       = PARAM<12>
+     L_MATRIX_KEY                   = ""
+     L_MATRIX_KEYS                  = ""
+
+     L_CUST_ACCT                    = ""
+     L_SHIP_TO                      = ""
+     L_TS                           = ""
+     L_AGENT_NAME                   = ""
+     L_AGENT_CODE                   = ""
+     L_SLSREP_NAME                  = ""
+     L_MGR_ID                       = ""
+     L_USER_EMAIL                   = ""
+     L_MKT_NAME                     = ""
+     L_RETURN_MATRIX_GUID           = ""
+     L_ACCT_SLSREP_MATRIX_GUID_LIST = ""
+     L_ERPKEY                       = ""
+     L_NB_RETRY                     = 0
+
+A200_EXIT: 
+     RETURN
+
+
+****************************************
+* Open any data files requried.
+****************************************
+A300_OPEN_FILES: 
+
+     FILE.ERR = 0
+
+     CALL SB.OPEN.FILE("CUSTMST",CUSTMST,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERR_CODE = "A300-ERROR-1"
+        L_ERR_MSG = "Unable to open file CUSTMST."
+        GO A300_EXIT
+     END
+
+     CALL SB.OPEN.FILE("QUHDR",QUHDR,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERR_CODE = "A300-ERROR-2"
+        L_ERR_MSG = "Unable to open file QUHDR."
+        GO A300_EXIT
+     END
+
+     CALL SB.OPEN.FILE("QUDET",QUDET,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERR_CODE = "A300-ERROR-3"
+        L_ERR_MSG = "Unable to open file QUDET."
+        GO A300_EXIT
+     END
+
+     CALL SB.OPEN.FILE("SYSCON",SYSCON,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERR_CODE = "A300-ERROR-4"
+        L_ERR_MSG = "Unable to open file SYSCON."
+        GO A300_EXIT
+     END
+
+     CALL SB.OPEN.FILE("COMPMST",COMPMST,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERR_CODE = "A300-ERROR-5"
+        L_ERR_MSG = "Unable to open file COMPMST."
+        GO A300_EXIT
+     END
+
+     CALL SB.OPEN.FILE("SYSTBL",SYSTBL,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERR_CODE = "A300-ERROR-6"
+        L_ERR_MSG = "Unable to open file SYSTBL."
+        GO A300_EXIT
+     END
+
+     CALL SB.OPEN.FILE("ADDRESSBOOK",ADDRESSBOOK,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERR_CODE = "A300-ERROR-7"
+        L_ERR_MSG = "Unable to open file ADDRESSBOOK"
+        GO A300_EXIT
+     END
+
+     CALL SB.OPEN.FILE("SLSREPMST",SLSREPMST,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERR_CODE = "A300-ERROR-8"
+        L_ERR_MSG = "Unable to open file SLSREPMST"
+        GO A300_EXIT
+     END
+
+     CALL SB.OPEN.FILE("MGRMST",MGRMST,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERR_CODE = "A300-ERROR-9"
+        L_ERR_MSG = "Unable to open filE MGRPMST"
+        GO A300_EXIT
+     END
+
+     CALL SB.OPEN.FILE("SYSTBLCRM",SYSTBLCRM,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERR_CODE = "A300-ERROR-10"
+        L_ERR_MSG = "Unable to open file SYSTBLCRM."
+        GO A300_EXIT
+     END
+
+     CALL SB.OPEN.FILE("CUSTMSTCRM",CUSTMSTCRM,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERR_CODE = "A300-ERROR-11"
+        L_ERR_MSG = "Unable to open file CUSTMSTCRM."
+        GO A300_EXIT
+     END
+
+     CALL SB.OPEN.FILE("QUHDRCRM",QUHDRCRM,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERR_CODE = "A300-ERROR-12"
+        L_ERR_MSG = "Unable to open file QUHDRCRM."
+        GO A300_EXIT
+     END
+
+     CALL SB.OPEN.FILE("CRMOPPCRM",CRMOPPCRM,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERR_CODE = "A300-ERROR-13"
+        L_ERR_MSG = "Unable to open file CRMOPPCRM."
+        GO A300_EXIT
+     END
+
+     CALL SB.OPEN.FILE("CONTMSTCRM",CONTMSTCRM,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERR_CODE = "A300-ERROR-14"
+        L_ERR_MSG = "Unable to open file CONTMSTCRM."
+        GO A300_EXIT
+     END
+
+     IF L_PHANTOM_MODE = 1 THEN
+        L_TS = OCONV(FIELD(SYSTEM(12)/1000,'.',1),"MTS"):".":FIELD(SYSTEM(12)/1000,'.',2)
+        SWAP "." WITH "" IN L_TS
+        SWAP ":" WITH "" IN L_TS
+
+        L_FILE_DIR  = "IFF_CRM"
+        L_FILE_NAME =  L_IDENTITY:"_":L_TS:"_":L_RECORD_KEY:".json"
+        OPENSEQ L_FILE_DIR, L_FILE_NAME TO L_IFF_CRM_FILE
+        ON ERROR
+           L_ERR_CODE = "A300-ERROR-15-1"
+           L_ERR_MSG = "Cannot open the CRM JSON file ":L_FILE_NAME:" in directory ":L_FILE_DIR:"."
+           GO A300_EXIT
+        END LOCKED
+           L_ERR_CODE = "A300-ERROR-15-2"
+           L_ERR_MSG  = "The CRM JSON file ":L_FILE_NAME:" in directory ":L_FILE_DIR:" is currently locked by ":L_FILE_DIR:" is currently locked by ":GETUSERNAME(STATUS()):"."
+           GO A300_EXIT
+        END ELSE
+           IF STATUS() # 0 THEN
+              L_ERR_CODE = "A300-ERROR-15-3"
+              L_ERR_MSG  = "Error occurred while opening the CRM JSON file ":L_FILE_NAME:" in directory ":L_FILE_DIR:" { ":STATUS():" }."
+              GO A300_EXIT
+           END
+        END
+     END ELSE
+        L_DATE        = OCONV(DATE(),"D4-")
+        L_MOD_ON      = FIELD(L_DATE,"-",3):"-":FIELD(L_DATE,"-",1):"-":FIELD(L_DATE,"-",2): "T" : OCONV(TIME(),"MTS"):"Z"
+        L_MOD_ON_FILE = FIELD(L_DATE,"-",3):"-":FIELD(L_DATE,"-",1):"-":FIELD(L_DATE,"-",2): "_" : OCONV(TIME(),"MTS")
+        SWAP "-" WITH "" IN L_MOD_ON_FILE
+        SWAP ":" WITH "" IN L_MOD_ON_FILE
+        SWAP " " WITH "" IN L_MOD_ON_FILE
+
+        L_FILE_DIR  = "CRM.LOG"
+        L_RECORD_KEY_TEMP = L_RECORD_KEY
+        SWAP @VM WITH "_" IN L_RECORD_KEY_TEMP
+        L_FILE_NAME = "OUT_":L_IDENTITY:"_":L_RECORD_KEY_TEMP:"_":L_MOD_ON_FILE:"_":USER.ID:'.log'
+        OPENSEQ L_FILE_DIR, L_FILE_NAME TO L_CRM_LOG_FILE
+        ON ERROR
+           L_ERR_CODE = "A300-ERROR-16-1"
+           L_ERR_MSG = "Cannot open the CRM log file ":L_FILE_NAME:" in directory ":L_FILE_DIR:"."
+           GO A300_EXIT
+        END LOCKED
+           L_ERR_CODE = "A300-ERROR-16-2"
+           L_ERR_MSG  = "The CRM log file ":L_FILE_NAME:" in directory ":L_FILE_DIR:" is currently locked by ":L_FILE_DIR:" is currently locked by ":GETUSERNAME(STATUS()):"."
+           GO A300_EXIT
+        END ELSE
+           IF STATUS() # 0 THEN
+              L_ERR_CODE = "A300-ERROR-16-3"
+              L_ERR_MSG  = "Error occurred while opening the CRM log file ":L_FILE_NAME:" in directory ":L_FILE_DIR:" { ":STATUS():" }."
+              GO A300_EXIT
+           END
+        END
+     END
+
+     CALL SB.OPEN.FILE("COMPMSTCRM",COMPMSTCRM,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERR_CODE = "A300-ERROR-17"
+        L_ERR_MSG = "Unable to open file COMPMSTCRM."
+        GO A300_EXIT
+     END
+
+     CALL SB.OPEN.FILE("AGENTMST",AGENTMST,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERR_CODE = "A300-ERROR-18"
+        L_ERR_MSG = "Unable to open file AGENTMST"
+        GO A300_EXIT
+     END
+
+     CALL SB.OPEN.FILE("CRMOPP",CRMOPP,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERR_CODE = "A300-ERROR-19"
+        L_ERR_MSG = "Unable to open file CRMOPP"
+        GO A300_EXIT
+     END
+
+     CALL SB.OPEN.FILE("CURRDET",CURRDET,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERR_CODE = "A300-ERROR-20"
+        L_ERR_MSG = "Unable to open file CURRDET"
+        GO A300_EXIT
+     END
+
+     CALL SB.OPEN.FILE("CRMMATRIXGUID",CRMMATRIXGUID,FILE.ERR)
+     IF FILE.ERR THEN
+        L_ERR_CODE = "A300-ERROR-21"
+        L_ERR_MSG = "Unable to open file CRMMATRIXGUID"
+        GO A300_EXIT
+     END
+
+A300_EXIT: 
+     RETURN
+
+
+****************************************
+* Main process logic structure.
+****************************************
+A400_MAIN_PROCESS:
+
+     READV L_NB_TRY FROM SYSCON, "CRM.HTTP.PARAMETERS", 7 ELSE L_NB_TRY = 1
+     L_NB_TRY = TRIM(FIELD(L_NB_TRY, ";",1))
+     IF L_NB_TRY = "" THEN
+        L_NB_TRY = 2
+     END
+
+     GOSUB B100_BUILD_CRM_JSON_DATA
+
+     IF L_ERR_CODE = "" THEN
+        IF L_DONOT_SEND # 1 THEN
+           GOSUB B300_CALL_CRM_WEB_API
+        END
+     END
+
+A400_EXIT: 
+     RETURN
+
+************************************
+* Internal subroutine to read data *
+************************************
+B100_BUILD_CRM_JSON_DATA: 
+
+     L_TS = OCONV(FIELD(SYSTEM(12)/1000,'.',1),"MTS"):".":FIELD(SYSTEM(12)/1000,'.',2)
+
+     BEGIN CASE
+
+        CASE L_IDENTITY = "SLSMATRIX" AND L_HTTP_METHOD = "DELETE"
+           GOSUB B105_SLSMATRIX_DELETE
+
+        CASE L_IDENTITY = "SLSMATRIX"  AND L_HTTP_METHOD = "POST" ; *
+           GOSUB B110_SLSMATRIX_POST
+
+        CASE L_IDENTITY = "SLSMATRIX"  AND L_HTTP_METHOD = "PUT" ; *
+           GOSUB B115_SLSMATRIX_PUT
+
+        CASE L_IDENTITY = "ACCOUNT"
+           GOSUB B120_ACCOUNT
+
+        CASE L_IDENTITY = "CUSTGRP"
+           GOSUB B125_CUSTGRP
+
+        CASE L_IDENTITY = "BUYINGGRP"
+           GOSUB B130_BUYINGGRP
+
+        CASE L_IDENTITY = "REGIONS"
+           GOSUB B135_REGIONS
+
+        CASE L_IDENTITY = "MARKET_SEGMENT"
+           GOSUB B140_MARKET_SEGMENT
+
+        CASE L_IDENTITY = "USERHIERACHY"
+           GOSUB B145_USER_HIERARCHY
+
+        CASE L_IDENTITY = "QUOTES"
+           GOSUB B150_QUOTES
+
+        CASE L_IDENTITY = "SYSTEMUSERROLESCOLLECTION"
+           GOSUB B155_SYSTEMUSERROLESCOLLECTION
+
+
+     END CASE
+
+B100_EXIT: 
+     RETURN
+
+B105_SLSMATRIX_DELETE: 
+
+     L_GUID = PARAM<12>
+
+     IF L_GUID # "" THEN
+        SWAP VM WITH "|" IN L_GUID
+        ENTITY_DATA  = 'gs_account_salesrepmatrixes/':L_GUID
+        JSON_DATA<-1> = ENTITY_DATA
+
+        *** The Complete JSON Data Structure to Send ***
+        SWAP @AM WITH ',' IN JSON_DATA
+        IN_DATA = JSON_DATA
+     END ELSE
+        L_ERR_CODE = "B100-ERROR-0"
+        L_ERR_MSG = "Missing CRM Sales Rep Matrix GUID."
+     END
+
+B105_EXIT: 
+     RETURN
+
+B110_SLSMATRIX_POST:
+
+     READ L_CUSTMST_REC FROM CUSTMST, L_RECORD_KEY
+     ON ERROR
+        L_ERR_CODE = "B110-ERROR-1-1-1"
+        L_ERR_MSG = "Cannot read record ":L_RECORD_KEY:" in file CUSTMST."
+        GO B110_EXIT
+     END ELSE
+        L_ERR_CODE = "B110-ERROR-1-1-2"
+        L_ERR_MSG = "Record ":L_KEY:" does not exists in file CUSTMST."
+        GO B110_EXIT
+     END
+
+     L_STATE = TRIM(L_CUSTMST_REC<23>)
+
+     IF L_CUST_ACCT_TYPE = 1 THEN
+        L_ACCT_CUSTGRP_GUID     = TRIM(FIELD(L_CRM_GUID_LIST<1,1>,"|",1))
+        L_ACCT_GUID             = TRIM(FIELD(L_CRM_GUID_LIST<1,2>,"|",1))
+        L_NB_MATRIX             = DCOUNT(L_MKT_MATRIX_LIST,VM)
+        FOR L_IND = 1 TO L_NB_MATRIX
+           L_ACCT_SLSREP_MATRIX_GUID_LIST<-1> = FIELD(L_MKT_MATRIX_LIST<1,L_IND>,"|",1)
+        NEXT L_IND
+     END ELSE
+        L_ACCT_CUSTGRP_GUID                   = ""
+        L_ACCT_GUID                           = TRIM(FIELD(L_CRM_GUID_LIST<1,1>,"|",1))
+        L_NB_MATRIX                           = DCOUNT(L_MKT_MATRIX_LIST,VM)
+        FOR L_IND = 1 TO L_NB_MATRIX
+           L_ACCT_SLSREP_MATRIX_GUID_LIST<-1> = FIELD(L_MKT_MATRIX_LIST<1,L_IND>,"|",1)
+        NEXT L_IND
+     END
+
+     BEGIN CASE
+        CASE L_ACCT_CUSTGRP_GUID = "" AND L_CUST_ACCT_TYPE = 1
+           L_ERR_CODE = "B110-ERROR-1-2-1.1"
+           L_ERR_MSG = "Missing CRM Customer Group GUID."
+           GO B110_EXIT
+        CASE L_ACCT_GUID = ""
+           L_ERR_CODE = "B110-ERROR-1-2-2.1"
+           L_ERR_MSG = "Missing CRM Customer Account GUID."
+           GO B110_EXIT
+        CASE L_ACCT_SLSREP_MATRIX_GUID_LIST = ""
+           L_ERR_CODE = "B110-ERROR-1-2-3.1"
+           L_ERR_MSG = "Missing CRM Sales Reps Matrix GUID(s)."
+           GO B110_EXIT
+     END CASE
+
+     L_COMPANY_CODE = L_RECORD_KEY"G0*1"
+     L_KEY          = L_COMPANY_CODE
+
+     READ L_REC FROM COMPMST, L_KEY
+     ON ERROR
+        L_ERR_CODE = "B110-ERROR-1-3-1"
+        L_ERR_MSG = "Cannot record record ":L_KEY:" in file COMPMST."
+        GO B110_EXIT
+     END THEN
+        L_COMPANY_NAME = L_REC<1>
+     END ELSE
+        L_COMPANY_NAME = ""
+     END
+
+********************************************************
+* Build JSON Data Sturcture for Each Sales Rep Matrix by Market Segment ***
+*********************************************************
+
+     L_SLS_FLAG                 = ""
+     L_SAVE_PARAM               =  PARAM
+     PARAM                      =  ""
+     PARAM<1>                   =  L_COMPANY_CODE
+
+     CALL  SB.PROCESS("SYSS9901.1")
+
+     L_COMPANY_SLS_AGENT_FLAG   =  PARAM<2>
+     PARAM                      =  ""
+     PARAM                      =  L_SAVE_PARAM
+
+*     READ L_REC FROM SYSCON, "QUO_SALESREP_COMPANY" THEN
+*        L_USD_CIE = TRIM(FIELD(L_REC<2>, ";",1))
+*        LOCATE L_COMPANY_CODE:"01" IN L_USD_CIE<1> SETTING POS THEN
+
+     IF L_COMPANY_SLS_AGENT_FLAG  =  "0" THEN
+        L_ERR_CODE = "B110-ERROR-1-1"
+        L_ERR_MSG  = "Company '" : L_COMPANY_CODE : "' is not setup in system constant CRM.COMPANY"
+        GO B110_EXIT
+     END ELSE
+        IF L_COMPANY_SLS_AGENT_FLAG = "1" OR L_COMPANY_SLS_AGENT_FLAG = "3" THEN
+           L_SLS_FLAG = 1
+        END ELSE
+           L_SLS_FLAG = 0
+        END
+     END
+
+     L_IND2            =  0
+     L_PREV_AGENT      =  ""
+     L_NB_MKT          = DCOUNT(PARAM<10>,VM)
+
+     FOR L_IND = 1 TO L_NB_MKT
+
+        IF TRIM(PARAM<10,L_IND,2>) # "" THEN
+
+           IF L_SLS_FLAG  =  1  THEN
+              L_MKT_SLS      = PARAM<10,L_IND,2>
+              L_OVERRIDE_MGR_ID       = ""
+           END ELSE
+              L_MKT_AGT      = TRIM(FIELD(PARAM<10,L_IND,2>,"*",1))
+              L_OVERRIDE_MGR_ID  = TRIM(FIELD(PARAM<10,L_IND,2>,"*",2))
+           END
+           L_MKT_CODE     = PARAM<10,L_IND,1>
+
+           L_KEY = ACNT.NAME:"*I18*":L_MKT_CODE
+
+           READ L_REC FROM SYSTBLCRM, L_KEY
+           ON ERROR
+              L_ERR_CODE = "B110-ERROR-1-11-1"
+              L_ERR_MSG  = "Cannot record record ":L_KEY:" in file SYSTBLCRM."
+              GO B110_EXIT
+           END THEN
+              L_MKT_SEG_GUID = L_REC<2>
+           END ELSE
+              L_ERR_CODE = "B110-ERROR-1-11-2"
+              L_ERR_MSG = "Missing CRM GUID for Default Sales Rep MarketSegment 0 in SYSTBLCRM { ":L_KEY:" }."
+              GO B110_EXIT
+           END
+
+           IF L_SLS_FLAG = 1 THEN
+
+              L_SLSREP_CODE  =  L_MKT_SLS
+              GOSUB C300_GET_SLS_REP_INFO
+              IF TRIM(L_ERR_CODE) # "" THEN GO B110_EXIT
+
+           END ELSE
+
+              IF L_MKT_AGT # L_PREV_AGENT THEN
+                 L_IND2 = 0
+              END
+              L_PREV_AGENT = L_MKT_AGT
+              L_IND2 += 1
+              L_SLSREP_CODE = L_MKT_AGT
+
+              L_MKT_AGT_STATE_KEY =  L_MKT_AGT:"*":L_STATE
+              PARAM<99> = PARAM<10>
+              GOSUB C400_GET_AGENT_INFO
+              IF TRIM(L_ERR_CODE) # "" THEN GO B110_EXIT
+
+           END
+
+           LOOKUP_DATA  = '{"systemusers":{"user_email":"':L_USER_EMAIL:'"}}'
+           ENTITY_DATA  = '{"gs_account_salesrepmatrixes":{'
+           ENTITY_DATA := '"gs_Accountid@odata.bind":"accounts:':L_ACCT_GUID:'",'
+           ENTITY_DATA := '"gs_name":"':L_SLSREP_NAME:'",'
+           ENTITY_DATA := '"gs_MarketSegmentid@odata.bind":"gs_marketsegments:':L_MKT_SEG_GUID:'",'
+           ENTITY_DATA := '"gs_User1id@odata.bind":"#':L_IND-1:'",'
+           ENTITY_DATA := '"ownerid@odata.bind":"#':L_IND-1:'",'
+           ENTITY_DATA := '"gs_userrole":"':L_SLSREP_CODE:'",'
+   
+           IF L_SLS_FLAG = 1 THEN
+              L_MATRIX_KEY  = ACNT.NAME:"*":L_RECORD_KEY:"*":L_MKT_SLS:"*":L_MKT_CODE
+           END ELSE
+              IF TRIM(L_OVERRIDE_MGR_ID) #  "" THEN
+                 L_MATRIX_KEY  = ACNT.NAME:"*":L_RECORD_KEY:"*":L_MKT_AGT:"*":L_OVERRIDE_MGR_ID:"*": L_MKT_CODE
+              END ELSE
+                 L_MATRIX_KEY  = ACNT.NAME:"*":L_RECORD_KEY:"*":L_MKT_AGT:"*":L_MKT_CODE
+              END
+           END
+
+           L_MATRIX_KEYS<-1> = L_MATRIX_KEY
+
+           ENTITY_DATA := '"gs_erpkey":"':L_MATRIX_KEY:'",'
+ 
+           IF L_AGENT_NAME # "" THEN
+              BEGIN CASE
+                CASE TRIM(L_OVERRIDE_MGR_ID) #  ""
+                   ENTITY_DATA  := '"gs_agentname":"':L_MKT_AGT:" - ":L_AGENT_NAME:" (Manager Override)":'",'
+                   L_AGENT_DESC = L_MKT_AGT:" - ":L_AGENT_NAME:" (Manager Override)"
+                CASE 1
+                   IF L_STATE_FLAG = 1 THEN
+                      READV L_STATE_DESC FROM SYSTBL, "TAX*":L_STATE, 4 ELSE L_STATE_DESC = ""
+                      ENTITY_DATA := '"gs_agentname":"':L_MKT_AGT:" - ": L_AGENT_NAME:" (":L_STATE_DESC:")":'",'
+                      L_AGENT_DESC = L_MKT_AGT:" - ": L_AGENT_NAME:" (":L_STATE_DESC:")"
+                   END ELSE
+                      ENTITY_DATA := '"gs_agentname":"':L_MKT_AGT:" - ":L_AGENT_NAME:'",'
+                      L_AGENT_DESC = L_MKT_AGT:" - ":L_AGENT_NAME
+                   END
+                END CASE
+           END
+
+           GOSUB C100_WRITE_PENDING_MATRIX
+
+           ENTITY_DATA := '"modifiedon":"':L_MOD_ON:'"'
+           ENTITY_DATA := '}}'
+           JSON_DATA<-1> = '[':LOOKUP_DATA:",":ENTITY_DATA:']'
+        END
+     NEXT L_IND
+     *** The Complete JSON Data Structure to Send ***
+     SWAP @AM WITH ',' IN JSON_DATA
+     IN_DATA = "[":JSON_DATA:"]"
+
+B110_EXIT: 
+     RETURN
+
+B115_SLSMATRIX_PUT:
+
+     READ L_CUSTMST_REC FROM CUSTMST, L_RECORD_KEY
+     ON ERROR
+        L_ERR_CODE = "B115-ERROR-1-1-1"
+        L_ERR_MSG = "Cannot read record ":L_RECORD_KEY:" in file CUSTMST."
+        GO B115_EXIT
+     END ELSE
+        L_ERR_CODE = "B115-ERROR-1-1-2"
+        L_ERR_MSG = "Record ":L_KEY:" does not exists in file CUSTMST."
+        GO B115_EXIT
+     END
+
+     L_STATE = TRIM(L_CUSTMST_REC<23>)
+
+     *** Validate CRM Guid for Existing Customer Group, Customer Account, Sales Reps, Agents ***
+     IF L_CUST_ACCT_TYPE = 1 THEN
+        L_ACCT_CUSTGRP_GUID            = TRIM(FIELD(L_CRM_GUID_LIST<1,1>,"|",1))
+        L_ACCT_GUID                    = TRIM(FIELD(L_CRM_GUID_LIST<1,2>,"|",1))
+        L_NB_MATRIX                    = DCOUNT(L_CRM_GUID_LIST<1,3>,SVM)
+        FOR L_IND = 1 TO L_NB_MATRIX
+           L_ACCT_SLSREP_MATRIX_GUID_LIST = FIELD(L_CRM_GUID_LIST<1,3,L_IND>,"|",1)
+        NEXT L_IND
+     END ELSE
+        L_ACCT_CUSTGRP_GUID            = ""
+        L_ACCT_GUID                    = TRIM(FIELD(L_CRM_GUID_LIST<1,1>,"|",1))
+        L_NB_MATRIX                    = DCOUNT(L_CRM_GUID_LIST<1,2>,SVM)
+        FOR L_IND = 1 TO L_NB_MATRIX
+           L_ACCT_SLSREP_MATRIX_GUID_LIST = FIELD(L_CRM_GUID_LIST<1,2,L_IND>,"|",1)
+        NEXT L_IND
+     END
+
+     BEGIN CASE
+        CASE L_ACCT_CUSTGRP_GUID = "" AND L_CUST_ACCT_TYPE = 1
+           L_ERR_CODE = "B115-ERROR-1-2-1.2"
+           L_ERR_MSG = "Missing CRM Customer Group GUID."
+           GO B115_EXIT
+        CASE L_ACCT_GUID = ""
+           L_ERR_CODE = "B115-ERROR-1-2-2.2"
+           L_ERR_MSG = "Missing CRM Customer Account GUID."
+           GO B115_EXIT
+*        CASE L_ACCT_SLSREP_MATRIX_GUID_LIST = ""
+*           L_ERR_CODE = "B115-ERROR-1-2-3.2"
+*           L_ERR_MSG = "Missing CRM Sales Reps Matrix GUID(s)."
+*           GO B115_EXIT
+     END CASE
+
+     L_COMPANY_CODE             = L_RECORD_KEY"G0*1"
+
+     *** Company Info ***
+     L_KEY = L_COMPANY_CODE
+     READ L_REC FROM COMPMST, L_KEY
+     ON ERROR
+        L_ERR_CODE = "B115-ERROR-1-3-1"
+        L_ERR_MSG = "Cannot record record ":L_KEY:" in file COMPMST."
+        GO B115_EXIT
+     END THEN
+        L_COMPANY_NAME = L_REC<1>
+     END ELSE
+        L_COMPANY_NAME = ""
+     END
+
+     L_KEY = ACNT.NAME:"*":L_COMPANY_CODE
+
+     READ L_REC FROM COMPMSTCRM, L_KEY
+     ON ERROR
+        L_ERR_CODE = "B115-ERROR-1-3-2"
+        L_ERR_MSG = "Cannot record record ":L_KEY:" in file COMPMSTCRM."
+        GO B115_EXIT
+     END THEN
+        L_COMP_GUID = TRIM(L_REC<2>)
+     END ELSE
+        L_COMP_GUID = ""
+     END
+
+* !!!!! SLSMATRIX  PUT
+********************************************************
+* Build JSON Data Structure for Defaut Sales Rep Matrix Entity ***
+*********************************************************
+
+     *** Build JSON Data Sturcture for Each Sales Rep Matrix by Market Segment ***
+
+     L_SLS_FLAG                 = ""
+     L_SAVE_PARAM               =  PARAM
+     PARAM                      =  ""
+     PARAM<1>                   =  L_COMPANY_CODE
+
+     CALL  SB.PROCESS("SYSS9901.1")
+
+     L_COMPANY_SLS_AGENT_FLAG   =  PARAM<2>
+     PARAM                      =  ""
+     PARAM                      =  L_SAVE_PARAM
+
+     IF L_COMPANY_SLS_AGENT_FLAG  =  "0" THEN
+        L_ERR_CODE = "B115-ERROR-1-1"
+        L_ERR_MSG  = "Company '" : L_COMPANY_CODE : "' not setup in system constant CRM.COMPANY"
+        GO B115_EXIT
+     END ELSE
+        IF L_COMPANY_SLS_AGENT_FLAG = "1" OR L_COMPANY_SLS_AGENT_FLAG = "3" THEN
+           L_SLS_FLAG = 1
+        END ELSE
+           L_SLS_FLAG = 0
+        END
+     END
+
+     L_IND2            =  0
+     L_PREV_AGENT      =  ""
+
+     L_NB_MKT   = DCOUNT(PARAM<11>,VM)
+
+     FOR L_IND = 1 TO L_NB_MKT
+
+        IF TRIM(PARAM<11,L_IND,2>) # "" THEN
+
+           L_SLSREP_CODE  = TRIM(FIELD(PARAM<11,L_IND,2>,"*",1))
+
+           L_MKT_SLS      = TRIM(FIELD(PARAM<11,L_IND,2>,"*",1))
+           L_MKT_AGT      = TRIM(FIELD(PARAM<11,L_IND,2>,"*",1))
+
+           L_MKT_CODE     = PARAM<11,L_IND,1>
+           L_MATRIX_GUID  = PARAM<11,L_IND,3>
+
+           L_KEY = ACNT.NAME:"*I18*":L_MKT_CODE
+           READ L_REC FROM SYSTBLCRM, L_KEY
+           ON ERROR
+              L_ERR_CODE = "B115-ERROR-1-11-1"
+              L_ERR_MSG  = "Cannot record record ":L_KEY:" in file SYSTBLCRM."
+              GO B115_EXIT  
+           END THEN
+              L_MKT_SEG_GUID = L_REC<2>
+           END ELSE
+              L_ERR_CODE = "B115-ERROR-1-11-2"
+              L_ERR_MSG = "Missing CRM GUID for Default Sales Rep MarketSegment 0 in SYSTBLCRM { ":L_KEY:" }."
+              GO B115_EXIT
+           END
+ 
+           IF L_SLS_FLAG = 1 THEN
+
+              L_OVERRIDE_MGR_ID = ""
+
+              GOSUB C300_GET_SLS_REP_INFO
+              IF TRIM(L_ERR_CODE) # "" THEN GO B115_EXIT
+
+           END ELSE
+
+              L_OVERRIDE_MGR_ID = TRIM(FIELD(PARAM<11,L_IND,2>,"*",2))
+
+              IF L_MKT_AGT # L_PREV_AGENT THEN
+                 L_IND2 = 0
+              END
+              L_PREV_AGENT = L_MKT_AGT
+              L_IND2 += 1
+
+              L_MKT_AGT_STATE_KEY =  L_MKT_AGT:"*":L_STATE
+              PARAM<99> = PARAM<11>
+              GOSUB C400_GET_AGENT_INFO
+              IF TRIM(L_ERR_CODE) # "" THEN GO B115_EXIT
+
+           END
+
+           LOOKUP_DATA  = '{"systemusers":{"user_email":"':L_USER_EMAIL:'"}}'
+
+           ENTITY_DATA  = '{"gs_account_salesrepmatrixes":{'
+           ENTITY_DATA := '"gs_account_salesrepmatrixid":"':L_MATRIX_GUID:'",'
+           ENTITY_DATA := '"gs_Accountid@odata.bind":"accounts:':L_ACCT_GUID:'",'
+           ENTITY_DATA := '"gs_name":"':L_SLSREP_NAME:'",'
+           ENTITY_DATA := '"gs_MarketSegmentid@odata.bind":"gs_marketsegments:':L_MKT_SEG_GUID:'",'
+           ENTITY_DATA := '"gs_User1id@odata.bind":"#':L_IND-1:'",'
+           ENTITY_DATA := '"gs_userrole":"':L_SLSREP_CODE:'",'
+*******************************
+           IF L_SLS_FLAG = 1 THEN
+              L_MATRIX_KEY  = ACNT.NAME:"*":L_RECORD_KEY:"*":L_MKT_SLS:"*":L_MKT_CODE
+           END ELSE
+              IF TRIM(L_OVERRIDE_MGR_ID) #  "" THEN
+                 L_MATRIX_KEY  = ACNT.NAME:"*":L_RECORD_KEY:"*":L_MKT_AGT:"*":L_OVERRIDE_MGR_ID:"*": L_MKT_CODE
+              END ELSE
+                 L_MATRIX_KEY  = ACNT.NAME:"*":L_RECORD_KEY:"*":L_MKT_AGT:"*":L_MKT_CODE
+              END
+           END
+           L_MATRIX_KEYS<-1> = L_MATRIX_KEY
+
+           ENTITY_DATA := '"gs_erpkey":"':L_MATRIX_KEY:'",'
+ *******************************
+           IF L_AGENT_NAME # "" THEN
+              BEGIN CASE
+                CASE TRIM(L_OVERRIDE_MGR_ID) #  ""
+                   ENTITY_DATA := '"gs_agentname":"':L_MKT_AGT:" - ":L_AGENT_NAME:" (Manager Override)":'",'
+                   L_AGENT_DESC = L_MKT_AGT:" - ":L_AGENT_NAME:" (Manager Override)"
+                CASE 1
+                   IF L_STATE_FLAG = 1 THEN
+                      READV L_STATE_DESC FROM SYSTBL, "TAX*":L_STATE, 4 ELSE L_STATE_DESC = L_STATE
+                      ENTITY_DATA := '"gs_agentname":"':L_MKT_AGT:" - ": L_AGENT_NAME:" (":L_STATE_DESC:")":'",'
+                      L_AGENT_DESC = L_MKT_AGT:" - ": L_AGENT_NAME:" (":L_STATE_DESC:")"
+                   END ELSE
+                     ENTITY_DATA := '"gs_agentname":"':L_MKT_AGT:" - ":L_AGENT_NAME:'",'
+                     L_AGENT_DESC = L_MKT_AGT:" - ":L_AGENT_NAME
+                   END
+               END CASE
+           END
+
+           GOSUB C100_WRITE_PENDING_MATRIX
+
+           ENTITY_DATA := '"modifiedon":"':L_MOD_ON:'"'
+           ENTITY_DATA := '}}'
+
+           JSON_DATA<-1> = '[':LOOKUP_DATA:",":ENTITY_DATA:']'
+        END
+     NEXT L_IND
+
+         *** The Complete JSON Data Structure to Send ***
+     SWAP @AM WITH ',' IN JSON_DATA
+     IN_DATA = "[":JSON_DATA:"]"
+
+B115_EXIT: 
+     RETURN
+
+B120_ACCOUNT:
+
+     READ L_CUSTMST_REC FROM CUSTMST, L_RECORD_KEY
+     ON ERROR
+        L_ERR_CODE = "B120-ERROR-1-1-1"
+        L_ERR_MSG = "Cannot read record ":L_RECORD_KEY:" in file CUSTMST."
+        GO B120_EXIT
+     END ELSE
+        L_ERR_CODE = "B120-ERROR-1-1-2"
+        L_ERR_MSG = "Record ":L_KEY:" does not exists in file CUSTMST."
+        GO B120_EXIT
+     END
+
+     *** Validate CRM Guid for Existing Customer Group, Customer Account, Sales Reps, Agents ***
+
+     IF L_HTTP_METHOD = "PUT" THEN
+
+        IF L_CUST_ACCT_TYPE = 1 THEN
+           L_ACCT_CUSTGRP_GUID            = TRIM(FIELD(L_CRM_GUID_LIST<1,1>,"|",1))
+           L_ACCT_GUID                    = TRIM(FIELD(L_CRM_GUID_LIST<1,2>,"|",1))
+        END ELSE
+           L_ACCT_CUSTGRP_GUID            = ""
+           L_ACCT_GUID                    = TRIM(FIELD(L_CRM_GUID_LIST<1,1>,"|",1))
+        END
+
+        BEGIN CASE
+           CASE L_ACCT_CUSTGRP_GUID = "" AND L_CUST_ACCT_TYPE = 1
+              L_ERR_CODE = "B120-ERROR-1-2-1.3"
+              L_ERR_MSG = "Missing CRM Customer Group GUID."
+              GO B120_EXIT
+           CASE L_ACCT_GUID = ""
+              L_ERR_CODE = "B120-ERROR-1-2-2.3"
+              L_ERR_MSG = "Missing CRM Customer Account GUID."
+              GO B120_EXIT
+        END CASE
+     END
+
+     *** Customer Account Basic Info ***
+     SWAP '"' WITH '' IN L_CUSTMST_REC
+     L_ACCT_CLASSIFICATION_CODE = PARAM<4>
+     L_COMPANY_CODE             = L_RECORD_KEY"G0*1"
+     L_ACCT_NBR                 = L_RECORD_KEY"G1*1"
+     L_IPEX_ACCT_KEY            = L_RECORD_KEY
+     IF L_CUSTMST_REC<2> # "" THEN
+        L_AR_NBR = L_CUSTMST_REC<2>
+     END ELSE
+        L_AR_NBR = L_ACCT_NBR[1,7]
+     END
+     L_SLSREP_CODE              = L_CUSTMST_REC<10>
+     L_AGENT_CODE               = L_CUSTMST_REC<112>
+     L_REGION_CODE              = L_CUSTMST_REC<36>
+     L_CREDIT_ON_HOLD_FLAG      = L_CUSTMST_REC<29>
+     L_ACTIVE_FLAG              = L_CUSTMST_REC<120>
+     L_ACCT_FAX_NBR             = L_CUSTMST_REC<47>
+     L_ACCT_PHONE               = L_CUSTMST_REC<25>
+     L_ACCT_LANG                = L_CUSTMST_REC<89>
+     L_ACCT_INDUSTRY_CODE       = "6"
+
+            *** Customer Language Info ***
+     IF L_ACCT_LANG = "FRN" THEN
+        L_CRM_LANG = "100000001"               
+     END ELSE
+        L_CRM_LANG = "100000000"               
+     END
+
+     *** Customer Account Active/Inactive Info ***
+*     IF PARAM<4> = "1" THEN  ;* A/R Customer
+*        IF L_CREDIT_ON_HOLD_FLAG = 3 THEN ;* Inactive
+*           L_STATE_CODE = 1
+*           L_STATUS_CODE = 2
+*        END ELSE ;* Active
+*           L_STATE_CODE = 0
+*           L_STATUS_CODE = 1
+*        END
+*     END ELSE
+*        IF L_ACTIVE_FLAG = 0 THEN ;* Inactive
+*           L_STATE_CODE = 1
+*           L_STATUS_CODE = 2
+*        END ELSE ;* Active
+*           L_STATE_CODE = 0
+*           L_STATUS_CODE = 1
+*        END
+*     END
+
+     GOSUB C450_GET_AR_STATUS
+
+     IF L_AR_STATUS # "3" AND L_ST_WEBSTART # "0" AND L_BT_WEBSTART # "0" AND L_AR_WEBSTART # "0" THEN
+* ACTIF
+        L_DONOT_SEND = 0
+        L_STATE_CODE = 0
+        L_STATUS_CODE = 1
+     END ELSE
+* INACTIF
+        L_STATE_CODE = 1
+        L_STATUS_CODE = 2
+        IF L_HTTP_METHOD = "POST" THEN ; * Do not send when inactive account
+           L_DONOT_SEND = 1
+           GO B120_EXIT
+        END ELSE
+           L_DONOT_SEND = 0
+        END
+     END
+
+     *** Company Info ***
+     L_KEY = L_COMPANY_CODE
+     READ L_REC FROM COMPMST, L_KEY
+     ON ERROR
+        L_ERR_CODE = "B120-ERROR-1-3-1"
+        L_ERR_MSG = "Cannot record record ":L_KEY:" in file COMPMST."
+        GO B120_EXIT
+     END THEN
+        L_COMPANY_NAME = L_REC<1>
+     END ELSE
+        L_COMPANY_NAME = ""
+     END
+
+     L_KEY = ACNT.NAME:"*":L_COMPANY_CODE
+
+     READ L_REC FROM COMPMSTCRM, L_KEY
+     ON ERROR
+        L_ERR_CODE = "B120-ERROR-1-3-2"
+        L_ERR_MSG = "Cannot record record ":L_KEY:" in file COMPMSTCRM."
+        GO B120_EXIT
+     END THEN
+        L_COMP_GUID = TRIM(L_REC<2>)
+     END ELSE
+        L_COMP_GUID = ""
+     END
+
+     L_B121_ERROR = 0
+     GOSUB B121_GET_OWNER_USER_EMAIL
+     IF L_B121_ERROR = 1 THEN
+        GO B120_EXIT
+     END
+
+     *** Sales Region Info ***
+     L_KEY = ACNT.NAME:"*I02*":L_REGION_CODE
+     READ L_REC FROM SYSTBLCRM, L_KEY
+     ON ERROR
+        L_ERR_CODE = "B120-ERROR-1-6-1"
+        L_ERR_MSG = "Cannot record record ":L_KEY:" in file SYSTBLCRM."
+        GO B120_EXIT
+     END THEN
+        ** CRM Sales Region GUID **
+        L_REGION_GUID = L_REC<2>
+        IF L_REGION_GUID = "" THEN
+           L_ERR_CODE = "B120-ERROR-1-6-3"
+           L_ERR_MSG = "Missing CRM GUID for sales region code { ":L_REGION_CODE:" }."
+           GO B120_EXIT
+        END
+     END ELSE
+        L_ERR_CODE = "B120-ERROR-1-6-2"
+        L_ERR_MSG = "Record ":L_KEY:" does not exists in file SYSTBLCRM."
+        GO B120_EXIT
+     END
+
+     *** Customer BuyIng Group & Customer Group Info ***
+     IF LEN(L_ACCT_NBR) # 10 THEN
+        L_BUYING_GROUP_CODE = L_CUSTMST_REC<17>
+     END ELSE
+        READV L_BUYING_GROUP_CODE FROM CUSTMST, L_COMPANY_CODE :"*":L_ACCT_NBR[1,7],17 ELSE L_BUYING_GROUP_CODE = ""
+     END
+
+     ** CRM Buying Group GUID **
+     L_KEY = ACNT.NAME:"*I131*":L_BUYING_GROUP_CODE
+     READ L_REC FROM SYSTBLCRM, L_KEY
+     ON ERROR
+        L_ERR_CODE = "B120-ERROR-1-8-1"
+        L_ERR_MSG = "Cannot record record ":L_KEY:" in file SYSTBLCRM."
+        GO B120_EXIT
+     END THEN
+        L_BUYING_GROUP_GUID = FIELD(L_REC<2>,"|",1)
+        IF L_BUYING_GROUP_GUID = "" THEN
+           L_ERR_CODE = "B120-ERROR-1-8-3"
+           L_ERR_MSG = "Missing CRM GUID for Buying Group Code { ":L_BUYING_GROUP_CODE:" }."
+           GO B120_EXIT
+        END
+     END ELSE
+        L_ERR_CODE = "B120-ERROR-1-8-2"
+        L_ERR_MSG = "Record ":L_KEY:" does not exists in file SYSTBLCRM."
+        GO B120_EXIT
+     END
+
+     IF L_ACCT_NBR = L_CUSTMST_REC<2> THEN  ;* Customer AR Account
+        L_KEY = L_COMPANY_CODE:"*":L_AR_NBR
+        READ L_AR_CUSTMST_REC FROM CUSTMST, L_KEY
+        ON ERROR
+           L_ERR_CODE = "B120-ERROR-1-7-1"
+           L_ERR_MSG = "Cannot record record ":L_KEY:" in file CUSTMST."
+           GO B120_EXIT
+        END THEN
+           ** Customer AR Account Info **
+           L_AR_CUST_NAME         = L_AR_CUSTMST_REC<3>
+           L_AR_CUST_GROUP_CODE   = L_AR_CUSTMST_REC<18>
+
+           ** CRM Customer Group GUID **
+           IF L_AR_CUST_GROUP_CODE # "00000" THEN  ;* regular customer group
+              L_KEY = ACNT.NAME:"*I132*":L_AR_CUST_GROUP_CODE
+              READ L_REC FROM SYSTBLCRM, L_KEY
+              ON ERROR
+                 L_ERR_CODE = "B120-ERROR-1-9-1"
+                 L_ERR_MSG = "Cannot record record ":L_KEY:" in file SYSTBLCRM."
+                 GO B120_EXIT
+              END THEN
+                 L_AR_CUST_GROUP_GUID = L_REC<2>
+              END ELSE
+                 L_ERR_CODE = "B120-ERROR-1-9-2"
+                 L_ERR_MSG = "Record ":L_KEY:" does not exists in file SYSTBLCRM."
+                 GO B120_EXIT
+              END
+           END ELSE
+              IF L_HTTP_METHOD = "PUT" THEN
+                 L_AR_CUST_GROUP_GUID = L_ACCT_CUSTGRP_GUID  ;* CUSTMSTCRM
+              END
+           END
+
+           ** Build JSON Data Structure for CRM Independent Customer Group Entity When We Create New AR Account ***                  
+           IF L_HTTP_METHOD = "POST" THEN
+              IF L_AR_CUST_GROUP_CODE = "00000" THEN
+                 L_AR_CUST_GROUP_GUID = "~0"  ;* special token to bind independent customer group on AR account creation
+              END
+              LOOKUP_DATA = "{}"
+              ENTITY_DATA = '{"gs_customergroups":{'
+              ENTITY_DATA := '"gs_customergroupnumber":"':L_AR_NBR:'",'
+
+              SWAP "'" WITH " " IN L_AR_CUST_NAME
+              SWAP '"' WITH ' ' IN L_AR_CUST_NAME
+
+              ENTITY_DATA := '"gs_name":"':L_AR_CUST_NAME:'",'
+              ENTITY_DATA := '"modifiedon":"':L_MOD_ON:'"'
+              ENTITY_DATA := '}}'
+              JSON_DATA<-1> = '[':LOOKUP_DATA:",":ENTITY_DATA:']'
+           END
+        END ELSE
+           L_ERR_CODE = "B120-ERROR-1-7-2"
+           L_ERR_MSG = "Record ":L_KEY:" does not exists in file CUSTMST."
+           GO B120_EXIT
+        END
+     END ELSE
+        ** Customer Bill-To or Ship-To Account Info **
+        L_PARENT_BT =  0
+        L_PARENT_AR =  0
+        L_AR_NUMBER   =  ""
+        IF LEN(L_ACCT_NBR) = 10 THEN
+           L_KEY = ACNT.NAME:"*":L_COMPANY_CODE:"*":L_ACCT_NBR[1,7]
+           READV L_AR_NUMBER FROM CUSTMST, L_COMPANY_CODE:"*":L_ACCT_NBR[1,7], 2 ELSE L_AR_NUMBER = ""
+           IF L_AR_NUMBER = L_ACCT_NBR[1,7] THEN
+              L_PARENT_AR =  1
+           END ELSE
+              L_PARENT_BT =  1
+           END
+        END ELSE
+           L_KEY = ACNT.NAME:"*":L_COMPANY_CODE:"*":L_CUSTMST_REC<2>
+           L_AR_NUMBER   =  L_CUSTMST_REC<2>
+           L_PARENT_AR =  1
+        END
+        READ L_REC FROM CUSTMSTCRM, L_KEY
+        ON ERROR
+           L_ERR_CODE = "B120-ERROR-1-10-1"
+           L_ERR_MSG = "Cannot record record ":L_KEY:" in file CUSTMSTCRM."
+           GO B120_EXIT
+        END THEN
+           ** CRM Customer Parent Account GUID **
+           IF L_PARENT_AR = 1 THEN
+              L_CUST_PARENT_ACCT_GUID = L_REC<2,2>
+           END ELSE
+              L_CUST_PARENT_ACCT_GUID = L_REC<2,1>
+           END
+           IF L_CUST_PARENT_ACCT_GUID = "" THEN
+              L_ERR_CODE = "B120-ERROR-1-10-3"
+*              L_ERR_MSG = "The CRM GUID is missing for the record key { ":L_KEY:" } in file CUSTMSTCRM."
+              L_ERR_MSG = "First, You have to send the Parent Account ":FIELD(L_KEY, "*",3):" to CRM prior to Send Shipt to or Bill to."
+              GO B120_EXIT
+           END
+        END ELSE
+           L_ERR_CODE = "B120-ERROR-1-10-2"
+*           L_ERR_MSG = "Record ":L_KEY:" does not exists in file CUSTMSTCRM."
+           L_ERR_MSG = "First, You have to send Parent Account ":FIELD(L_KEY, "*",3):" to CRM prior to Send Shipt to or Bill to."
+           GO B120_EXIT
+        END
+     END
+
+     *** Build JSON Data Structure for CRM Account Entity ***
+     LOOKUP_DATA  = '{"systemusers":{"user_email":"':L_USER_EMAIL<1,1>:'"}}'
+     ENTITY_DATA  = '{"accounts":{'
+     IF L_HTTP_METHOD = "PUT" THEN
+        !!! the first attribute should always be the entity guid for entity update operation !!!
+        ENTITY_DATA := '"accountid":"':L_ACCT_GUID:'",'
+     END
+     ENTITY_DATA := '"name":"':L_CUSTMST_REC<3>:'",'
+     ENTITY_DATA := '"address1_city":"':L_CUSTMST_REC<22>:'",'
+     ENTITY_DATA := '"address1_country":"':L_CUSTMST_REC<50>:'",'
+     ENTITY_DATA := '"address1_stateorprovince":"':L_CUSTMST_REC<23>:'",'
+     ENTITY_DATA := '"address1_line1":"':L_CUSTMST_REC<20>:'",'
+     ENTITY_DATA := '"address1_line2":"':L_CUSTMST_REC<21>:'",'
+     ENTITY_DATA := '"address1_line3":"':L_CUSTMST_REC<27>:'",'
+     ENTITY_DATA := '"address1_postalcode":"':L_CUSTMST_REC<24>:'",'
+     ENTITY_DATA := '"accountclassificationcode":"':L_ACCT_CLASSIFICATION_CODE:'",'
+     ENTITY_DATA := '"accountnumber":"':L_ACCT_NBR:'",'
+     ENTITY_DATA := '"gs_erpkey":"':ACNT.NAME:"*":L_IPEX_ACCT_KEY:'",'
+     ENTITY_DATA := '"industrycode":"':L_ACCT_INDUSTRY_CODE:'",'
+     ENTITY_DATA := '"fax":"':L_ACCT_FAX_NBR:'",'
+     ENTITY_DATA := '"telephone1":"':L_ACCT_PHONE:'",'
+     ENTITY_DATA := '"gs_language":"':L_CRM_LANG:'",'
+     ENTITY_DATA := '"statecode":"':L_STATE_CODE:'",'
+     ENTITY_DATA := '"statuscode":"':L_STATUS_CODE:'",'
+     ENTITY_DATA := '"ownerid@odata.bind":"#0",'
+     ENTITY_DATA := '"gs_ipexscompany@odata.bind":"gs_ipexscompanies:':L_COMP_GUID:'",'
+     ENTITY_DATA := '"gs_Region@odata.bind":"gs_regions:':L_REGION_GUID:'",'
+     ENTITY_DATA := '"gs_buyinggroupaccountid_account@odata.bind":"accounts:':L_BUYING_GROUP_GUID:'",'
+     IF L_ACCT_NBR = L_CUSTMST_REC<2> THEN  ;* Customr AR Account
+        ENTITY_DATA := '"gs_customergroupid@odata.bind":"gs_customergroups:':L_AR_CUST_GROUP_GUID:'",'
+     END ELSE  ;* Customer Bill-To or Ship-To Account
+        ENTITY_DATA := '"parentaccountid@odata.bind":"accounts:':FIELD(L_CUST_PARENT_ACCT_GUID,"|",1):'",'
+     END
+     ENTITY_DATA := '"description":"Infoflo: ':L_TS:'",'
+     ENTITY_DATA := '"modifiedon":"':L_MOD_ON:'"'
+     ENTITY_DATA := '}}'
+     JSON_DATA<-1> = '[':LOOKUP_DATA:",":ENTITY_DATA:']'
+
+     *** The Complete JSON Data Structure to Send ***
+     SWAP @AM WITH ',' IN JSON_DATA
+     IN_DATA = "[":JSON_DATA:"]"
+
+B120_EXIT: 
+     RETURN
+
+B121_GET_OWNER_USER_EMAIL:
+
+     *** Default Sales Rep Info ***
+
+     L_SAVE_PARAM               =  PARAM
+     PARAM                      =  ""
+     PARAM<1>                   =  L_COMPANY_CODE
+
+     CALL  SB.PROCESS("SYSS9901.1")
+
+     L_COMPANY_SLS_AGENT_FLAG   =  PARAM<2>
+     PARAM                      =  ""
+     PARAM                      =  L_SAVE_PARAM
+
+     IF L_COMPANY_SLS_AGENT_FLAG  =  "0" THEN
+        L_ERR_CODE = "B120-ERROR-1-1"
+        L_ERR_MSG  = "Company '" : L_COMPANY_CODE : "' not setup in system constant CRM.COMPANY"
+        L_B121_ERROR   =  1
+        GO B121_EXIT
+     END ELSE
+        IF L_COMPANY_SLS_AGENT_FLAG = "1" OR L_COMPANY_SLS_AGENT_FLAG = "3" THEN
+           L_SLS_FLAG = 1
+        END ELSE
+           L_SLS_FLAG = 0
+        END
+     END
+
+     IF L_SLS_FLAG = 1 THEN
+
+        READ L_REC FROM SLSREPMST, L_SLSREP_CODE
+        ON ERROR
+           L_ERR_CODE = "B121-ERROR-1-4-1"
+           L_ERR_MSG = "Cannot record record ":L_SLSREP_CODE:" in file SLSREPMST."
+           L_B121_ERROR   =  1
+           GO B121_EXIT
+        END THEN
+           L_USER_ID = L_REC<1>
+           READ L_REC FROM ADDRESSBOOK, L_USER_ID
+           ON ERROR
+              L_ERR_CODE = "B121-ERROR-1-5-1"
+              L_ERR_MSG = "Cannot record record ":L_USER_ID:" in file ADDRESSBOOK"
+              L_B121_ERROR   =  1
+              GO B121_EXIT
+           END THEN
+              *
+              * The DEFAULT Sales rep is used to identify the account owner.
+              *
+              IF TRIM(L_REC<23>) # "1" THEN
+                 L_ERR_CODE = "B121-ERROR-1-5-1.1"
+                 L_ERR_MSG = "User ID ":L_USER_ID: " is not setup in CRM, cannot be assign to C.R.M. System"
+                 L_B121_ERROR   =  1
+                 GO B121_EXIT
+              END ELSE
+                 IF TRIM(L_REC<22>) # "" THEN
+                    L_USER_EMAIL  = L_REC<22>
+                 END ELSE
+                    L_ERR_CODE = "B121-ERROR-1-5-1.2"
+                    L_ERR_MSG = "User ID ":L_USER_ID: " Email Address is empty in INFOFLO ADDRESSBOOK, cannot be assign to C.R.M. System"
+                    L_B121_ERROR   =  1
+                    GO B121_EXIT
+                 END
+              END
+           END ELSE
+              L_ERR_CODE = "B121-ERROR-1-5-1"
+              L_ERR_MSG = "Cannot record record ":L_USER_ID:" in file ADDRESSBOOK"
+              L_B121_ERROR   =  1
+              GO B121_EXIT
+           END
+        END ELSE
+           L_ERR_CODE = "B121-ERROR-1-4-2"
+           L_ERR_MSG = "Record ":L_SLSREP_CODE:" does not exists in file SLSREPMST."
+           L_B121_ERROR   =  1
+           GO B121_EXIT
+        END
+
+     END ELSE
+        READ L_REC FROM AGENTMST, L_AGENT_CODE
+        ON ERROR
+           L_ERR_CODE = "B121-ERROR-1.1-4-1"
+           L_ERR_MSG = "Cannot record record ":L_AGENT_CODE:" in file AGENTMST."
+           L_B121_ERROR   =  1
+           GO B121_EXIT
+        END THEN
+           L_AGENT_MGR  = L_REC<1>
+           READV L_USER_ID FROM MGRMST, L_AGENT_MGR, 3 THEN
+              READ L_REC FROM ADDRESSBOOK, L_USER_ID
+              ON ERROR
+                 L_ERR_CODE = "B121-ERROR-1.1-5-1"
+                 L_ERR_MSG = "Cannot record record ":L_USER_ID:" in file ADDRESSBOOK"
+                 L_B121_ERROR   =  1
+                 GO B121_EXIT
+              END THEN
+                 IF TRIM(L_REC<23>) # "1" THEN
+                       L_ERR_CODE = "B121-ERROR-1.1-5-1.2"
+                       L_ERR_MSG = "User ID ":L_USER_ID: " is not setup in CRM, cannot be assign to C.R.M. System"
+                       L_B121_ERROR   =  1
+                       GO B121_EXIT
+                    END ELSE
+                       IF TRIM(L_REC<22>) # "" THEN
+                          L_USER_EMAIL  = L_REC<22>
+                       END ELSE
+                          L_ERR_CODE = "B121-ERROR-1.1-5-1.3"
+                          L_ERR_MSG = "User ID ":L_USER_ID: " Email Address is empty in INFOFLO ADDRESSBOOK, cannot be assign to C.R.M. System"
+                          L_B121_ERROR   =  1
+                          GO B121_EXIT
+                       END
+                    END
+                 END ELSE
+                    L_ERR_CODE = "B121-ERROR-1.1-5-1.4"
+                    L_ERR_MSG = "Cannot record record ":L_USER_ID:" in file ADDRESSBOOK"
+                    L_B121_ERROR   =  1
+                    GO B121_EXIT
+                 END
+           END ELSE
+              L_USER_ID = ""
+              L_ERR_CODE = "B121-ERROR-1.1-5-1.1"
+              L_ERR_MSG = "Cannot record record ":L_AGENT_MGR:" in file MGRMST"
+              L_B121_ERROR   =  1
+              GO B121_EXIT
+           END
+        END ELSE
+           L_B121_ERROR   =  1
+           L_ERR_CODE = "B121-ERROR-1-4-2"
+           L_ERR_MSG = "Record ":L_AGENT_CODE:" does not exists in file AGENTMST."
+           GO B121_EXIT
+        END
+     END
+
+B121_EXIT:
+     RETURN
+
+B125_CUSTGRP: 
+
+     *** Customer Group Info ***
+     L_CUST_GROUP_GUID = L_CRM_GUID_LIST<1,1>
+     IF L_HTTP_METHOD = "PUT" AND L_CUST_GROUP_GUID = "" THEN
+        L_ERR_CODE = "B125-ERROR-2-1"
+        L_ERR_MSG = "Missing CRM Sales Region GUID."
+        GO B125_EXIT
+     END
+
+     L_CUST_GROUP_NBR = L_RECORD_KEY"G1*1"
+     READ L_REC FROM SYSTBL, L_RECORD_KEY
+     ON ERROR
+        L_ERR_CODE = "B125-ERROR-2-2"
+        L_ERR_MSG = "Cannot record record ":L_KEY:" in file SYSTBL."
+        GO B125_EXIT
+     END THEN
+        L_CUST_GROUP_NAME = L_REC<4>
+     END ELSE
+        L_CUST_GROUP_NAME = ""
+     END
+
+     *** Build JSON Data Structure for CRM Customer Group Entity ***
+     LOOKUP_DATA = "{}"
+     ENTITY_DATA = '{"gs_customergroups":{'
+     IF L_HTTP_METHOD = "PUT" THEN
+        !!! the first attribute should always be the entity guid for entity update operation !!!
+        ENTITY_DATA := '"gs_customergroupid":"':L_CUST_GROUP_GUID:'",'
+     END
+     ENTITY_DATA := '"gs_customergroupnumber":"':L_CUST_GROUP_NBR:'",'
+
+     SWAP "'" WITH " " IN L_CUST_GROUP_NAME
+     SWAP '"' WITH ' ' IN L_CUST_GROUP_NAME
+
+     ENTITY_DATA := '"gs_name":"':L_CUST_GROUP_NAME:'",'
+     ENTITY_DATA := '"modifiedon":"':L_MOD_ON:'"'
+     ENTITY_DATA := '}}'
+
+     *** The Complete JSON Data Structure to Send *** 
+     IN_DATA = '[[':LOOKUP_DATA:",":ENTITY_DATA:']]'
+
+B125_EXIT: 
+     RETURN
+
+B130_BUYINGGRP: 
+
+     *** Buying Group Info ***
+     L_BUYING_GROUP_GUID = L_CRM_GUID_LIST<1,1>
+     IF L_HTTP_METHOD = "PUT" AND L_BUYING_GROUP_GUID = "" THEN
+        L_ERR_CODE = "B130-ERROR-3-1"
+        L_ERR_MSG = "Missing CRM Customer Buying Group GUID."
+        GO B130_EXIT
+     END
+     L_ACCT_INDUSTRY_CODE = "15"
+
+     L_ACCT_CLASSIFICATION_CODE = PARAM<4> 
+     READ L_REC FROM SYSTBL, L_RECORD_KEY
+     ON ERROR
+        L_ERR_CODE = "B130-ERROR-3-2"
+        L_ERR_MSG = "Cannot record record ":L_KEY:" in file SYSTBL."
+        GO B130_EXIT
+     END THEN
+        L_BUYING_GROUP_NAME = L_REC<4>
+        L_BUYING_GROUP_TEAM = L_REC<2>
+     END ELSE
+        L_BUYING_GROUP_NAME = ""
+        L_BUYING_GROUP_TEAM = ""
+     END
+
+     IF L_BUYING_GROUP_TEAM = "" THEN
+        L_ERR_CODE = "B130-WARNING-3-1"
+        L_ERR_MSG = "CRM Team not defined for ":L_KEY:" in file SYSTBL, Not sent to CRM"
+        GO B130_EXIT
+     END
+
+     L_KEY = ACNT.NAME:"*I317*":L_BUYING_GROUP_TEAM
+
+     READV L_BUYING_GROUP_TEAM_GUID FROM SYSTBLCRM,L_KEY,2 ELSE L_BUYING_GROUP_TEAM_GUID = ""
+     IF  L_BUYING_GROUP_TEAM_GUID = "" THEN
+        L_ERR_CODE = "B130-ERROR-3-1B"
+        L_ERR_MSG = "Missing Customer Buying Group CRM Team GUID."
+        GO B130_EXIT
+     END
+
+     *** Build JSON Data Structure for CRM Buying Group Entity ***
+     LOOKUP_DATA = "{}"
+     ENTITY_DATA = '{"accounts":{'
+     IF L_BUYING_GROUP_GUID # "" THEN
+        !!! the first attribute should always be the entity guid for entity update operation !!!
+        ENTITY_DATA := '"accountid":"':L_BUYING_GROUP_GUID:'",'
+     END
+     ENTITY_DATA := '"name":"':L_BUYING_GROUP_NAME:'",'
+     ENTITY_DATA := '"accountnumber":"':L_RECORD_KEY"G1*1":'",'
+     ENTITY_DATA := '"accountclassificationcode":"':L_ACCT_CLASSIFICATION_CODE:'",'
+     ENTITY_DATA := '"industrycode":"':L_ACCT_INDUSTRY_CODE:'",'
+     ENTITY_DATA := '"gs_erpkey":"0",'
+     ENTITY_DATA := '"description":"Infoflo: ':L_TS:'",'
+     ENTITY_DATA := '"modifiedon":"':L_MOD_ON:'",'
+     ENTITY_DATA := '"ownerid@odata.bind":"teams:':L_BUYING_GROUP_TEAM_GUID:'"'
+     ENTITY_DATA := '}}'
+
+     *** The Complete JSON Data Structure to Send ***  
+     IN_DATA = '[[':LOOKUP_DATA:",":ENTITY_DATA:']]'
+
+B130_EXIT: 
+     RETURN
+
+B135_REGIONS: 
+
+     *** Sales Region Info ***
+     L_REGION_GUID = L_CRM_GUID_LIST<1,1>
+     IF L_HTTP_METHOD = "PUT" AND L_REGION_GUID = "" THEN
+        L_ERR_CODE = "B135-ERROR-4-1"
+        L_ERR_MSG = "Missing CRM Sales Region GUID."
+        GO B135_EXIT
+     END
+
+     L_REGION_CODE = L_RECORD_KEY"G1*1"
+     READ L_REC FROM SYSTBL, L_RECORD_KEY
+     ON ERROR
+        L_ERR_CODE = "B135-ERROR-4-2"
+        L_ERR_MSG = "Cannot record record ":L_KEY:" in file SYSTBL."
+        GO B135_EXIT
+     END THEN
+        L_REGION_NAME = L_REC<4>
+     END ELSE
+        L_REGION_NAME = ""
+     END
+     L_STATUS_CODE = "1"
+
+     *** Build JSON Data Structure for CRM Sales Region Entity ***
+     LOOKUP_DATA = "{}"
+     ENTITY_DATA = '{"gs_regions":{'
+     IF L_HTTP_METHOD = "PUT" THEN
+            !!! the first attribute should always be the entity guid for entity update operation !!!
+        ENTITY_DATA := '"gs_regionid":"':L_REGION_GUID:'",'
+     END
+     ENTITY_DATA := '"gs_code":"':L_REGION_CODE:'",'
+     ENTITY_DATA := '"gs_name":"':L_REGION_NAME:'",'
+     ENTITY_DATA := '"statuscode":"':L_STATUS_CODE:'",'
+     ENTITY_DATA := '"modifiedon":"':L_MOD_ON:'"'
+     ENTITY_DATA := '}}'
+
+     *** The Complete JSON Data Structure to Send ***
+     IN_DATA = '[[':LOOKUP_DATA:",":ENTITY_DATA:']]'
+
+B135_EXIT: 
+     RETURN
+
+B140_MARKET_SEGMENT: 
+
+     *** Market Segment Info ***
+     L_MARKET_SEGMENT_GUID = L_CRM_GUID_LIST<1,1>
+     IF L_HTTP_METHOD = "PUT" AND L_MARKET_SEGMENT_GUID = "" THEN
+        L_ERR_CODE = "B140-ERROR-5-1"
+        L_ERR_MSG = "Missing CRM Market Segment GUID."
+        GO B140_EXIT
+     END
+
+     L_MARKET_SEGMENT_CODE = L_RECORD_KEY"G1*1"
+     READ L_REC FROM SYSTBL, L_RECORD_KEY
+     ON ERROR
+        L_ERR_CODE = "B140-ERROR-5-2"
+        L_ERR_MSG = "Cannot record record ":L_KEY:" in file SYSTBL."
+        GO B140_EXIT
+     END THEN
+        L_MARKET_SEGMENT_NAME = L_REC<4>
+     END ELSE
+        L_MARKET_SEGMENT_NAME = ""
+     END
+     L_STATUS_CODE = "1"
+
+     ** Build JSON Data Structure for CRM Market Segment Entity ** 
+     LOOKUP_DATA = "{}"
+     ENTITY_DATA = '{"gs_marketsegments":{'
+     IF L_HTTP_METHOD = "PUT" THEN
+        ENTITY_DATA := '"gs_marketsegmentid":"':L_MARKET_SEGMENT_GUID:'",'
+     END
+     ENTITY_DATA := '"gs_code":"':L_MARKET_SEGMENT_CODE:'",'
+     ENTITY_DATA := '"gs_name":"':L_MARKET_SEGMENT_NAME:'",'
+     ENTITY_DATA := '"statuscode":"':L_STATUS_CODE:'",'
+     ENTITY_DATA := '"modifiedon":"':L_MOD_ON:'"'
+     ENTITY_DATA := '}}'
+
+     *** The Complete JSON Data Structure to Send ***
+     IN_DATA= '[[':LOOKUP_DATA:",":ENTITY_DATA:']]'
+
+B140_EXIT: 
+     RETURN
+
+B145_USER_HIERARCHY: 
+
+     *** CRM Sales User Hierachy Info ***
+     L_KEY = L_RECORD_KEY<1,2>
+     READ L_REC FROM ADDRESSBOOK, L_KEY
+     ON ERROR
+        L_ERR_CODE = "B145-ERROR-6-1-1"
+        L_ERR_MSG = "Cannot read record ":L_KEY:" in file ADDRESSBOOK."
+        GO B145_EXIT
+     END THEN
+        ** CRM Sales Rep Info **
+        L_USER_NAME  = L_REC<1>
+        IF TRIM(L_REC<23>) # "1" THEN
+           L_ERR_CODE = "B145-ERROR-6-2-2.1"
+           L_ERR_MSG = "User ID ":L_USER_ID: " is not setup in CRM, cannot be assign to C.R.M. System"
+           GO B145_EXIT
+        END ELSE
+           IF TRIM(L_REC<22>) # "" THEN
+              L_USER_EMAIL  = L_REC<22>
+           END ELSE
+              L_ERR_CODE = "B145-ERROR-6-2-2.2"
+              L_ERR_MSG = "User ID ":L_USER_ID: " Email Address is empty in INFOFLO ADDRESSBOOK, cannot be assign to C.R.M. System"
+              GO B145_EXIT
+           END
+        END
+
+        IF L_RECORD_KEY<1,3> # "" THEN
+
+           L_KEY = L_RECORD_KEY<1,3>
+           READ L_REC FROM ADDRESSBOOK, L_KEY
+           ON ERROR
+              L_ERR_CODE = "B145-ERROR-6-2-1"
+              L_ERR_MSG = "Cannot read record ":L_KEY:" in file ADDRESSBOOK."
+              GO B145_EXIT
+           END THEN
+              ** CRM Sales Manager Info **
+              L_MANAGER_NAME  = L_REC<1>
+              IF TRIM(L_REC<23>) # "1" THEN
+                 L_ERR_CODE = "B145-ERROR-1-5-1.1"
+                 L_ERR_MSG = "User ID ":L_USER_ID: " is not setup in CRM, cannot be assign to C.R.M. System"
+                 GO B145_EXIT
+              END ELSE
+                 IF TRIM(L_REC<22>) # "" THEN
+                    L_MANAGER_EMAIL = L_REC<22>
+                 END ELSE
+                    L_ERR_CODE = "B145-ERROR-1-5-1.2"
+                    L_ERR_MSG = "User ID ":L_USER_ID: " Email Address is empty in INFOFLO ADDRESSBOOK, cannot be assign to C.R.M. System"
+                    GO B145_EXIT
+                 END
+              END
+              ** Build JSON Data Structure for CRM Market Segment Entity **
+              LOOKUP_DATA  = '{"systemusers":{"user_email":"':L_USER_EMAIL:'|':L_MANAGER_EMAIL:'"}}'
+ 
+              ENTITY_DATA  = '{"systemusers":{'
+              ENTITY_DATA := '"systemuserid":"@odata.lookup:#0",'
+              ENTITY_DATA := '"parentsystemuserid@odata.bind":"#1",'
+              ENTITY_DATA := '"modifiedon": "':L_MOD_ON:'"'
+              ENTITY_DATA := '}}'
+
+              ** The Complete JSON Data Structure to Send **
+              IN_DATA = '[[':LOOKUP_DATA:",":ENTITY_DATA:']]'
+           END ELSE
+              L_ERR_CODE = "B145-ERROR-6-2-2"
+              L_ERR_MSG = "Record ":L_KEY:" does not exists in file ADDRESSBOOK."
+              GO B145_EXIT
+           END
+        END ELSE
+           ** Build JSON Data Structure for CRM Market Segment Entity **
+           LOOKUP_DATA  = '{"systemusers":{"user_email":"':L_USER_EMAIL:'"}}'
+
+           ENTITY_DATA  = '{"systemusers":{'
+           ENTITY_DATA := '"systemuserid":"@odata.lookup:#0",'
+***************
+* PARENTSYSTEM
+           ENTITY_DATA := '"gs_removemanager":true,'
+**************
+           ENTITY_DATA := '"modifiedon": "':L_MOD_ON:'"'
+           ENTITY_DATA := '}}'
+
+           ** The Complete JSON Data Structure to Send **
+           IN_DATA = '[[':LOOKUP_DATA:",":ENTITY_DATA:']]'
+
+        END
+     END ELSE
+        L_ERR_CODE = "B145-ERROR-6-2-2"
+        L_ERR_MSG = "Record ":L_KEY:" does not exists in file ADDRESSBOOK."
+        GO B145_EXIT
+     END
+
+B145_EXIT: 
+     RETURN
+
+B150_QUOTES: 
+
+     L_KEY = L_RECORD_KEY
+
+     READ L_REC FROM QUHDR, L_KEY
+
+     ON ERROR
+        L_ERR_CODE = "B150-ERROR-7-1-1"
+        L_ERR_MSG = "Cannot read record ":L_KEY:" in file QUHDR."
+        GO B150_EXIT
+     END THEN
+        SWAP '"' WITH '\"' IN L_REC
+
+        L_COMPANY    = L_REC<1>
+        L_CUST_NBR   = L_REC<3>
+        L_DATE       = L_REC<12>
+        ENTITY_DATA = '{"quotes":{'
+        IF L_HTTP_METHOD = "PUT" THEN
+           ENTITY_DATA := '"quoteid":"':FIELD(L_CRM_GUID_LIST,"|",1):'",'
+           ENTITY_DATA := '"modifiedon":"':L_MOD_ON:'",'
+        END
+        ENTITY_DATA := '"quotenumber":"':L_KEY:'",'
+        ENTITY_DATA := '"name":"':L_KEY:'",'
+        ENTITY_DATA := '"gs_erpkey":"':ACNT.NAME:"*":L_KEY:'",'
+        ENTITY_DATA := '"gs_quotetype":717600003,' ;* Project
+        L_COMPANY_CODE = L_REC<1>
+        READ L_SYSCON_REC FROM SYSCON, "QUO_SALESREP_COMPANY" THEN
+           L_USD_CIE = TRIM(FIELD(L_SYSCON_REC<2>, ";",1))
+           LOCATE L_COMPANY_CODE:"01" IN L_USD_CIE<1> SETTING POS THEN
+              L_SLS_FLAG = 0
+           END ELSE
+              L_SLS_FLAG = 1
+           END
+        END
+
+        IF L_SLS_FLAG = 1 THEN
+           READV L_MKT_SLS FROM CUSTMST, L_COMPANY:"*":L_CUST_NBR, 10 ELSE L_MKT_SLS = ""
+           L_SLSREP_CODE = L_MKT_SLS
+           READ L_SLS_REC FROM SLSREPMST, L_MKT_SLS
+           ON ERROR
+              L_ERR_CODE = "B150-ERROR-1-4-1"
+              L_ERR_MSG = "Cannot record record ":L_MKT_SLS:" in file SLSREPMST."
+              GO B150_EXIT
+           END THEN
+              L_USER_ID = L_SLS_REC<1>
+              READ L_ADD_REC FROM ADDRESSBOOK, L_USER_ID
+              ON ERROR
+                 L_ERR_CODE = "B150-ERROR-1-5-1"
+                 L_ERR_MSG = "Cannot record record ":L_USER_ID:" in file ADDRESSBOOK."
+                 GO B150_EXIT
+              END THEN
+                 L_SLSREP_NAME = L_ADD_REC<1>
+                 IF TRIM(L_ADD_REC<23>) # "1" THEN
+                    L_ERR_CODE = "B150-ERROR-1-5-1.1"
+                    L_ERR_MSG = "User ID ":L_USER_ID: " is not setup in CRM, cannot be assign to C.R.M. System"
+                    GO B150_EXIT
+                 END ELSE
+                    IF TRIM(L_ADD_REC<22>) # "" THEN
+                       L_USER_EMAIL  = L_ADD_REC<22>
+                    END ELSE
+                       L_ERR_CODE = "B150-ERROR-1-5-1.2"
+                       L_ERR_MSG = "User ID ":L_USER_ID: " Email Address is empty in INFOFLO ADDRESSBOOK, cannot be assign to C.R.M. System"
+                       GO B150_EXIT
+                    END
+                 END
+              END ELSE
+                 L_ERR_CODE = "B150-ERROR-1-5-1"
+                 L_ERR_MSG = "Cannot record record ":L_USER_ID:" in file ADDRESSBOOK."
+                 GO B150_EXIT
+              END
+           END ELSE
+              L_ERR_CODE = "B150-ERROR-1-4-2"
+              L_ERR_MSG = "Record ":L_MKT_SLS:" does not exists in file SLSREPMST."
+              GO B150_EXIT
+           END
+        END ELSE
+           READV L_MKT_SLS FROM CUSTMST, L_COMPANY:"*":L_CUST_NBR, 112 ELSE L_MKT_SLS = ""
+           L_AGENT_CODE = L_MKT_SLS
+           READ L_AGENT_REC FROM AGENTMST, L_AGENT_CODE
+           ON ERROR
+              L_ERR_CODE = "B150-ERROR-1.1-4-1"
+              L_ERR_MSG = "Cannot record record ":L_AGENT_CODE:" in file AGENTMST."
+              GO B150_EXIT
+           END THEN
+              L_MGR_ID = L_AGENT_REC<1>
+              L_SLSREP_CODE = L_MGR_ID
+              READV L_USER_ID FROM MGRMST, L_MGR_ID, 3 THEN
+                 READ L_ADD_REC FROM ADDRESSBOOK, L_USER_ID
+                 ON ERROR
+                    L_ERR_CODE = "B150-ERROR-1.1-5-1"
+                    L_ERR_MSG = "Cannot record record ":L_USER_ID:" in file ADDRESSBOOK."
+                    GO B150_EXIT
+                 END THEN
+                    L_SLSREP_NAME = L_ADD_REC<1>
+                    IF TRIM(L_ADD_REC<23>) # "1" THEN
+                       L_ERR_CODE = "B150-ERROR-1.1-5-2.1"
+                       L_ERR_MSG = "User ID ":L_USER_ID: " is not setup in CRM, cannot be assign to C.R.M. System"
+                       GO B150_EXIT
+                    END ELSE
+                       IF TRIM(L_ADD_REC<22>) # "" THEN
+                          L_USER_EMAIL  = L_ADD_REC<22>
+                       END ELSE
+                          L_ERR_CODE = "B150-ERROR-1.1-5-2.2"
+                          L_ERR_MSG = "User ID ":L_USER_ID: " Email Address is empty in INFOFLO ADDRESSBOOK, cannot be assign to C.R.M. System"
+                          GO B150_EXIT
+                       END
+                    END
+                    READV L_AGENT_NAME FROM SYSTBL, "I17*":L_AGENT_CODE ,4 ELSE L_AGENT_NAME = ""
+                 END ELSE
+                    L_ERR_CODE = "B150-ERROR-1.1-5-2"
+                    L_ERR_MSG = "Record ":L_AGENT_CODE:" does not exists in file AGENTMST."
+                    GO B150_EXIT
+                 END
+              END ELSE
+                 L_USER_ID = ""
+              END
+           END ELSE
+              L_ERR_CODE = "B150-ERROR-1-4-2"
+              L_ERR_MSG = "Record ":L_AGENT_CODE:" does not exists in file AGENTMST."
+              GO B150_EXIT
+           END
+        END
+
+        LOOKUP_DATA  = '{"systemusers":{"user_email":"':L_USER_EMAIL:'"}}'
+
+*** ACCOUNT
+
+        IF TRIM(L_CUST_NBR) # "" THEN
+           L_CRMCUST_KEY = ACNT.NAME:"*":L_COMPANY:"*":L_CUST_NBR
+           READV L_CUSTMST_GUID FROM CUSTMSTCRM, L_CRMCUST_KEY, 2 THEN
+              IF L_CUST_ACCT_TYPE = 1 THEN
+                 L_CUSTMST_GUID = L_CUSTMST_GUID<1,2>
+              END ELSE
+                 L_CUSTMST_GUID = L_CUSTMST_GUID<1,1>
+              END
+              ENTITY_DATA := '"customerid_account@odata.bind":"accounts:':FIELD(L_CUSTMST_GUID,"|",1):'",'
+              ENTITY_DATA := '"ownerid@odata.bind":"#0",'
+           END ELSE
+              L_ERR_CODE = "B150-ERROR-8-1-1"
+              L_ERR_MSG = "Record ":L_CRMCUST_KEY:" does not exists in file CUSTMSTCRM.(Not in C.R.M.)"
+              GO B150_EXIT
+           END
+        END
+
+*** OPPORTUNITY
+
+        IF TRIM(L_REC<263>) THEN
+           L_CRMOPP_CRM_KEY = ACNT.NAME:"*":L_REC<263>
+           READV L_OPP_GUID FROM CRMOPPCRM, L_CRMOPP_CRM_KEY, 2 THEN
+              ENTITY_DATA := '"opportunityid@odata.bind":"opportunities:':FIELD(L_OPP_GUID,"|",1):'",'
+           END
+        END ELSE
+           IF PARAM<15> = 1 THEN
+              ENTITY_DATA := '"gs_removeopportunity":true,'
+           END
+        END
+
+*** CONTRACTOR
+        IF TRIM(L_REC<251>) # "" THEN
+           L_CONTMST_CRM_KEY = ACNT.NAME:"*":L_REC<251>
+           READV L_CONTMST_GUID FROM CONTMSTCRM, L_CONTMST_CRM_KEY, 2 THEN
+              ENTITY_DATA := '"gs_Contractorid@odata.bind":"accounts:':FIELD(L_CONTMST_GUID,",",1):'",'
+           END
+        END
+
+*** CURRENCY
+        IF TRIM(L_REC<92>) # "" THEN
+           READ L_SYSTBL_CUR FROM SYSTBLCRM, ACNT.NAME:"*CUR" THEN
+              L_NB_CUR = DCOUNT(L_SYSTBL_CUR, AM)
+              FOR L_IND2 = 1 TO L_NB_CUR
+                 IF TRIM(L_REC<92>) = FIELD(L_SYSTBL_CUR<L_IND2>,"|",1) THEN
+                    ENTITY_DATA := '"transactioncurrencyid@odata.bind":"transactioncurrencies:':FIELD(L_SYSTBL_CUR<L_IND2>,"|",2):'",'
+                 END
+              NEXT L_IND2
+           END
+        END
+
+*** RATE
+        L_RATE = 0
+
+        READ L_CURRDET_REC FROM CURRDET, "CAD*USD" THEN
+           LOCATE L_DATE IN L_CURRDET_REC<1> BY "AR" SETTING I ELSE I=I-1
+           L_RATE = L_CURRDET_REC<2,I>
+        END
+
+        L_RATE = OCONV(L_RATE,'MD6')
+
+        L_RATE = 1 / L_RATE
+
+        L_RATE = ICONV(L_RATE,"MD6")
+        L_RATE = OCONV(L_RATE,"MD6")
+
+        ENTITY_DATA := '"gs_exchangerate":':L_RATE:','
+        L_TOTAL_AMOUNT = L_REC<36>
+
+***ANDRE - HARD CODED LOGIC FOR FIELD NAME FOR AMOUNT, WILL BE DIFFERENT FOR CAD vs USD.
+        IF TRIM(L_REC<92>) = "CAD" THEN
+           ENTITY_DATA := '"gs_total":':OCONV(L_TOTAL_AMOUNT,"MD2"):','
+        END ELSE
+           ENTITY_DATA := '"gs_total_us":':OCONV(L_TOTAL_AMOUNT,"MD2"):','
+        END
+***ANDRE - HARD CODED LOGIC FOR FIELD NAME FOR AMOUNT, WILL BE DIFFERENT FOR CAD vs USD.
+
+        L_JOBNUMBER  = L_REC<248>
+        ENTITY_DATA := '"gs_jobnumber":"':L_JOBNUMBER:'",'
+        L_JOBNAME    = L_REC<245>
+
+        ENTITY_DATA := '"gs_jobname":"':L_JOBNAME:'",'
+
+        L_DATE = OCONV(L_REC<90>[1,5], "D4/")
+        L_DATE = FIELD(L_DATE,"/",3):"-":FIELD(L_DATE,"/",1):"-":FIELD(L_DATE,"/",2)
+
+        ENTITY_DATA := '"effectivefrom":"':L_DATE:'",'
+        ENTITY_DATA := '"requestdeliveryby":"':L_DATE:'",'
+
+        L_DATE = OCONV(L_REC<164>, "D4/")
+        L_DATE = FIELD(L_DATE,"/",3):"-":FIELD(L_DATE,"/",1):"-":FIELD(L_DATE,"/",2)
+        ENTITY_DATA := '"effectiveto":"':L_DATE:'",'
+
+        ENTITY_DATA := '"statecode":"0"'
+
+        IF L_REC<167,1> = 5 THEN  ; * CONVERTED TO ORDER
+           ENTITY_DATA := ',"statuscode":"717600000"'
+        END
+
+        ENTITY_DATA := ',"gs_blenderkey":"0"'
+
+        ENTITY_DATA := '}}'
+        ** The Complete JSON Data Structure to Send **
+        IN_DATA = '[[':LOOKUP_DATA:",":ENTITY_DATA:']]'
+     END ELSE
+        L_ERR_CODE = "B150-ERROR-7-1-2"
+        L_ERR_MSG = "Record ":L_KEY:" does not exists in file QUHDR."
+        GO B150_EXIT
+     END
+B150_EXIT: 
+     RETURN
+
+
+B155_SYSTEMUSERROLESCOLLECTION:
+
+           L_USER_EMAIL = PARAM<2>
+           LOOKUP_DATA  = '{"systemuserrolescollection":{"user_email":"':L_USER_EMAIL:'|':L_MANAGER_EMAIL:'"}}'
+           ENTITY_DATA  = '{}'
+
+B155_SYSTEMUSERROLESCOLLECTION_EXIT: 
+     RETURN
+
+
+**************************************************************
+* Internal subroutine to process data based on business rule *
+**************************************************************
+B300_CALL_CRM_WEB_API: 
+
+     IF L_PHANTOM_MODE  = 1THEN
+        WRITESEQ PARAM APPEND ON L_IFF_CRM_FILE THEN END
+     END ELSE
+        L_NB_RETRY += 1
+        L_SYSCON_KEYS<1>   = PARAM<1,1>     ; * "CRM.HTTP.SETTINGS"
+        L_SYSCON_KEYS<2,1> = PARAM<1,2>     ; * "CRM.HTTP.PARAMETERS"
+        L_SYSCON_KEYS<2,2> = L_HTTP_METHOD  ; * "HTTP Method"
+
+        READ L_SYSCON_PARAM_REC FROM SYSCON, L_SYSCON_KEYS<2,1> THEN
+           WRITESEQ "************************************" APPEND ON L_CRM_LOG_FILE THEN END
+           WRITESEQ "ACCOUNT: (" :ACNT.NAME: ")"  APPEND ON L_CRM_LOG_FILE THEN END
+           WRITESEQ "************************************" APPEND ON L_CRM_LOG_FILE THEN END
+           WRITESEQ "WHEN: " : L_DATE : ", " :OCONV(TIME(),"MTS") APPEND ON L_CRM_LOG_FILE THEN END
+           WRITESEQ "TRY:  " : L_NB_RETRY  APPEND ON L_CRM_LOG_FILE THEN END
+
+           WRITESEQ "CRM WEBB API URL: " : TRIM(FIELD(L_SYSCON_PARAM_REC<1>,";",1)) APPEND ON L_CRM_LOG_FILE THEN END
+           WRITESEQ "HTTP Method: " : L_HTTP_METHOD APPEND ON L_CRM_LOG_FILE THEN END
+        END
+        WRITESEQ "************************************" APPEND ON L_CRM_LOG_FILE THEN END
+        WRITESEQ ">>> Requested by:  " : USER.ID        APPEND ON L_CRM_LOG_FILE THEN END
+        WRITESEQ ">>> C.R.M. Entity: " : L_IDENTITY     APPEND ON L_CRM_LOG_FILE THEN END
+        IF TRIM(L_MATRIX_KEYS) # "" THEN
+           L_INFOFLO_KEY = L_MATRIX_KEYS
+*           FIELD(L_MATRIX_KEY,"*",1):"*":FIELD(L_MATRIX_KEY,"*",2):"*":FIELD(L_MATRIX_KEY,"*",3):"*":FIELD(L_MATRIX_KEY,"*",4)
+        END ELSE
+           L_INFOFLO_KEY = L_RECORD_KEY
+        END
+        WRITESEQ ">>> INFOFLO Key:"     APPEND ON L_CRM_LOG_FILE THEN END
+        WRITESEQ L_INFOFLO_KEY          APPEND ON L_CRM_LOG_FILE THEN END
+        WRITESEQ ">>> Json String:   " : IN_DATA        APPEND ON L_CRM_LOG_FILE THEN END
+        WRITESEQ "************************************" APPEND ON L_CRM_LOG_FILE THEN END
+
+        IF PARAM<20> # 1 THEN  ; * Not Initial Load
+           IF L_IDENTITY = "SLSMATRIX" THEN
+              BEGIN CASE
+                 CASE L_HTTP_METHOD = "POST"
+                    CALL SB.DISP(8, "Now adding new Sales Rep/Agents matrix in C.R.M. system, please wait")
+                 CASE L_HTTP_METHOD = "DELETE"
+                    CALL SB.DISP(8, "Now deleting Sales Rep/Agents matrix in C.R.M. system, please wait")
+                 CASE L_HTTP_METHOD = "PUT"
+                    CALL SB.DISP(8, "Now updating existing Sales Rep/Agents matrix in C.R.M. system, please wait")
+              END CASE
+           END
+
+           IF L_IDENTITY = "ACCOUNT" THEN
+              BEGIN CASE
+                 CASE L_HTTP_METHOD = "POST"
+                    CALL SB.DISP(8, "Now creating new account in C.R.M. system, please wait")
+                 CASE L_HTTP_METHOD = "PUT"
+                    CALL SB.DISP(8, "Now updating existing account in C.R.M. system, please wait")
+              END CASE
+           END
+
+           IF L_IDENTITY # "ACCOUNT" AND L_IDENTITY # "SLSMATRIX" THEN
+              CALL SB.DISP(8, "Now updating C.R.M. system, please wait")
+           END
+        END
+
+        CALL SYSS9000.1(L_SYSCON_KEYS, IN_DATA, OUT_DATA, STATUS)
+
+        IF PARAM<20> # 1 THEN  ; * Not Initial Load
+           CALL SB.DISP(8, "")
+        END
+
+        WRITESEQ "<<< Status                   : " : STATUS<1> APPEND ON L_CRM_LOG_FILE THEN END
+        WRITESEQ "<<< Status Detail            : " : STATUS<2> APPEND ON L_CRM_LOG_FILE THEN END
+        WRITESEQ "<<< Return GUIDS             : " : OUT_DATA APPEND ON L_CRM_LOG_FILE THEN END
+
+*        CLOSESEQ L_CRM_LOG_FILE
+
+        PARAM<7> = STATUS<1>
+        PARAM<9> = STATUS<2>: " - " : OUT_DATA
+
+        IF PARAM<7> = 0 THEN
+           CLOSESEQ L_CRM_LOG_FILE
+
+           SWAP "," WITH VM IN OUT_DATA
+
+           IF L_HTTP_METHOD # "DELETE" THEN
+              IF L_CUST_ACCT_TYPE = 1 THEN
+*                 IF L_HTTP_METHOD = "POST" AND L_IDENTITY = "SLSMATRIX" THEN
+                 IF L_IDENTITY = "SLSMATRIX" THEN
+                    L_DCOUNT = DCOUNT(OUT_DATA, VM)
+                    FOR L_I = 1 TO L_DCOUNT
+                       L_RETURN_MATRIX_GUID = FIELD(OUT_DATA<1,L_I>,"|",1)
+                       L_MATRIX_KEY = FIELD(OUT_DATA<1,L_I>,"=",2)
+                       GOSUB C200_WRITE_COMPLETED_MATRIX
+                    NEXT L_I
+                 END ELSE
+                    PARAM<9> = OUT_DATA<1,1>:",":OUT_DATA<1,2>
+*                    IF PARAM<20> # 1 THEN
+                       L_DCOUNT = DCOUNT(OUT_DATA, VM)
+                       FOR L_I = 3 TO L_DCOUNT
+                          L_MATRIX_KEY         = FIELD(OUT_DATA<1,L_I>,"=",2)
+                          L_RETURN_MATRIX_GUID = FIELD(OUT_DATA<1,L_I>,"|",1)
+
+                          GOSUB C200_WRITE_COMPLETED_MATRIX
+                       NEXT L_I
+*                    END
+                 END
+              END ELSE
+*                 IF L_HTTP_METHOD = "POST" AND L_IDENTITY = "SLSMATRIX" THEN
+                 IF L_IDENTITY = "SLSMATRIX" THEN
+                    L_DCOUNT = DCOUNT(OUT_DATA, VM)
+                    FOR L_I = 1 TO L_DCOUNT
+                       L_MATRIX_KEY         = FIELD(OUT_DATA<1,L_I>,"=",2)
+                       L_RETURN_MATRIX_GUID = FIELD(OUT_DATA<1,L_I>,"|",1)
+
+                       GOSUB C200_WRITE_COMPLETED_MATRIX
+                    NEXT L_I
+                 END ELSE
+                    PARAM<9> = OUT_DATA<1,1>
+*                    IF PARAM<20> # 1 THEN
+                       L_DCOUNT = DCOUNT(OUT_DATA, VM)
+                       FOR L_I = 2 TO L_DCOUNT
+                          L_MATRIX_KEY         = FIELD(OUT_DATA<1,L_I>,"=",2)
+                          L_RETURN_MATRIX_GUID = FIELD(OUT_DATA<1,L_I>,"|",1)
+
+                          GOSUB C200_WRITE_COMPLETED_MATRIX
+                       NEXT L_I
+*                    END
+                 END
+              END
+****\/ PIEDES.112
+           END ELSE
+              L_NB_TO_DELETE = DCOUNT(PARAM<16>,VM)
+              FOR L_DEL_IND = 1 TO L_NB_TO_DELETE
+                  DELETE CRMMATRIXGUID, PARAM<16,L_DEL_IND>
+              NEXT L_DEL_IND
+****/\ PIEDES.112
+           END
+
+        END ELSE
+****\/ PIEDES.112
+           IF L_NB_RETRY => L_NB_TRY THEN
+              L_NB_RETRY = 0
+
+              IF L_HTTP_METHOD = "DELETE" THEN
+                 L_NB_TO_DELETE = DCOUNT(PARAM<16>,VM)
+                 FOR L_DEL_IND = 1 TO L_NB_TO_DELETE
+                    WRITEV 1 ON CRMMATRIXGUID, PARAM<16,L_DEL_IND>, 10
+                 NEXT L_DEL_IND
+              END
+****/\ PIEDES.112
+              PARAM<7> = 1
+
+              IF PARAM<13> # 1 THEN
+                 IF TRIM(STATUS<2>) = "" THEN
+                    STATUS<2> = "Unknown Error!!!"
+                 END
+              END
+*              CALL SB.DISP(3, STATUS<2>:" M.I.S is already advised, they will contact you soon.")
+              CALL SB.DISP(3, STATUS<2>:" I.T. received the details of this error")
+              IF PARAM<20> # 1 THEN ; * NOT INITIAL LOAD
+                 L_EMAIL_ADD = ""
+                 READ L_SYSCON_ERR FROM SYSCON, "CRM.ERROR.HANDLING" THEN
+                    L_EMAIL_LIST = TRIM(FIELD(L_SYSCON_ERR<2>,";",1))
+                    L_NB_EMAIL   = DCOUNT(L_EMAIL_LIST, VM)
+                    FOR L_IND = 1 TO L_NB_EMAIL
+                       LOC = ""
+                       LOC = INDEX(L_EMAIL_LIST<1,L_IND>,"@",1)
+                       IF LOC # 0 THEN
+                          L_EMAIL_ADD<1,-1> = L_EMAIL_LIST<1,L_IND>
+                       END ELSE
+                          ARG_EMAIL   = ""
+                          ARG_USER_ID = L_EMAIL_LIST<1,L_IND>
+                          CALL SYSS9300.1(ARG_EMAIL,ARG_USER_ID)
+                          L_EMAIL_ADD<1,-1> = ARG_EMAIL
+                       END
+                    NEXT L_IND
+                    SWAP VM WITH ";" IN L_EMAIL_ADD
+                 END ELSE
+                    L_EMAIL_ADD = "devteam@ipexna.com"
+                 END
+ 
+                 L_SAVE_PARAM = PARAM
+                 PARAM    = ""
+                 PARAM<1,1> = "STATUS<1>: " : STATUS<1>
+                 PARAM<1,2> = "STATUS<2>: " : STATUS<2>
+                 PARAM<2> = TRIM(FIELD(L_SYSCON_ERR<1>, ";",1)) : ", Key: " : TRIM(KEY) : ", " : TRIM(L_DATE) : " - " : TRIM(OCONV(TIME(),"MTS"))
+                 PARAM<3> = L_EMAIL_ADD
+                 PARAM<4> = "CRM.LOG"
+                 PARAM<5> = L_FILE_NAME
+                 SWAP "'" WITH " " IN PARAM ; * To eliminate Mailing error in SYSS9060.2
+                 CALL SB.PROCESS("SYSS9060.2")
+                 PARAM = L_SAVE_PARAM
+              END
+           END ELSE
+** RETRY TO SEND
+              GOSUB B300_CALL_CRM_WEB_API
+           END
+        END
+     END
+
+B300_EXIT: 
+     RETURN
+
+**********************
+* Matrix handling *
+**********************
+
+C100_WRITE_PENDING_MATRIX:
+
+     IF L_MATRIX_KEY # "" THEN
+        WRITEV "P"                 ON CRMMATRIXGUID, L_MATRIX_KEY, 1 
+        WRITEV OCONV(DATE(),"D4/") ON CRMMATRIXGUID, L_MATRIX_KEY, 3
+        WRITEV OCONV(TIME(),"MTS") ON CRMMATRIXGUID, L_MATRIX_KEY, 4
+        WRITEV USER.ID             ON CRMMATRIXGUID, L_MATRIX_KEY, 5
+        WRITEV L_OVERRIDE_MGR_ID   ON CRMMATRIXGUID, L_MATRIX_KEY, 6
+        IF L_STATE_FLAG = 1 THEN
+           WRITEV L_STATE : " - " : L_STATE_DESC  ON CRMMATRIXGUID, L_MATRIX_KEY, 7
+        END ELSE
+           WRITEV "" ON CRMMATRIXGUID, L_MATRIX_KEY, 7
+        END
+        WRITEV L_SLSREP_NAME       ON CRMMATRIXGUID, L_MATRIX_KEY, 8
+        IF L_AGENT_DESC # "" THEN
+           WRITEV L_AGENT_DESC     ON CRMMATRIXGUID, L_MATRIX_KEY, 9
+        END ELSE
+           WRITEV L_SLSREP_CODE    ON CRMMATRIXGUID, L_MATRIX_KEY, 9
+        END
+
+     END
+C100_WRITE_PENDING_MATRIX_EXIT: 
+     RETURN
+
+C200_WRITE_COMPLETED_MATRIX: 
+     IF L_MATRIX_KEY # "" THEN
+        WRITEV "C"                     ON CRMMATRIXGUID, L_MATRIX_KEY, 1 
+        IF L_HTTP_METHOD = "POST" THEN
+           WRITEV L_RETURN_MATRIX_GUID ON CRMMATRIXGUID, L_MATRIX_KEY, 2
+        END
+        WRITEV OCONV(DATE(),"D4/")     ON CRMMATRIXGUID, L_MATRIX_KEY, 3
+        WRITEV OCONV(TIME(),"MTS")     ON CRMMATRIXGUID, L_MATRIX_KEY, 4
+        WRITEV USER.ID                 ON CRMMATRIXGUID, L_MATRIX_KEY, 5
+     END
+C200_WRITE_COMPLETED_MATRIX_EXIT: 
+     RETURN
+
+
+C300_GET_SLS_REP_INFO:
+
+   READ L_REC FROM SLSREPMST, L_MKT_SLS
+   ON ERROR
+      L_ERR_CODE = "C300-ERROR-1-1"
+      L_ERR_MSG = "Sales Rep code ":L_MKT_SLS :" does not exist in Sales Rep Master File."
+      GO C300_EXIT
+   END THEN
+      L_USER_ID = L_REC<1>
+      READ L_REC FROM ADDRESSBOOK, L_USER_ID
+      ON ERROR
+         L_ERR_CODE = "C300-ERROR-1-2"
+         L_ERR_MSG = "Cannot record record ":L_USER_ID:" in file ADDRESSBOOK."
+         GO C300_EXIT
+      END THEN
+         L_SLSREP_NAME = L_REC<1>
+         IF TRIM(L_REC<23>) # "1" THEN
+            L_ERR_CODE = "C300-ERROR-1-3"
+            L_ERR_MSG = "User ID ":L_USER_ID: " is not setup in CRM, cannot be assign to C.R.M. System"
+            GO C300_EXIT
+         END ELSE
+            IF TRIM(L_REC<22>) # "" THEN
+               L_USER_EMAIL  = L_REC<22>
+            END ELSE
+               L_ERR_CODE = "C300-ERROR-1-4"
+               L_ERR_MSG = "User ID ":L_USER_ID: " Email Address is empty in INFOFLO ADDRESSBOOK, cannot be assign to C.R.M. System"
+               GO C300_EXIT
+            END
+         END
+      END ELSE
+         L_ERR_CODE = "C300-ERROR-1-5"
+         L_ERR_MSG = "Cannot record record ":L_USER_ID:" in file ADDRESSBOOK."
+         GO C300_EXIT
+      END
+   END ELSE
+      L_ERR_CODE = "C300-ERROR-1-6"
+      L_ERR_MSG = "Sales Rep code ":L_MKT_SLS :" does not exist in Sales Rep Master File."
+      GO C300_EXIT
+   END
+
+C300_EXIT:
+
+   RETURN
+
+
+C400_GET_AGENT_INFO:
+
+   IF L_OVERRIDE_MGR_ID # "" THEN
+      L_MGR_ID = L_OVERRIDE_MGR_ID
+      L_STATE_FLAG = 0
+      READV L_USER_ID FROM MGRMST, L_MGR_ID, 3 THEN
+         READ L_REC FROM ADDRESSBOOK, L_USER_ID
+         ON ERROR
+            L_ERR_CODE = "C400-ERROR-1.1-5"
+            L_ERR_MSG = "Cannot record record ":L_USER_ID:" in file ADDRESSBOOK."
+            GO C400_EXIT
+         END THEN
+            L_SLSREP_NAME = L_REC<1>
+            IF TRIM(L_REC<23>) # "1" THEN
+               L_ERR_CODE = "C400-ERROR-1.1-6"
+               L_ERR_MSG = "User ID ":L_USER_ID: " is not setup in CRM, cannot be assign to C.R.M. System"
+               GO C400_EXIT
+            END ELSE
+               IF TRIM(L_REC<22>) # "" THEN
+                  L_USER_EMAIL  = L_REC<22>
+               END ELSE
+                  L_ERR_CODE = "C400-ERROR-1.1-7"
+                  L_ERR_MSG = "User ID ":L_USER_ID: " Email Address is empty in INFOFLO ADDRESSBOOK, cannot be assign to C.R.M. System"
+                  GO C400_EXIT
+               END
+            END
+            READV L_AGENT_NAME FROM SYSTBL, "I17*":L_MKT_AGT ,4 ELSE L_AGENT_NAME = ""
+         END ELSE
+            L_ERR_CODE = "C400-ERROR-1.1-8"
+            L_ERR_MSG = "Agent code ":L_MKT_AGT :" does not exist in Agent Master File."
+            GO C400_EXIT
+         END
+      END ELSE
+         L_USER_ID = ""
+      END
+
+   END ELSE
+
+      READ L_REC FROM AGENTMST, L_MKT_AGT_STATE_KEY THEN
+         L_STATE_FLAG = 1
+         IF PARAM<99,L_IND,1> = 0 THEN
+            L_MGR_ID = L_REC<1>
+            L_SLSREP_CODE = L_MGR_ID
+         END ELSE
+            LOCATE PARAM<99,L_IND,1> IN L_REC<2> SETTING POS THEN
+              L_MGR_ID = L_REC<3,POS>
+              L_SLSREP_CODE = L_MGR_ID
+            END
+         END
+
+         READV L_USER_ID FROM MGRMST, L_MGR_ID, 3 THEN
+            READ L_REC FROM ADDRESSBOOK, L_USER_ID
+            ON ERROR
+               L_ERR_CODE = "C400-ERROR-1-1"
+               L_ERR_MSG = "Cannot record record ":L_USER_ID:" in file ADDRESSBOOK."
+               GO C400_EXIT
+            END THEN
+               L_SLSREP_NAME = L_REC<1>
+               IF TRIM(L_REC<23>) # "1" THEN
+                  L_ERR_CODE = "C400-ERROR-1-2"
+                  L_ERR_MSG = "User ID ":L_USER_ID: " is not setup in CRM, cannot be assign to C.R.M. System"
+                  GO C400_EXIT
+               END ELSE
+                  IF TRIM(L_REC<22>) # "" THEN
+                     L_USER_EMAIL  = L_REC<22>
+                  END ELSE
+                     L_ERR_CODE = "C400-ERROR-1-3"
+                     L_ERR_MSG = "User ID ":L_USER_ID: " Email Address is empty in INFOFLO ADDRESSBOOK, cannot be assign to C.R.M. System"
+                     GO C400_EXIT
+                  END
+               END
+               READV L_AGENT_NAME FROM SYSTBL, "I17*":L_MKT_AGT ,4 ELSE L_AGENT_NAME = ""
+            END ELSE
+               L_ERR_CODE = "C400-ERROR-1-4"
+               L_ERR_MSG = "Agent code ":L_MKT_AGT :" does not exist in Agent Master File."
+               GO C400_EXIT
+            END
+         END ELSE
+            L_USER_ID = ""
+         END
+
+      END ELSE
+
+         READ L_REC FROM AGENTMST, L_MKT_AGT THEN
+            L_STATE_FLAG = 0
+
+            IF PARAM<99,L_IND,1> = 0 THEN
+
+               L_MGR_ID = L_REC<1>
+               L_SLSREP_CODE = L_MGR_ID
+            END ELSE
+               LOCATE PARAM<99,L_IND,1> IN L_REC<2> SETTING POS THEN
+
+                  L_MGR_ID = L_REC<3,POS>
+                  L_SLSREP_CODE = L_MGR_ID
+               END
+            END
+
+            READV L_USER_ID FROM MGRMST, L_MGR_ID, 3 THEN
+               READ L_REC FROM ADDRESSBOOK, L_USER_ID
+               ON ERROR
+                  L_ERR_CODE = "C400-ERROR-1-5"
+                  L_ERR_MSG = "Cannot record record ":L_USER_ID:" in file ADDRESSBOOK."
+                  GO C400_EXIT
+               END THEN
+                  L_SLSREP_NAME = L_REC<1>
+                  IF TRIM(L_REC<23>) # "1" THEN
+                     L_ERR_CODE = "C400-ERROR-1-6"
+                     L_ERR_MSG = "User ID ":L_USER_ID: " is not setup in CRM, cannot be assign to C.R.M. System"
+                     GO C400_EXIT
+                  END ELSE
+                     IF TRIM(L_REC<22>) # "" THEN
+                        L_USER_EMAIL  = L_REC<22>
+                     END ELSE
+                        L_ERR_CODE = "C400-ERROR-1-7"
+                        L_ERR_MSG = "User ID ":L_USER_ID: " Email Address is empty in INFOFLO ADDRESSBOOK, cannot be assign to C.R.M. System"
+                        GO C400_EXIT
+                     END
+                  END
+                  READV L_AGENT_NAME FROM SYSTBL, "I17*":L_MKT_AGT ,4 ELSE L_AGENT_NAME = ""
+               END ELSE
+                  L_ERR_CODE = "C400-ERROR-1-8"
+                  L_ERR_MSG = "Agent code ":L_MKT_AGT :" does not exist in Agent Master File."
+                  GO C400_EXIT
+               END
+            END ELSE
+               L_USER_ID = ""
+            END
+         END ELSE
+            L_ERR_CODE = "C400-ERROR-1-9"
+            L_ERR_MSG = "Record ":L_MKT_AGT:" does not exists in file AGENTMST."
+            GO C400_EXIT
+         END
+      END
+
+
+   END
+
+C400_EXIT:
+
+   RETURN
+
+C450_GET_AR_STATUS:
+
+    L_AR_STATUS       =  ""
+    L_COMPANY         =  FIELD(L_RECORD_KEY,"*",1)
+    L_CUSTOMER_NUMBER =  FIELD(L_RECORD_KEY,"*",2)
+
+    IF LEN(L_CUSTOMER_NUMBER) > 7 THEN
+       L_ACCOUNT_TYPE        = "3"
+       L_ST_NUMBER           =  L_CUSTOMER_NUMBER
+       L_BT_NUMBER           =  L_CUSTOMER_NUMBER[1,7]
+       READ  L_BT_CUSTMST_REC FROM CUSTMST, L_COMPANY : "*" : L_BT_NUMBER ELSE L_BT_CUSTMST_REC = ""
+       IF L_BT_CUSTMST_REC<2>   #  L_BT_NUMBER THEN
+          L_AR_NUMBER           =  L_BT_CUSTMST_REC<2>
+          READ  L_AR_CUSTMST_REC FROM CUSTMST, L_COMPANY : "*" : L_AR_NUMBER ELSE L_AR_CUSTMST_REC = ""
+       END ELSE
+          L_AR_NUMBER           =  L_BT_NUMBER
+          L_AR_CUSTMST_REC      =  L_BT_CUSTMST_REC
+       END
+    END ELSE
+       L_ST_NUMBER           =  L_CUSTOMER_NUMBER
+       L_BT_NUMBER           =  L_CUSTOMER_NUMBER
+       L_BT_CUSTMST_REC      =  L_CUSTMST_REC
+       IF L_BT_CUSTMST_REC<2>   #  L_BT_NUMBER THEN
+          L_ACCOUNT_TYPE     = "2"
+          L_AR_NUMBER        =  L_BT_CUSTMST_REC<2>
+          READ  L_AR_CUSTMST_REC FROM CUSTMST, L_COMPANY : "*" : L_AR_NUMBER ELSE L_AR_CUSTMST_REC = ""
+       END ELSE
+          L_ACCOUNT_TYPE        = "1"
+          L_AR_NUMBER           =  L_CUSTOMER_NUMBER
+          L_AR_CUSTMST_REC      =  L_BT_CUSTMST_REC
+       END
+    END
+
+    L_AR_STATUS    =  L_AR_CUSTMST_REC<29>
+    L_AR_WEBSTART  =  L_AR_CUSTMST_REC<120>
+    L_BT_WEBSTART  =  L_BT_CUSTMST_REC<120>
+    L_ST_WEBSTART  =  L_CUSTMST_REC<120>
+
+A450_EXIT:
+     RETURN
+
+
+**********************
+* Exception handling *
+**********************
+
+A500_CONCLUSION: 
+
+     IF L_ERR_CODE # "" THEN
+        SAVE_PARAM = PARAM
+        L_TS = OCONV(FIELD(SYSTEM(12)/1000,'.',1),"MTS"):".":FIELD(SYSTEM(12)/1000,'.',2)
+        CALL SB.PROCESS("SYS0061,IP3000\":L_TS:@VM:PROGRAM:@VM:L_ERR_CODE:@VM:L_ERR_MSG)
+        PARAM = SAVE_PARAM
+        PARAM<7> = 1
+        PARAM<9> = L_ERR_CODE : " - " : L_ERR_MSG
+     END
+
+     RTN.FLAG = 0
+     REFRESH = -2
+
+A500_EXIT: 
+     GO 9999
+
+
+****************************************
+* Exit
+****************************************
+
+     $INCLUDE IIPLUS.BOTTOM
+
+     END
+*

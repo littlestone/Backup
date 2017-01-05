@@ -1,0 +1,27 @@
+﻿Procedure to install Arch Linux on VirtualBox:
+
+1) Boot CD & use cfdisk to create your partitions (#fdisk /dev/sda): a primary bootable partition for root of 7.5GB (type linux 83) ->/dev/sda1 and a logical swap partiton of 1GB (type linux swap 82) -> /dev/sda5
+
+2) Format your partitions: (# mkfs.ext4 /dev/sda1 and # mkswap /dev/sda5 && swapon /dev/sda5)
+
+3) Mount your partitions: (# mount /dev/sda1 /mnt)
+
+4) Check if you're connected to the internet (# ping www.google.com) & pick your closest mirror in mirror list (# nano /etc/pacman.d/mirrorlist), for wifi type # wifi-menu
+
+5) Install base system: (# pacstrap /mnt base base-devel sudo)
+
+6) Generate fstab entries: (# genfstab -p /mnt >> /mnt/etc/fstab) -> # more /mnt/etc/fstab
+
+7) Initial Installation of the Boot Loader: (# pacstrap /mnt syslinux)
+
+8) chroot in your new system: (# arch-chroot /mnt) -> (# bash)
+
+9) write your hostname (# nano /etc/hostname) -> archlinux
+
+10) set your timezone (# ln -s /usr/share/zoneinfo/America/Montreal /etc/localtime && hwclock --systohc --utc)
+
+11) Uncomment your locale (# nano /etc/locale.gen) and generate it (# locale-gen && locale > /etc/locale.conf) 
+
+12) Finishing the Boot Loader Installation: (# cd /boot/syslinux/) -> (cp /usr/lib/syslinux/bios/*.c32 .) -> (# extlinux --install /boot/syslinux) -> (# dd conv=notrunc bs=440 count=1 if=/usr/lib/syslinux/bios/gptmbr.bin of=/dev/sda) -> (# mkinitcpio -p linux)
+
+13) Set root password: (# passwd)

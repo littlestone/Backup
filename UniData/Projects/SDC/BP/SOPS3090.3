@@ -1,0 +1,840 @@
+   SUBROUTINE SOPS3090.3(SDCAUDIT_KEY,APPROVER,ACTIONS,SLA_LEVEL_CNT,TIMESTAMP,MSG)
+
+* Send SDC Approval Request to Approver by Email
+* VERSION 8.2.3
+* 25 SEP 14 8.2.3 juntan PRJ*SOP381D.22-(Sub #22) SHIP AND DEBIT - PHASE 2
+* 15 SEP 14 8.2.3 juntan PRJ*JUNTAN.71-Add logic to determine if next level approver available
+* 11 SEP 14 8.2.3 juntan PRJ*JUNTAN.69-Bug fix for Ship & Debit approval request email resend 
+* 21 APR 14 8.2.3 juntan PRJ*SOP381D.11-(Sub #11) SHIP AND DEBIT - PHASE 2
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+
+   PROGRAM = 'SOPS3090.3'
+
+   $INCLUDE IIPLUS.TOP
+   $INCLUDE IIPLUS.TEXTLOAD
+   $INCLUDE IIPLUS.DEBUG
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*
+*              This program is used to handle the web service call-back process for SDC approval
+*              request and do the following necessary steps:
+*
+*                1. Call SOPS3080.10 API to build HTML email for per web service response.
+*                2. Send the response email back to Creator.
+*                3. Determine the next level approver and call SOPS3090.1 to send the approval request.
+*                4. Update SDCHDR & SDCAUDIT files if all above steps succeed.
+*
+*              <<<NOTE>>>
+*
+*              Input Parameters:
+*                 SDCAUDIT_KEY  -> SDCAUDIT key
+*                 APPROVER      -> SLA approver userid
+*                 ACTIONS       -> Approve/Reject/Not Mine (A/X/B)
+*                 SLA_LEVEL_CNT -> SLA level CNT
+*                 TIMESTAMP     -> Approver action timestamp (used to validate request HTML email expiration)
+*
+*              Output Parameters:
+*                 MSG           -> Return message
+* MODIFICATIONS:
+* ==============
+*              2014/09/22 juntan SOP381D.22 - Add previous level approver's response message for request email.
+*              2014/09/15 juntan JUNTAN.71  - Add logic to determine the scenario where exists consecutive different level
+*                                             approver with the same approval amount range on the SLA setup.
+*              2014/09/11 juntan JUNTAN.69  - Response text adjustments.
+*              2014/03/26 juntan SOP381D.11 - Initial creation.
+*
+**************************************************************************
+
+
+A100_MAIN:
+
+   GOSUB A200_INITIALIZATION
+   IF RTN.FLAG # 0 THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF RTN.FLAG # 0 THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF RTN.FLAG # 0 THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+   GO A500_CONCLUSION
+
+
+****************************************
+* Define & initialize variables.
+****************************************
+A200_INITIALIZATION:
+
+   RTN.FLAG                   = 0
+   L_CNT                      = 0
+   L_INC                      = 0
+   L_TTL                      = 0
+   L_TO_UPDATE                = 0
+   L_FIND_NEXT_LEVEL          = 0
+   L_AR_APPROVED              = 0
+   L_WAIT_SLA_APPROVER        = 0
+   L_WAIT_AR_APPROVER         = 0
+   L_SDC_SECURITY_FLAG        = 0
+
+   L_KEY                      = ""
+   L_REC                      = ""
+   L_SDCHDR_REC               = ""
+   L_SDCAUDIT_REC             = ""
+   L_SDCSLA_REC               = ""
+   L_INPUT_PARAMS             = ""
+   L_OUTPUT_PARAMS            = ""
+
+   L_COMPANY                  = SDCAUDIT_KEY"G0*1"
+   L_DISTRIBUTOR              = SDCAUDIT_KEY"G1*1"
+   L_CLAIM_NBR                = SDCAUDIT_KEY"G2*1"
+   L_CLAIM_DT                 = ""
+   L_CLAIM_AMT                = ""
+   L_FROM_AMT                 = ""
+   L_TO_AMT                   = ""
+   L_SLA_LEVEL                = ""
+   L_SLA_KEY                  = ""
+   L_USER_ID                  = ""
+   L_USER_NAME                = ""
+   L_REQUESTOR_USERID         = ""
+   L_REQUESTOR_NAME           = ""
+   L_APPROVER_NAME            = ""
+   L_NAME                     = ""
+   L_COMPANY_DESC             = ""
+   L_DISTRIBUTOR_DESC         = ""
+   L_ACTION_MSG               = ""
+   L_NEXT_SLA_APPROVER_USERID = ""
+   L_NEXT_SLA_APPROVER_NAME   = ""
+   L_AR_COLLECTOR_CODE        = ""
+   L_AR_COLLECTOR_USERID      = ""
+   L_AR_COLLECTOR_NAME        = ""
+   L_SLA_ADMIN_EMAIL          = ""
+   L_TIMESTAMP                = ""
+   L_DATE                     = DATE()
+   L_TIME                     = TIME()
+
+   MSG                        = ""
+   MSG_ENG                    = ""
+   MSG_FRN                    = ""
+   MSG_ENG_UPDATE             = ""
+   MSG_FRN_UPDATE             = ""
+
+   *** juntan \/ JUNTAN.71 - 2014/09/15
+   L_SAME_APPROVAL_AMT_RANGE_FOUND = 0
+   *** juntan /\ JUNTAN.71 - 2014/09/15
+
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open any data files requried.
+****************************************
+A300_OPEN_FILES:
+
+   OPEN "SDCHDR" TO SDCHDR ELSE
+      MSG_ENG = "Open file SDCHDR failed."
+      MSG_FRN = "Ouvrir le fichier SDCHDR &eacute;chou&eacute;."
+      RTN.FLAG = 1
+      GO A300_EXIT
+   END
+
+   OPEN "SDCAUDIT" TO SDCAUDIT ELSE
+      MSG_ENG = "Open file SDCAUDIT failed."
+      MSG_FRN = "Ouvrir le fichier SDCAUDIT &eacute;chou&eacute;."
+      RTN.FLAG = 1
+      GO A300_EXIT
+   END
+
+   OPEN "SDCSLA" TO SDCSLA ELSE
+      MSG_ENG = "Open file SDCSLA failed."
+      MSG_FRN = "Ouvrir le fichier SDCSLA &eacute;chou&eacute;."
+      RTN.FLAG = 1
+      GO A300_EXIT
+   END
+
+   OPEN "COMPMST" TO COMPMST ELSE
+      MSG_ENG = "Open file COMPMST failed."
+      MSG_FRN = "Ouvrir le fichier COMPMST &eacute;chou&eacute;."
+      RTN.FLAG = 1
+      GO A300_EXIT
+   END
+
+   OPEN "CUSTMST" TO CUSTMST ELSE
+      MSG_ENG = "Open file CUSTMST failed."
+      MSG_FRN = "Ouvrir le fichier CUSTMST &eacute;chou&eacute;."
+      RTN.FLAG = 1
+      GO A300_EXIT
+   END
+
+   OPEN "SYSTBL" TO SYSTBL ELSE
+      MSG_ENG = "Open file SYSTBL failed."
+      MSG_FRN = "Ouvrir le fichier SYSTBL &eacute;chou&eacute;."
+      RTN.FLAG = 1
+      GO A300_EXIT
+   END
+
+   OPEN "SYSCON" TO SYSCON ELSE
+      MSG_ENG = "Open file SYSCON failed."
+      MSG_FRN = "Ouvrir le fichier SYSCON &eacute;chou&eacute;."
+      RTN.FLAG = 1
+      GO A300_EXIT
+   END
+
+   OPEN "ADDRESSBOOK" TO ADDRESSBOOK ELSE
+      MSG_ENG = "Open file ADDRESSBOOK failed."
+      MSG_FRN = "Ouvrir le fichier ADDRESSBOOK &eacute;chou&eacute;."
+      RTN.FLAG = 1
+      GO A300_EXIT
+   END
+
+A300_EXIT:
+   RETURN
+
+
+****************************************
+* Main process logic structure.
+****************************************
+A400_MAIN_PROCESS:
+
+   GOSUB B100_READ_DATA_SOURCE
+   IF RTN.FLAG # 0 THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B200_PROCESS_WEB_SERVICE_RESPONSE
+   IF RTN.FLAG # 0 THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B300_UPDATE_DATA_FILES
+   IF RTN.FLAG # 0 THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B400_FIND_NEXT_SLA_LEVEL
+   IF RTN.FLAG # 0 THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B500_SEND_APPROVER_RESPONSE
+   IF RTN.FLAG # 0 THEN
+      GO A400_EXIT
+   END
+
+A400_EXIT:
+   RETURN
+
+
+****************************************
+* Internal subroutine section.
+****************************************
+B100_READ_DATA_SOURCE:
+
+   L_KEY = SDCAUDIT_KEY
+   READU L_SDCHDR_REC FROM SDCHDR, L_KEY
+   ON ERROR
+      MSG_ENG = "Unable to read record ":L_KEY:" in SDCHDR file."
+      MSG_FRN = "Impossible de lire l'dossier ":L_KEY:" dans le fichier SDCHDR."
+      RTN.FLAG = 1
+      GO B100_EXIT
+   END LOCKED
+      L_USER_ID = GETUSERNAME(STATUS())
+      READV L_USER_NAME FROM ADDRESSBOOK, L_USER_ID, 1 ELSE L_USER_NAME = L_USER_ID
+      MSG_ENG = "Claim #": L_CLAIM_NBR : ' is currently <font color="red">locked</font>':" by " : L_USER_NAME: ", please try again later."
+      MSG_FRN = "R&eacute;clamation #": L_CLAIM_NBR : ' is pr&eacute;sentement <font color="red">verouill&eacute;</font>:':" par " : L_USER_NAME: ", S.V.P r&eacute;esayez plus tard."
+      RTN.FLAG = 1
+      GO B100_EXIT
+   END THEN
+      L_CLAIM_DT = OCONV(L_SDCHDR_REC<4>,"D2/")
+      L_USERID   = L_SDCHDR_REC<5>
+      L_FROM_AMT = L_SDCHDR_REC<12>
+      L_TO_AMT   = L_SDCHDR_REC<13>
+
+      READ L_SDCAUDIT_REC FROM SDCAUDIT, SDCAUDIT_KEY
+      ON ERROR
+         MSG_ENG = "Unable to read record ":L_KEY:" in SDCAUDIT file."
+         MSG_FRN = "Impossible de lire l'dossier ":L_KEY:" dans le fichier SDCAUDIT."
+         RTN.FLAG = 1
+         GO B100_EXIT
+      END THEN
+         L_TTL = DCOUNT(L_SDCAUDIT_REC<1>,@VM)
+         L_USER_ID = L_SDCAUDIT_REC<4,1>
+         L_SLA_LEVEL = L_SDCAUDIT_REC<7,1>
+         L_CLAIM_AMT = L_SDCAUDIT_REC<8,1>
+         L_SLA_KEY = L_SDCAUDIT_REC<9,1>
+         L_REQUESTOR_USERID = L_SDCAUDIT_REC<4,L_TTL>
+
+         IF L_REQUESTOR_USERID # "" THEN
+            READV L_REQUESTOR_NAME FROM ADDRESSBOOK, L_REQUESTOR_USERID, 1 ELSE
+               MSG_ENG = "Unable to read requestor userid ":L_REQUESTOR_USERID:" in ADDRESSBOOK file."
+               MSG_FRN = "Impossible de lire l'ID de utilisateur de demandeur ":L_REQUESTOR_USERID:" dans le fichier ADDRESSBOOK."
+               RTN.FLAG = 1
+               GO B100_EXIT
+            END
+         END ELSE
+            MSG_ENG = "Missing the requestor's userid to get full user name."
+            MSG_FRN = "Manquant l'ID de demandeur d'obtenir le nom d'utilisateur complet."
+            RTN.FLAG = 1
+            GO B100_EXIT
+         END
+
+         IF L_USER_ID # "" THEN
+            READV L_USER_NAME FROM ADDRESSBOOK, L_USER_ID, 1 ELSE
+               MSG_ENG = "Unable to read userid ":L_USER_ID:" in ADDRESSBOOK file."
+               MSG_FRN = "Impossible de lire l'ID de utilisateur ":L_USER_ID:" dans le fichier ADDRESSBOOK."
+               RTN.FLAG = 1
+               GO B100_EXIT
+            END
+         END ELSE
+            MSG_ENG = "Missing the userid to get full user name."
+            MSG_FRN = "Manquant l'ID de utilisateur d'obtenir le nom d'utilisateur complet."
+            RTN.FLAG = 1
+            GO B100_EXIT
+         END
+
+         IF APPROVER # "" THEN
+            READV L_APPROVER_NAME FROM ADDRESSBOOK, APPROVER, 1 ELSE
+               MSG_ENG = "Unable to read approver's userid ":APPROVER:" in ADDRESSBOOK file."
+               MSG_FRN = "Impossible de lire l'ID utilisateur de l'approbateur ":APPROVER:" dans le fichier ADDRESSBOOK."
+               RTN.FLAG = 1
+               GO B100_EXIT
+            END
+         END ELSE
+            MSG_ENG = "Missing the approver userid to get full user name."
+            MSG_FRN = "Manquant l'ID utilisateur de l'approbateur pour obtenir le nom d'utilisateur complet."
+            RTN.FLAG = 1
+            GO B100_EXIT
+         END
+
+         IF L_SLA_KEY # "" THEN
+            READ L_SDCSLA_REC FROM SDCSLA, L_SLA_KEY THEN
+               *** Check for approver replacement ***
+               IF L_SDCSLA_REC<3,SLA_LEVEL_CNT> # "" AND L_DATE >= L_SDCSLA_REC<5,SLA_LEVEL_CNT> AND L_DATE <= L_SDCSLA_REC<6,SLA_LEVEL_CNT> THEN
+                  L_NEXT_SLA_APPROVER_USERID = L_SDCSLA_REC<4,SLA_LEVEL_CNT+1>
+               END ELSE
+                  L_NEXT_SLA_APPROVER_USERID = L_SDCSLA_REC<3,SLA_LEVEL_CNT+1>
+               END
+               IF L_NEXT_SLA_APPROVER_USERID # "" THEN
+                  READV L_NEXT_SLA_APPROVER_NAME FROM ADDRESSBOOK, L_NEXT_SLA_APPROVER_USERID, 1 ELSE
+                     MSG_ENG = "Unable to read next SLA approver's userid ":L_NEXT_SLA_APPROVER_USERID:" in ADDRESSBOOK file."
+                     MSG_FRN = "Impossible de lire l'ID utilisateur de la prochaine approbateur SLA ":L_NEXT_SLA_APPROVER_USERID:" dans le fichier ADDRESSBOOK."
+                     RTN.FLAG = 1
+                     GO B100_EXIT
+                  END
+                  *** juntan \/ JUNTAN.71 - 2014/09/15
+                  IF L_SDCSLA_REC<1,SLA_LEVEL_CNT+1> = L_SDCSLA_REC<1,SLA_LEVEL_CNT> AND L_SDCSLA_REC<2,SLA_LEVEL_CNT+1> = L_SDCSLA_REC<2,SLA_LEVEL_CNT> THEN
+                     L_SAME_APPROVAL_AMT_RANGE_FOUND = 1
+                  END
+                  *** juntan /\ JUNTAN.71 - 2014/09/15
+               END
+            END
+         END ELSE
+            MSG_ENG = "Missing the SLA key to get next SLA approver userid."
+            MSG_FRN = "Manquer la cl&eacute; pour obtenir la prochaine l'ID utilisateur de l'approbateur SLA."
+            RTN.FLAG = 1
+            GO B100_EXIT
+         END
+
+         READV L_AR_COLLECTOR_CODE FROM CUSTMST, L_COMPANY:"*":L_DISTRIBUTOR, 68 THEN
+            READV L_AR_COLLECTOR_USERID FROM SYSTBL, "COL*":L_AR_COLLECTOR_CODE, 1 THEN
+               READV L_AR_COLLECTOR_NAME FROM ADDRESSBOOK, L_AR_COLLECTOR_USERID, 1 ELSE
+                  MSG_ENG = "Unable to read collector's userid ":L_AR_COLLECTOR_USERID:" in ADDRESSBOOK file."
+                  MSG_FRN = "Impossible de lire le nom de collecteur pour l'ID utilisateur ":L_AR_COLLECTOR_USERID:" dans le fichier ADDRESSBOOK."
+                  RTN.FLAG = 1
+                  GO B100_EXIT
+               END
+            END ELSE
+               MSG_ENG = "Unable to read collector code ":L_AR_COLLECTOR_CODE:" in SYSTBL file."
+               MSG_FRN = "Impossible de lire le code de collecteur ":L_AR_COLLECTOR_CODE:" dans le fichier SYSTBL."
+               RTN.FLAG = 1
+               GO B100_EXIT
+            END
+         END ELSE
+            MSG_ENG = "Unable to read record ":L_COMPANY:"*":L_DISTRIBUTOR:" in CUSTMST file."
+            MSG_FRN = "Impossible de lire l'dossier ":L_COMPANY:"*":L_DISTRIBUTOR:" dans le fichier SDCAUDIT."
+            RTN.FLAG = 1
+            GO B100_EXIT
+         END
+
+         *** Retrieve SLA Administrator Email Address ****
+         READV L_SLA_ADMIN_EMAIL FROM SYSCON, "SDC.CONSTANT", 2 THEN
+            L_SLA_ADMIN_EMAIL = TRIM(FIELD(L_SLA_ADMIN_EMAIL,";",1))
+         END ELSE
+            MSG_ENG = "Unable to retrieve SLA administrator email address from SYSCON table SDC.CONSTANT."
+            MSG_FRN = "Incapable de r&eacute;cup&eacute;rer SLA administrateur adresse e-mail de la table SDC.CONSTANT dans le fichier SYSCON."
+            RTN.FLAG = 1
+            GO B100_EXIT
+         END
+      END ELSE
+         MSG_ENG = "Record ":L_KEY:" does not exist in SDCAUDIT file."
+         MSG_FRN = "Dossier ":L_KEY:" n'existe pas dans le fichier SDCAUDIT."
+         RTN.FLAG = 1
+         GO B100_EXIT
+      END
+   END ELSE
+      MSG_ENG = "Record ":L_KEY:" does not exist in SDCHDR file."
+      MSG_FRN = "Dossier ":L_KEY:" n'existe pas dans le fichier SDCHDR."
+      RTN.FLAG = 1
+      GO B100_EXIT
+   END
+
+B100_EXIT:
+   RETURN
+
+
+B200_PROCESS_WEB_SERVICE_RESPONSE:
+
+   *** Verify if the answer from web service is still active ***
+   BEGIN CASE
+      CASE L_SDCAUDIT_REC<1,1> = "SLA Approved" ; * SLA Approved
+         IF L_SDCAUDIT_REC<1,1> = "Approve SLA" THEN
+            MSG_ENG = "Request denied ==> Claim # ": L_CLAIM_NBR : ' was already <font color="green">approved</font> by ' : L_APPROVER_NAME: " on " : OCONV(L_SDCAUDIT_REC<2,1>,"D2/") : " at " : OCONV(L_SDCAUDIT_REC<3,1>,"MTS") : "."
+            MSG_FRN = "Requ&ecirc;te refus&eacute;e ==> R&eacute;clamation # ": L_CLAIM_NBR : ' a d&eacute;j&agrave; &eacute;t&eacute; <font color="green">approuv&eacute;</font> par ' : L_APPROVER_NAME: " le " : OCONV(L_SDCAUDIT_REC<2,1>,"D2/") : " &agrave; " : OCONV(L_SDCAUDIT_REC<3,1>,"MTS") : "."
+         END
+         IF L_SDCAUDIT_REC<1,1> = "AR Rejected" THEN
+            MSG_ENG = "Request denied ==> Claim # ": L_CLAIM_NBR : ' was already <font color="red">rejected</font> by ' : L_AR_COLLECTOR_NAME : " on " : OCONV(L_SDCAUDIT_REC<2,1>,"D2/") : " at " : OCONV(L_SDCAUDIT_REC<3,1>,"MTS") : "."
+            MSG_FRN = "Requ&ecirc;te refus&eacute;e ==> R&eacute;clamation # ": L_CLAIM_NBR : ' a d&eacute;j&agrave; &eacute;t&eacute; <font color="red">rejet&eacute;</font> par le collecteur CR ' : L_AR_COLLECTOR_NAME : " le " : OCONV(L_SDCAUDIT_REC<2,1>,"D2/") : " &agrave; " : OCONV(L_SDCAUDIT_REC<3,1>,"MTS") : "."
+         END
+         RTN.FLAG = 1
+         GO B200_EXIT
+      CASE L_SDCAUDIT_REC<6,1> = "AR" ; * AR Approved
+         MSG_ENG = "Request denied ==> Claim # ": L_CLAIM_NBR : ' was already <font color="green">approved</font> by AR collector ' : L_APPROVER_NAME: " on " : OCONV(L_SDCAUDIT_REC<2,1>,"D2/") : " at " : OCONV(L_SDCAUDIT_REC<3,1>,"MTS") : "."
+         MSG_FRN = "Requ&ecirc;te refus&eacute;e ==> R&eacute;clamation # ": L_CLAIM_NBR : ' a d&eacute;j&agrave; &eacute;t&eacute; <font color="green">approuv&eacute;</font> par le collecteur CR ' : L_APPROVER_NAME: " le " : OCONV(L_SDCAUDIT_REC<2,1>,"D2/") : " &agrave; " : OCONV(L_SDCAUDIT_REC<3,1>,"MTS") : "."
+         RTN.FLAG = 1
+         GO B200_EXIT
+      CASE L_SDCAUDIT_REC<6,1> = "C" ; * Completed
+         MSG_ENG = "Request denied ==> The SDC approval request for Claim # ": L_CLAIM_NBR : ' was already <font color="green">completed</font> on ' : OCONV(L_SDCAUDIT_REC<2,1>,"D2/") : " at " : OCONV(L_SDCAUDIT_REC<3,1>,"MTS") : "."
+         MSG_FRN = "Requ&ecirc;te refus&eacute;e ==> Demande d'approbation SDC pour la r&eacute;clamation # ": L_CLAIM_NBR : ' a d&eacute;j&agrave; &eacute;t&eacute; <font color="green">termin&eacute;e</font> le ' : OCONV(L_SDCAUDIT_REC<2,1>,"D2/") : " &agrave; " : OCONV(L_SDCAUDIT_REC<3,1>,"MTS") : "."
+         RTN.FLAG = 1
+         GO B200_EXIT
+      CASE L_SDCAUDIT_REC<6,1> = "W" OR L_SDCAUDIT_REC<6,1> = "WAR" OR L_SDCAUDIT_REC<6,1> = "O" OR L_SDCAUDIT_REC<6,1> = "A"
+         L_TIMESTAMP = OCONV(L_SDCAUDIT_REC<2,1>,"D2/"):"-":OCONV(L_SDCAUDIT_REC<3,1>,"MTS")
+         IF L_TIMESTAMP # TIMESTAMP THEN ; * Email expired
+            MSG_ENG = "Request denied ==> This SDC approval request for claim # " : L_CLAIM_NBR : ' was already <font color="OrangeRed">expired and voided</font>' : "."
+            MSG_FRN = "Requ&ecirc;te refus&eacute;e ==> Cette demande d'approbation SDC pour la r&eacute;clamation # " : L_CLAIM_NBR : " a d&eacute;j&agrave; " : ' <font color="OrangeRed">expir&eacute;e et annul&eacute;</font>':"."
+            RTN.FLAG = 1
+            GO B200_EXIT
+         END
+      CASE L_SDCAUDIT_REC<6,1> = "X" ; * Cancelled
+         MSG_ENG = "Request denied ==> Claim # ": L_CLAIM_NBR : ' was already <font color="red">cancelled</font> by ' : L_APPROVER_NAME : " on " : OCONV(L_SDCAUDIT_REC<2,1>,"D2/") : " at " : OCONV(L_SDCAUDIT_REC<3,1>,"MTS") : "."
+         MSG_FRN = "Requ&ecirc;te refus&eacute;e ==> R&eacute;clamation # ": L_CLAIM_NBR : ' a d&eacute;j&agrave; &eacute;t&eacute; <font color="red">annul&eacute;</font> par ' : L_APPROVER_NAME : " le " : OCONV(L_SDCAUDIT_REC<2,1>,"D2/") : " &agrave; " : OCONV(L_SDCAUDIT_REC<3,1>,"MTS") : "."
+         RTN.FLAG = 1
+         GO B200_EXIT
+   END CASE
+
+   *** Process SDC approver's response ***
+   BEGIN CASE
+      CASE ACTIONS = "A"
+         MSG_ENG           = 'Claim # ' : L_CLAIM_NBR : ' was <font color="green">approved</font> (LEVEL: ':L_SLA_LEVEL: ") by " : L_APPROVER_NAME : " on " : OCONV(DATE(), "D2/") : " at " : OCONV(TIME(), "MTS")
+         MSG_FRN           = 'R&eacute;clamation # ' : L_CLAIM_NBR : ' a &eacute;t&eacute; <font color="green">approuv&eacute;</font> (NIVEAU: ':L_SLA_LEVEL:") par " : L_APPROVER_NAME : " le " : OCONV(DATE(), "D2/") : " &agrave; " : OCONV(TIME(), "MTS")
+         L_ACTION_MSG      = "SLA Approved"
+         L_TO_UPDATE       = 1
+         L_FIND_NEXT_LEVEL = 1
+      CASE ACTIONS = "AR"
+         MSG_ENG           = 'Claim # ' : L_CLAIM_NBR : ' was <font color="green">approved</font> by AR collector ' : L_APPROVER_NAME : " on " : OCONV(DATE(), "D2/") : " at " : OCONV(TIME(), "MTS")
+         MSG_FRN           = 'R&eacute;clamation # ' : L_CLAIM_NBR : ' a &eacute;t&eacute; <font color="green">approuv&eacute;</font> par le collecteur CR ' : L_APPROVER_NAME : " le " : OCONV(DATE(), "D2/") : " &agrave; " : OCONV(TIME(), "MTS")
+         L_ACTION_MSG      = "AR Approved"
+         L_TO_UPDATE       = 1
+         L_AR_APPROVED     = 1
+      CASE ACTIONS = "X"
+         MSG_ENG           = 'Claim # ' : L_CLAIM_NBR : ' was <font color="red">rejected</font> by ' : L_APPROVER_NAME : " on " : OCONV(DATE(), "D2/") : " at " : OCONV(TIME(), "MTS") : "."
+         MSG_FRN           = 'R&eacute;clamation # ' : L_CLAIM_NBR : ' a &eacute;t&eacute; <font color="red">rejet&eacute;</font> par ' : L_APPROVER_NAME : " le " : OCONV(DATE(), "D2/") : " &agrave; " : OCONV(TIME(), "MTS") : "."
+         L_ACTION_MSG      = "SLA Rejected"
+         L_TO_UPDATE       = 1
+         ACTIONS           = "O"
+      CASE ACTIONS = "XAR"
+         MSG_ENG           = 'Claim # ' : L_CLAIM_NBR : ' was <font color="red">rejected</font> by AR collector ' : L_AR_COLLECTOR_NAME : " on " : OCONV(DATE(), "D2/") : " at " : OCONV(TIME(), "MTS") : "."
+         MSG_FRN           = 'R&eacute;clamation # ' : L_CLAIM_NBR : ' a &eacute;t&eacute; <font color="red">rejet&eacute;</font> par le collecteur CR ' : L_AR_COLLECTOR_NAME : " le " : OCONV(DATE(), "D2/") : " &agrave; " : OCONV(TIME(), "MTS") : "."
+         L_ACTION_MSG      = "AR Rejected"
+         L_TO_UPDATE       = 1
+         ACTIONS           = "A"  ;* reset to last SLA Approved status
+      CASE ACTIONS = "B"
+         MSG_ENG           = 'Claim # ' : L_CLAIM_NBR : ' was <font color="DarkViolet">returned</font> by ': L_APPROVER_NAME : " on " : OCONV(DATE(), "D2/") : " at " : OCONV(TIME(), "MTS") : "."
+         MSG_FRN           = 'R&eacute;clamation # ' : L_CLAIM_NBR : ' a &eacute;t&eacute; <font color="DarkViolet">retourn&eacute; </font> par ' : L_APPROVER_NAME : " le " : OCONV(DATE(), "D2/") : " &agrave; " : OCONV(TIME(), "MTS") : "."
+         L_ACTION_MSG      = "SLA Returned"
+         L_TO_UPDATE       = 1
+         ACTIONS           = "O"
+      CASE ACTIONS = "BAR"
+         MSG_ENG           = 'Claim # ' : L_CLAIM_NBR : ' was <font color="DarkViolet">returned</font> by AR collector ': L_AR_COLLECTOR_NAME : " on " : OCONV(DATE(), "D2/") : " at " : OCONV(TIME(), "MTS") : "."
+         MSG_FRN           = 'R&eacute;clamation # ' : L_CLAIM_NBR : ' a &eacute;t&eacute; <font color="DarkViolet">retourn&eacute; </font> par le collecteur CR ' : L_AR_COLLECTOR_NAME : " le " : OCONV(DATE(), "D2/") : " &agrave; " : OCONV(TIME(), "MTS") : "."
+         L_ACTION_MSG      = "AR Returned"
+         L_TO_UPDATE       = 1
+         ACTIONS           = "O"
+      CASE 1
+         MSG_ENG           = '<font color="red">':"Wrong action code</font> (" : ACTIONS : ") found at " : OCONV(DATE(), "D2/") : " " : OCONV(TIME(), "MTS") : "."
+         MSG_FRN           = '<font color="red">':"Mauvais code d'action (" : ACTIONS : ") &agrave; " : OCONV(DATE(), "D2/") : " " : OCONV(TIME(), "MTS") : "."
+         RTN.FLAG          = 1
+   END CASE
+
+B200_EXIT:
+   RETURN
+
+
+B300_UPDATE_DATA_FILES:
+
+   IF L_TO_UPDATE THEN
+      *** Update SDCAUDIT File ***
+      L_KEY = SDCAUDIT_KEY
+      READ L_REC FROM SDCAUDIT, L_KEY
+      ON ERROR
+         MSG_ENG = "Unable to read SDCAUDIT record ":L_KEY:", status code returned is ":STATUS():"."
+         MSG_FRN = "Impossible de lire l'dossier ":L_KEY:" dans le fichier SDCAUDIT, le code d'&eacute;tat est ":STATUS():"."
+         RTN.FLAG = 1
+         GO B300_EXIT
+      END THEN
+         ;* nop
+      END ELSE
+         MSG_ENG = "Record ":L_KEY:" does not exist in SDCAUDIT file."
+         MSG_FRN = "L'dossier ":L_KEY:" n'existe pas dans le fichier SDCAUDIT."
+         RTN.FLAG = 1
+         GO B300_EXIT
+      END
+
+      *** juntan \/ SOP381D.22 - 2014/09/25
+      IF ACTIONS = "AR" THEN
+         L_SLA_LEVEL = ""  ;* AR has no SLA level
+      END
+      *** juntan /\ SOP381D.22 - 2014/09/25
+
+      L_REC<1>  = L_ACTION_MSG:@VM:L_REC<1>          ;* Approval Action Message
+      L_REC<2>  = L_DATE:@VM:L_REC<2>                ;* Action Date
+      L_REC<3>  = L_TIME:@VM:L_REC<3>                ;* Action Time
+      L_REC<4>  = L_REQUESTOR_USERID:@VM:L_REC<4>    ;* Requestor Userid
+      L_REC<5>  = APPROVER:@VM:L_REC<5>              ;* Approver Userid
+      L_REC<6>  = ACTIONS:@VM:L_REC<6>               ;* Approval Status Flag
+      L_REC<7>  = L_SLA_LEVEL:@VM:L_REC<7>           ;* SLA Level
+      L_REC<8>  = L_CLAIM_AMT:@VM:L_REC<8>           ;* Claim Amount
+      L_REC<9>  = L_SLA_KEY:@VM:L_REC<9>             ;* SLA Key - Sales office code
+      L_REC<10> = SLA_LEVEL_CNT:@VM:L_REC<10>        ;* SLA Level Cnt
+      L_REC<11> = "":@VM:L_REC<11>                   ;* Reference
+      IF L_ACTION_MSG = "SLA Approved" OR L_ACTION_MSG = "AR Approved" THEN
+         L_REC<12> = 0  ;* reset resend count
+      END
+
+      WRITE L_REC TO SDCAUDIT, L_KEY ON ERROR
+         MSG_ENG = "Unable to write SDCAUDIT record ":L_KEY:", status code returned is ":STATUS():"."
+         MSG_FRN = "Impossible de lire l'dossier ":L_KEY:" dans le fichier SDCAUDIT, le code d'&eacute;tat est ":STATUS():"."
+         RTN.FLAG = 1
+         GO B300_EXIT
+      END
+
+      *** Update SDCHDR File ***
+      READ L_REC FROM SDCHDR, L_KEY
+      ON ERROR
+         MSG_ENG = "Unable to read SDCHDR record ":L_KEY:", status code returned is ":STATUS():"."
+         MSG_FRN = "Impossible de lire l'dossier ":L_KEY:" dans le fichier SDCHDR, le code d'&eacute;tat est ":STATUS():"."
+         RTN.FLAG = 1
+         GO B300_EXIT
+      END THEN
+         ;* no operation
+      END ELSE
+         MSG_ENG = "Record ":L_KEY:" does not exist in SDCHDR file."
+         MSG_FRN = "Dossier ":L_KEY:" n'existe pas dans le fichier SDCHDR."
+         RTN.FLAG = 1
+         GO B300_EXIT
+      END
+
+      IF L_AR_APPROVED THEN     ;* AR collector approved, update final status
+         L_REC<2>  = "AR"                     ;* SDC Workbench Final Status
+         L_REC<6>  = SLA_LEVEL_CNT            ;* SLA Level CNT
+         L_REC<7>  = L_AR_COLLECTOR_USERID    ;* AR Collector Userid
+         L_REC<8>  = L_SLA_LEVEL              ;* SLA Level Approved
+         L_REC<9>  = L_DATE                   ;* Action Date
+         L_REC<10> = L_TIME                   ;* Action Time
+         L_REC<11> = APPROVER                 ;* Approver Userid
+         L_REC<12> = L_FROM_AMT               ;* Approval From Amount
+         L_REC<13> = L_TO_AMT                 ;* Approval To Amount
+         L_REC<14> = ACTIONS                  ;* Most Recent Approval Status
+         L_REC<15> = L_SLA_KEY                ;* SLA Key - Sales office code
+      END ELSE
+         IF ACTIONS # "A" THEN  ;* SLA not approved, reset to initial status ***
+            L_REC<2>  = "O"
+            L_REC<6>  = ""
+            L_REC<7>  = ""
+            L_REC<8>  = ""
+            L_REC<9>  = ""
+            L_REC<10> = ""
+            L_REC<11> = ""
+            L_REC<12> = ""
+            L_REC<13> = ""
+            L_REC<14> = ""
+            L_REC<15> = ""
+         END
+      END
+
+      WRITE L_REC TO SDCHDR, L_KEY ON ERROR
+         MSG_ENG = "Unable to write SDCHDR record ":L_KEY:", status code returned is ":STATUS():"."
+         MSG_FRN = "Impossible d'&eacute;crire l'dossier ":L_KEY:" dans le fichier SDCHDR, le code d'&eacute;tat est ":STATUS():"."
+         RTN.FLAG = 1
+         GO B300_EXIT
+      END
+   END
+
+   *** Approval Process Completed ***
+   IF L_AR_APPROVED THEN
+      MSG_ENG :=", approval process is now completed successfully."
+      MSG_FRN :=", le processus d'approbation est maintenant termin&eacute; avec succ&egrave;s."
+   END
+
+B300_EXIT:
+   RETURN
+
+
+B400_FIND_NEXT_SLA_LEVEL:
+
+   IF L_FIND_NEXT_LEVEL THEN
+      *** juntan \/ SOP381D.22 - 2014/09/25
+      GOSUB C100_GENERATE_APPROVER_RESPONSE_MESSAGE
+      MSG_ENG_UPDATE := '<br><font color="blue">==> Now waiting for your approval...</font>'
+      MSG_FRN_UPDATE := '<br><font color="blue">':"==> Maintenant en attendre de votre approbation...</font>"
+      MSG_ENG_UPDATE = "<br>":MSG_ENG_UPDATE:"<br>"
+      MSG_FRN_UPDATE = "<br>":MSG_FRN_UPDATE:"<br>"
+      *** juntan /\ SOP381D.22 - 2014/09/25
+
+      IF NOT(L_SAME_APPROVAL_AMT_RANGE_FOUND) AND (L_CLAIM_AMT >= L_FROM_AMT AND L_CLAIM_AMT <= L_TO_AMT OR L_CLAIM_AMT < L_FROM_AMT) THEN
+         *** Final approver approved, now require AR collector approval ***
+         INPUT_PARAMS<1> = SDCAUDIT_KEY
+         INPUT_PARAMS<2> = L_CLAIM_DT
+         INPUT_PARAMS<3> = SLA_LEVEL_CNT
+         INPUT_PARAMS<4> = L_REQUESTOR_USERID
+         *** juntan \/ SOP381D.22 - 2014/09/25
+         INPUT_PARAMS<5,1> = MSG_ENG_UPDATE
+         INPUT_PARAMS<5,2> = MSG_FRN_UPDATE
+         INPUT_PARAMS<6> = 1             ;* SLA approval process completed
+         INPUT_PARAMS<7> = 0             ;* SLA approval request resend flag
+         *** juntan /\ SOP381D.22 - 2014/09/25
+         L_WAIT_AR_APPROVER = 1
+      END ELSE
+         *** Next Level SLA Approver ***
+         INPUT_PARAMS<1> = SDCAUDIT_KEY
+         INPUT_PARAMS<2> = L_CLAIM_DT
+         INPUT_PARAMS<3> = SLA_LEVEL_CNT + 1
+         INPUT_PARAMS<4> = L_REQUESTOR_USERID
+         *** juntan \/ SOP381D.22 - 2014/09/25
+         INPUT_PARAMS<5,1> = MSG_ENG_UPDATE
+         INPUT_PARAMS<5,2> = MSG_FRN_UPDATE
+         INPUT_PARAMS<6> = 0
+         INPUT_PARAMS<7> = 0
+         *** juntan /\ SOP381D.22 - 2014/09/25
+         L_WAIT_SLA_APPROVER = 1
+      END
+
+      CALL SOPS3090.1(INPUT_PARAMS,OUTPUT_PARAMS)
+      IF OUTPUT_PARAMS<1> # "" THEN
+         MSG_ENG = "Program ":OUTPUT_PARAMS<1,1>:" aborted at ":OUTPUT_PARAMS<1,2>:" -> ":OUTPUT_PARAMS<1,3>
+         MSG_FRN = ""
+         RTN.FLAG = 1
+         GO B400_EXIT
+      END
+      *** juntan \/ SOP381D.22 - 2014/09/25
+      MSG_ENG_UPDATE = ""
+      MSG_FRN_UPDATE = ""
+      *** juntan /\ SOP381D.22 - 2014/09/25
+   END
+
+B400_EXIT:
+   RETURN
+
+
+B500_SEND_APPROVER_RESPONSE:
+
+   IF L_TO_UPDATE THEN
+      *** Generate Message for Web Browser Response ***
+      IF L_WAIT_SLA_APPROVER THEN
+         MSG_ENG := ", now waiting for next level approver ":L_NEXT_SLA_APPROVER_NAME:"."
+         MSG_FRN := ", maintenant en attendre de l'approbateur suivant de niveau ":L_NEXT_SLA_APPROVER_NAME:"."
+      END
+      IF L_WAIT_AR_APPROVER THEN
+         MSG_ENG := ", now waiting for AR collector ":L_AR_COLLECTOR_NAME:"."
+         MSG_FRN := ", maintenant en attendre du collecteur AR ":L_AR_COLLECTOR_NAME:"."
+      END
+      IF ACTIONS = "B" THEN
+         MSG_ENG := ", please contact SLA administrator at ":L_SLA_ADMIN_EMAIL:" to fix the SLA setup issue as soon as possible."
+         MSG_FRN := ", s'il vous pl&acirc;t contacter l'administrateur SLA &agrave; ":L_SLA_ADMIN_EMAIL:" pour r&eacute;soudre le probl&egrave;me de configuration SLA aussit&ocirc;t que possible."
+         SWAP "DarkViolet" WITH "OrangeRed" IN MSG_ENG
+         SWAP "DarkViolet" WITH "OrangeRed" IN MSG_FRN
+      END
+
+      *** juntan \/ SOP381D.22 - 2014/09/25
+      GOSUB C100_GENERATE_APPROVER_RESPONSE_MESSAGE
+      *** juntan /\ SOP381D.22 - 2014/09/25
+
+      *** Generate & Send Response Email ***
+      INPUT_PARAMS<1>   = SDCAUDIT_KEY
+      INPUT_PARAMS<2>   = L_CLAIM_DT
+      INPUT_PARAMS<3>   = SLA_LEVEL_CNT
+      INPUT_PARAMS<4>   = L_REQUESTOR_USERID
+      INPUT_PARAMS<5,1> = MSG_ENG_UPDATE
+      INPUT_PARAMS<5,2> = MSG_FRN_UPDATE
+      IF L_AR_APPROVED THEN
+         INPUT_PARAMS<6> = 1
+      END ELSE
+         INPUT_PARAMS<6> = 0
+      END
+      INPUT_PARAMS<7> = 0  ;* recall flag
+      CALL SOPS3090.2(INPUT_PARAMS,OUTPUT_PARAMS)
+      IF OUTPUT_PARAMS<1> # "" THEN
+         MSG_ENG = "Program ":OUTPUT_PARAMS<1,1>:" aborted at ":OUTPUT_PARAMS<1,2>:" -> ":OUTPUT_PARAMS<1,3>
+         MSG_FRN = ""
+      END
+   END
+
+B500_EXIT:
+   RETURN
+
+
+C100_GENERATE_APPROVER_RESPONSE_MESSAGE:
+
+   *** Reload Ship & Debit Audit Information ***
+   L_KEY = SDCAUDIT_KEY
+   READ L_SDCAUDIT_REC FROM SDCAUDIT, L_KEY
+   ON ERROR
+      MSG_ENG = "Unable to read SDCAUDIT record ":L_KEY:", status code returned is ":STATUS():"."
+      MSG_FRN = "Impossible de lire l'dossier ":L_KEY:" dans le fichier SDCAUDIT, le code d'&eacute;tat est ":STATUS():"."
+      RTN.FLAG = 1
+      GO B300_EXIT
+   END THEN
+      L_TTL = DCOUNT(L_SDCAUDIT_REC<1>,@VM)
+      L_USER_ID = L_SDCAUDIT_REC<4,1>
+      IF L_SDCAUDIT_REC<7,1> # "" THEN
+         L_SLA_LEVEL = L_SDCAUDIT_REC<7,1>
+      END ELSE
+         L_SLA_LEVEL = MAXIMUM(L_SDCAUDIT_REC<7>)
+      END
+      L_CLAIM_AMT = L_SDCAUDIT_REC<8,1>
+      L_SLA_KEY = L_SDCAUDIT_REC<9,1>
+      L_REQUESTOR_USERID = L_SDCAUDIT_REC<4,L_TTL>
+   END ELSE
+      MSG_ENG = "Record ":L_KEY:" does not exist in SDCAUDIT file."
+      MSG_FRN = "Dossier ":L_KEY:" n'existe pas dans le fichier SDCAUDIT."
+      RTN.FLAG = 1
+      GO B300_EXIT
+   END
+
+   *** Generate SLA Approver's Response Message for HTML Request/Response Email ***
+   FOR L_CNT = 1 TO SLA_LEVEL_CNT  ;* check matched SLA level
+      FOR L_INC = 1 TO L_TTL  ;* start with the most recent status
+         IF L_SDCAUDIT_REC<7,L_INC> # "" AND L_SDCAUDIT_REC<7,L_INC> = L_CNT THEN  ;* SLA level found
+            IF L_SDCSLA_REC<4,L_CNT> # "" AND L_DATE >= L_SDCSLA_REC<5,L_CNT> AND L_DATE <= L_SDCSLA_REC<6,L_CNT> THEN  ;* check approver replacement
+               READV L_NAME FROM ADDRESSBOOK, L_SDCSLA_REC<4,L_CNT>, 1 ELSE L_NAME = L_SDCSLA_REC<4,L_CNT>   ;* replaced approver
+            END ELSE
+               READV L_NAME FROM ADDRESSBOOK, L_SDCSLA_REC<3,L_CNT>, 1 ELSE L_NAME = L_SDCSLA_REC<3,L_CNT>   ;* original approver
+            END
+            BEGIN CASE
+               CASE L_SDCAUDIT_REC<6,L_INC> = "A"
+                  MSG_ENG_UPDATE = MSG_ENG_UPDATE:"Level ":L_CNT:': <font color="green">Approved</font> by SLA approver ':L_NAME:" on ":OCONV(L_SDCAUDIT_REC<2,L_INC>,"D2/"):" at ":OCONV(L_SDCAUDIT_REC<3,L_INC>,"MTS"):".<br>"
+                  MSG_FRN_UPDATE = MSG_FRN_UPDATE:"Niveau ":L_CNT:': <font color="green">Approuv&eacute;</font>':" par l'approbateur SLA ":L_NAME:" le ":OCONV(L_SDCAUDIT_REC<2,L_INC>,"D2/"):" &agrave; ":OCONV(L_SDCAUDIT_REC<3,L_INC>,"MTS"):".<br>"
+               CASE L_SDCAUDIT_REC<1,L_INC> = "SLA Skipped"
+                  MSG_ENG_UPDATE = MSG_ENG_UPDATE:"Level ":L_CNT:': <font color="green">Auto skipped</font> by system':" on ":OCONV(L_SDCAUDIT_REC<2,L_INC>,"D2/"):" at ":OCONV(L_SDCAUDIT_REC<3,L_INC>,"MTS"):".<br>"
+                  MSG_FRN_UPDATE = MSG_FRN_UPDATE:"Niveau ":L_CNT:': <font color="green">Auto ignor&eacute;e</font> par le syst&egrave;m ':" le ":OCONV(L_SDCAUDIT_REC<2,L_INC>,"D2/"):" &agrave; ":OCONV(L_SDCAUDIT_REC<3,L_INC>,"MTS"):".<br>"
+            END CASE
+            EXIT
+         END
+      NEXT L_INC
+   NEXT L_CNT
+
+   *** Generate AR Collector's Response Message for HTML Request/Response Email ***
+   FOR L_INC = 1 TO L_TTL  ;* start with the most recent status
+      IF L_SDCAUDIT_REC<7,L_INC> = "" AND L_SDCAUDIT_REC<6,L_INC> = "AR" THEN   ;* AR level found
+         MSG_ENG_UPDATE = MSG_ENG_UPDATE:"Level AR":': <font color="green">Approved</font> by AR collector ':L_AR_COLLECTOR_NAME:" on ":OCONV(L_SDCAUDIT_REC<2,L_INC>,"D2/"):" at ":OCONV(L_SDCAUDIT_REC<3,L_INC>,"MTS"):".<br>"
+         MSG_FRN_UPDATE = MSG_FRN_UPDATE:"Niveau CR":': <font color="green">Approuv&eacute;</font> par le collecteur CR ':L_AR_COLLECTOR_NAME:" le ":OCONV(L_SDCAUDIT_REC<2,L_INC>,"D2/"):" &agrave; ":OCONV(L_SDCAUDIT_REC<3,L_INC>,"MTS"):".<br>"
+         EXIT
+      END
+   NEXT L_INC
+
+   *** Generate Current Approval Status Message for HTML Request/Response Email ***
+   BEGIN CASE
+      CASE L_SDCAUDIT_REC<6,1> = "W"
+         MSG_ENG_UPDATE := '<br><font color="blue">==> Now waiting for next level approver ':L_NEXT_SLA_APPROVER_NAME:"...</font>"
+         MSG_FRN_UPDATE := '<br><font color="blue">':"==> Maintenant en attendre de l'approbateur suivant de niveau ":L_NEXT_SLA_APPROVER_NAME:"...</font>"
+      CASE L_SDCAUDIT_REC<6,1> = "WAR"
+         MSG_ENG_UPDATE := '<br><font color="blue">==> Now waiting for AR collector ':L_AR_COLLECTOR_NAME:"...</font>"
+         MSG_FRN_UPDATE := '<br><font color="blue">==> Maintenant en attendre du collecteur CR ':L_AR_COLLECTOR_NAME:"...</font>"
+      CASE L_SDCAUDIT_REC<6,1> = "AR"
+         MSG_ENG_UPDATE := '<br><font color="blue">==> Approval process is now completed successfully.</font>'
+         MSG_FRN_UPDATE := '<br><font color="blue">':"==> Processus d'approbation est maintenant termin&eacute; avec succ&egrave;s.</font>"
+      CASE L_SDCAUDIT_REC<6,1> = "O"
+         BEGIN CASE
+            CASE L_SDCAUDIT_REC<1,1> = "Uploaded"
+                ;* initial status before an approval request is issued
+            CASE L_SDCAUDIT_REC<1,1> = "SLA Rejected"
+               MSG_ENG_UPDATE := "Level ":L_SLA_LEVEL:': <font color="red">Rejected</font> by SLA approver ':L_APPROVER_NAME:" on ":OCONV(L_SDCAUDIT_REC<2,L_CNT>,"D2/"):" at ":OCONV(L_SDCAUDIT_REC<3,L_CNT>,"MTS"):"."
+               MSG_FRN_UPDATE := "Niveau ":L_SLA_LEVEL:': <font color="red">Rejet&eacute;</font>':" par l'approbateur SLA ":L_APPROVER_NAME:" le ":OCONV(L_SDCAUDIT_REC<2,L_CNT>,"D2/"):" &agrave; ":OCONV(L_SDCAUDIT_REC<3,L_CNT>,"MTS"):"."
+            CASE L_SDCAUDIT_REC<1,1> = "SLA Returned"
+               MSG_ENG_UPDATE := "Level ":L_SLA_LEVEL:': <font color="red">Returned</font> by SLA approver ':L_APPROVER_NAME:" on ":OCONV(L_SDCAUDIT_REC<2,L_CNT>,"D2/"):" at ":OCONV(L_SDCAUDIT_REC<3,L_CNT>,"MTS"):"."
+               MSG_FRN_UPDATE := "Niveau ":L_SLA_LEVEL:': <font color="red">Renvoy&eacute;</font>':" par l'approbateur SLA ":L_APPROVER_NAME:" le ":OCONV(L_SDCAUDIT_REC<2,L_CNT>,"D2/"):" &agrave; ":OCONV(L_SDCAUDIT_REC<3,L_CNT>,"MTS"):"."
+            CASE L_SDCAUDIT_REC<1,1> = "Recalled"
+               MSG_ENG_UPDATE := '>>> <font color="red">Recalled</font> by user ':L_USER_NAME:" on ":OCONV(L_SDCAUDIT_REC<2,L_CNT>,"D2/"):" at ":OCONV(L_SDCAUDIT_REC<3,L_CNT>,"MTS"):"."
+               MSG_FRN_UPDATE := '>>> <font color="red">Rappel&eacute;</font>':" par l'ID de utilisateur ":L_USER_NAME:" le ":OCONV(L_SDCAUDIT_REC<2,L_CNT>,"D2/"):" &agrave; ":OCONV(L_SDCAUDIT_REC<3,L_CNT>,"MTS"):"."
+            CASE L_SDCAUDIT_REC<1,1> = "Modified"
+               MSG_ENG_UPDATE := '>>> <font color="red">Modified</font> by user ':L_USER_NAME:" on ":OCONV(L_SDCAUDIT_REC<2,L_CNT>,"D2/"):" at ":OCONV(L_SDCAUDIT_REC<3,L_CNT>,"MTS"):"."
+               MSG_FRN_UPDATE := '>>> <font color="red">Modifi&eacute;</font>':" par l'ID de utilisateur ":L_USER_NAME:" le ":OCONV(L_SDCAUDIT_REC<2,L_CNT>,"D2/"):" &agrave; ":OCONV(L_SDCAUDIT_REC<3,L_CNT>,"MTS"):"."
+            CASE L_SDCAUDIT_REC<1,1> = "AR Returned"
+               MSG_ENG_UPDATE := "Level AR:":' <font color="red">Returned</font> by AR collector ':L_AR_COLLECTOR_NAME:" on ":OCONV(L_SDCAUDIT_REC<2,L_CNT>,"D2/"):" at ":OCONV(L_SDCAUDIT_REC<3,L_CNT>,"MTS"):"."
+               MSG_FRN_UPDATE := "Niveau CR:":' <font color="red">Revoy&eacute;</font>':" par le collecteur AR ":L_AR_COLLECTOR_NAME:" le ":OCONV(L_SDCAUDIT_REC<2,L_CNT>,"D2/"):" &agrave; ":OCONV(L_SDCAUDIT_REC<3,L_CNT>,"MTS"):"."
+         END CASE
+         MSG_ENG_UPDATE := '<br><br><font color="blue">==> Claim # ':L_CLAIM_NBR:" is now reopened...</font>"
+         MSG_FRN_UPDATE := '<br><br><font color="blue">==> R&eacute;clamation # ':L_CLAIM_NBR:" est maintenant rouvert...</font>"
+      CASE L_SDCAUDIT_REC<6,1> = "A" AND L_SDCAUDIT_REC<7,1> = ""
+         BEGIN CASE
+            CASE L_SDCAUDIT_REC<1,1> = "AR Rejected"
+               MSG_ENG_UPDATE := "Level AR:":' <font color="red">Rejected</font> by AR collector ':L_AR_COLLECTOR_NAME:" on ":OCONV(L_SDCAUDIT_REC<2,L_CNT>,"D2/"):" at ":OCONV(L_SDCAUDIT_REC<3,L_CNT>,"MTS"):"."
+               MSG_FRN_UPDATE := "Niveau CR:":' <font color="red">Rejet&eacute;</font>':" par le collecteur AR ":L_AR_COLLECTOR_NAME:" le ":OCONV(L_SDCAUDIT_REC<2,L_CNT>,"D2/"):" &agrave; ":OCONV(L_SDCAUDIT_REC<3,L_CNT>,"MTS"):"."
+               MSG_ENG_UPDATE := '<br><br><font color="blue">==> Claim # ':L_CLAIM_NBR:" is now waiting to be resent for AR collector's approval.</font>"
+               MSG_FRN_UPDATE := '<br><br><font color="blue">==> R&eacute;clamation # ':L_CLAIM_NBR:" est maintenant en attente d'&ecirc;tre renvoy&eacute; pour le collecteur AR.</font>"
+         END CASE
+   END CASE
+
+C100_EXIT:
+   RETURN
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+   L_TIMESTAMP = "[":OCONV(DATE(),"D2/"):" ":OCONV(TIME(),"MTS"):"] "
+   MSG = L_TIMESTAMP:MSG_ENG
+   IF MSG_FRN # "" THEN
+      MSG := "<br><hr>"
+      MSG := L_TIMESTAMP:MSG_FRN
+   END
+
+   RTN.FLAG = 0
+   REFRESH = -2
+
+A500_EXIT:
+   GO 9999
+
+
+****************************************
+* Exit
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END
+*
+*
+*

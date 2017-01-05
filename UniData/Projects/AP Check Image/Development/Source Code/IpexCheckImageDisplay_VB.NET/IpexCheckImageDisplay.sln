@@ -1,0 +1,29 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "IpexCheckImageDisplay", "IpexCheckImageDisplay\IpexCheckImageDisplay.vbproj", "{538F6457-65F9-4FDE-BA5B-2899B8A6614B}"
+EndProject
+Global
+	GlobalSection(TeamFoundationVersionControl) = preSolution
+		SccNumberOfProjects = 2
+		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
+		SccTeamFoundationServer = http://sql11:8080/tfs/project%20collection
+		SccLocalPath0 = .
+		SccProjectUniqueName1 = IpexCheckImageDisplay\\IpexCheckImageDisplay.vbproj
+		SccProjectName1 = IpexCheckImageDisplay
+		SccLocalPath1 = IpexCheckImageDisplay
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{538F6457-65F9-4FDE-BA5B-2899B8A6614B}.Debug|x86.ActiveCfg = Debug|x86
+		{538F6457-65F9-4FDE-BA5B-2899B8A6614B}.Debug|x86.Build.0 = Debug|x86
+		{538F6457-65F9-4FDE-BA5B-2899B8A6614B}.Release|x86.ActiveCfg = Release|x86
+		{538F6457-65F9-4FDE-BA5B-2899B8A6614B}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

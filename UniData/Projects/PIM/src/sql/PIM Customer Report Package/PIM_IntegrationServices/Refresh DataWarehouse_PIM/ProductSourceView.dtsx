@@ -1,0 +1,746 @@
+﻿<?xml version="1.0"?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:refId="Package"
+  DTS:CreationDate="3/4/2016 5:11:59 PM"
+  DTS:CreationName="SSIS.Package.3"
+  DTS:CreatorComputerName="63RJGV1"
+  DTS:CreatorName="CORP\juntan"
+  DTS:DTSID="{D403AE80-3F73-4101-9379-4604B07997A0}"
+  DTS:ExecutableType="SSIS.Package.3"
+  DTS:LastModifiedProductVersion="11.0.5583.0"
+  DTS:LocaleID="4105"
+  DTS:ObjectName="ProductSourceView"
+  DTS:PackageType="5"
+  DTS:ProtectionLevel="0"
+  DTS:VersionBuild="31"
+  DTS:VersionGUID="{4257E1A2-1EDA-4A28-9F33-95DF41012798}">
+  <DTS:Property
+    DTS:Name="PackageFormatVersion">6</DTS:Property>
+  <DTS:ConnectionManagers>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[step.stepview]"
+      DTS:CreationName="OLEDB"
+      DTS:DTSID="{6280328F-A55F-40D7-8D5A-6BA9BE0BC938}"
+      DTS:ObjectName="step.stepview">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:Retain="True"
+          DTS:ConnectionString="Data Source=step;User ID=stepview;Provider=OraOLEDB.Oracle.1;Persist Security Info=True;">
+          <DTS:Password
+            DTS:Name="Password"
+            Sensitive="1"></DTS:Password>
+        </DTS:ConnectionManager>
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+  </DTS:ConnectionManagers>
+  <DTS:Variables />
+  <DTS:Executables>
+    <DTS:Executable
+      DTS:refId="Package\Sequence Container"
+      DTS:CreationName="STOCK:SEQUENCE"
+      DTS:Description="Sequence Container"
+      DTS:DTSID="{294BD249-0216-470F-BF29-BDA2F700ABF7}"
+      DTS:ExecutableType="STOCK:SEQUENCE"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Sequence Container">
+      <DTS:Variables />
+      <DTS:Executables>
+        <DTS:Executable
+          DTS:refId="Package\Sequence Container\Copy ProductSourceView"
+          DTS:CreationName="SSIS.Pipeline.3"
+          DTS:Description="Oracle Query"
+          DTS:DTSID="{BA877B8F-D9C6-4AB7-B203-D5285CF0BABE}"
+          DTS:ExecutableType="SSIS.Pipeline.3"
+          DTS:LocaleID="-1"
+          DTS:ObjectName="Copy ProductSourceView"
+          DTS:TaskContact="Performs high-performance data extraction, transformation and loading;Microsoft Corporation; Microsoft SQL Server; (C) 2007 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1">
+          <DTS:Variables />
+          <DTS:ObjectData>
+            <pipeline
+              version="1">
+              <components>
+                <component
+                  refId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM"
+                  componentClassID="{4ADA7EAA-136C-4215-8098-D7A7C27FC0D1}"
+                  contactInfo="OLE DB Destination;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;4"
+                  description="OLE DB Destination"
+                  name="DataWarehouse PIM"
+                  usesDispositions="true"
+                  version="4">
+                  <properties>
+                    <property
+                      dataType="System.Int32"
+                      description="The number of seconds before a command times out.  A value of 0 indicates an infinite time-out."
+                      name="CommandTimeout">0</property>
+                    <property
+                      dataType="System.String"
+                      description="Specifies the name of the database object used to open a rowset."
+                      name="OpenRowset">[dbo].[ProductSourceView]</property>
+                    <property
+                      dataType="System.String"
+                      description="Specifies the variable that contains the name of the database object used to open a rowset."
+                      name="OpenRowsetVariable"></property>
+                    <property
+                      dataType="System.String"
+                      description="The SQL command to be executed."
+                      name="SqlCommand"
+                      UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor, Microsoft.DataTransformationServices.Controls, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"></property>
+                    <property
+                      dataType="System.Int32"
+                      description="Specifies the column code page to use when code page information is unavailable from the data source."
+                      name="DefaultCodePage">1252</property>
+                    <property
+                      dataType="System.Boolean"
+                      description="Forces the use of the DefaultCodePage property value when describing character data."
+                      name="AlwaysUseDefaultCodePage">false</property>
+                    <property
+                      dataType="System.Int32"
+                      description="Specifies the mode used to access the database."
+                      name="AccessMode"
+                      typeConverter="AccessMode">3</property>
+                    <property
+                      dataType="System.Boolean"
+                      description="Indicates whether the values supplied for identity columns will be copied to the destination. If false, values for identity columns will be auto-generated at the destination. Applies only if fast load is turned on."
+                      name="FastLoadKeepIdentity">false</property>
+                    <property
+                      dataType="System.Boolean"
+                      description="Indicates whether the columns containing null will have null inserted in the destination. If false, columns containing null will have their default values inserted at the destination. Applies only if fast load is turned on."
+                      name="FastLoadKeepNulls">false</property>
+                    <property
+                      dataType="System.String"
+                      description="Specifies options to be used with fast load.  Applies only if fast load is turned on."
+                      name="FastLoadOptions">TABLOCK</property>
+                    <property
+                      dataType="System.Int32"
+                      description="Specifies when commits are issued during data insertion.  A value of 0 specifies that one commit will be issued at the end of data insertion.  Applies only if fast load is turned on."
+                      name="FastLoadMaxInsertCommitSize">2147483647</property>
+                  </properties>
+                  <connections>
+                    <connection
+                      refId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Connections[OleDbConnection]"
+                      connectionManagerID="{8D6DB1AA-86B9-44CA-AAC3-F419A009453B}:external"
+                      connectionManagerRefId="Project.ConnectionManagers[sql11.DataWarehouse_PIM]"
+                      description="The OLE DB runtime connection used to access the database."
+                      name="OleDbConnection" />
+                  </connections>
+                  <inputs>
+                    <input
+                      refId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input]"
+                      errorOrTruncationOperation="Insert"
+                      errorRowDisposition="FailComponent"
+                      hasSideEffects="true"
+                      name="OLE DB Destination Input">
+                      <inputColumns>
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[PRODUCTSOURCEID]"
+                          cachedDataType="wstr"
+                          cachedLength="40"
+                          cachedName="PRODUCTSOURCEID"
+                          externalMetadataColumnId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[ProductSourceID]"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].Columns[PRODUCTSOURCEID]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[PRODUCTID]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="PRODUCTID"
+                          externalMetadataColumnId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[ProductID]"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].Columns[PRODUCTID]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[PRODUCTCODE]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="PRODUCTCODE"
+                          externalMetadataColumnId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[ProductCode]"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].Columns[PRODUCTCODE]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[SOURCECODE]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="SOURCECODE"
+                          externalMetadataColumnId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[SourceCode]"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].Columns[SOURCECODE]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[SOURCENAME]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="SOURCENAME"
+                          externalMetadataColumnId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[SourceName]"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].Columns[SOURCENAME]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[SOURCETYPE]"
+                          cachedDataType="wstr"
+                          cachedLength="40"
+                          cachedName="SOURCETYPE"
+                          externalMetadataColumnId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[SourceType]"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].Columns[SOURCETYPE]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[CERTIFICATIONEXTERNALNOTES]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="CERTIFICATIONEXTERNALNOTES"
+                          externalMetadataColumnId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[CertificationExternalNotes]"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].Columns[CERTIFICATIONEXTERNALNOTES]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[LINKTYPE]"
+                          cachedDataType="wstr"
+                          cachedLength="9"
+                          cachedName="LINKTYPE"
+                          externalMetadataColumnId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[LinkType]"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].Columns[LINKTYPE]" />
+                      </inputColumns>
+                      <externalMetadataColumns
+                        isUsed="True">
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[ProductSourceID]"
+                          dataType="wstr"
+                          length="255"
+                          name="ProductSourceID" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[ProductID]"
+                          dataType="wstr"
+                          length="255"
+                          name="ProductID" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[ProductCode]"
+                          dataType="wstr"
+                          length="255"
+                          name="ProductCode" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[SourceCode]"
+                          dataType="wstr"
+                          length="255"
+                          name="SourceCode" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[SourceName]"
+                          dataType="wstr"
+                          length="255"
+                          name="SourceName" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[SourceType]"
+                          dataType="wstr"
+                          length="255"
+                          name="SourceType" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[NoCertification]"
+                          dataType="wstr"
+                          length="255"
+                          name="NoCertification" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[CertificationExternalNotes]"
+                          dataType="wstr"
+                          length="255"
+                          name="CertificationExternalNotes" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[LinkType]"
+                          dataType="wstr"
+                          length="255"
+                          name="LinkType" />
+                      </externalMetadataColumns>
+                    </input>
+                  </inputs>
+                  <outputs>
+                    <output
+                      refId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Outputs[OLE DB Destination Error Output]"
+                      exclusionGroup="1"
+                      isErrorOut="true"
+                      name="OLE DB Destination Error Output"
+                      synchronousInputId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input]">
+                      <outputColumns>
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
+                          dataType="i4"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
+                          name="ErrorCode"
+                          specialFlags="1" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
+                          dataType="i4"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
+                          name="ErrorColumn"
+                          specialFlags="2" />
+                      </outputColumns>
+                      <externalMetadataColumns />
+                    </output>
+                  </outputs>
+                </component>
+                <component
+                  refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query"
+                  componentClassID="{165A526D-D5DE-47FF-96A6-F8274C19826B}"
+                  contactInfo="OLE DB Source;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;7"
+                  description="OLE DB Source"
+                  name="Oracle Query"
+                  usesDispositions="true"
+                  version="7">
+                  <properties>
+                    <property
+                      dataType="System.Int32"
+                      description="The number of seconds before a command times out.  A value of 0 indicates an infinite time-out."
+                      name="CommandTimeout">0</property>
+                    <property
+                      dataType="System.String"
+                      description="Specifies the name of the database object used to open a rowset."
+                      name="OpenRowset"></property>
+                    <property
+                      dataType="System.String"
+                      description="Specifies the variable that contains the name of the database object used to open a rowset."
+                      name="OpenRowsetVariable"></property>
+                    <property
+                      dataType="System.String"
+                      description="The SQL command to be executed."
+                      name="SqlCommand"
+                      UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor, Microsoft.DataTransformationServices.Controls, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91">select ProductSourceID, ProductID, ProductCode, 
+  substr(ProductSource,1,instr(ProductSource, ' - ')-1) SourceCode,
+  substr(ProductSource,instr(ProductSource, ' - ')+3, length(ProductSource)-instr(ProductSource, ' - ')-2) SourceName,
+  SourceType, CertificationExternalNotes, LinkType
+from (
+select psc.name ProductSourceID, pimviewapipck.getname(prdlnk.sourceid) ProductID, 
+  pimviewapipck.getproductvalue(psc.name, 'ProductCode') ProductCode, 
+  pimviewapipck.getcontextname(src.classificationid) ProductSource,
+  stp.name SourceType,
+  pimviewapipck.getproductvalue(psc.name, 'ExternalCertificationNotes') CertificationExternalNotes,
+  case nvl(lnk.referencetypeid,0) when 0 then '' when 1754773 then 'Primary' else 'Alternate' end LinkType
+from (((((product_v psc 
+  left join productreferencelink_v lnk on lnk.targetid = psc.id and lnk.referencetypeid in (1754773,1754772))
+  left join productclassificationlink_v src on src.productid = psc.id and src.linktypeid in (1754874,1754873))
+  left join classification_v cls on cls.id = src.classificationid) left join pimsubtype_all stp on stp.id = cls.subtypeid)
+  left join productreferencelink_v prdlnk on prdlnk.targetid = psc.id)
+where psc.subtypeid in (1753141,1753143))</property>
+                    <property
+                      dataType="System.String"
+                      description="The variable that contains the SQL command to be executed."
+                      name="SqlCommandVariable"></property>
+                    <property
+                      dataType="System.Int32"
+                      description="Specifies the column code page to use when code page information is unavailable from the data source."
+                      name="DefaultCodePage">1252</property>
+                    <property
+                      dataType="System.Boolean"
+                      description="Forces the use of the DefaultCodePage property value when describing character data."
+                      name="AlwaysUseDefaultCodePage">false</property>
+                    <property
+                      dataType="System.Int32"
+                      description="Specifies the mode used to access the database."
+                      name="AccessMode"
+                      typeConverter="AccessMode">2</property>
+                    <property
+                      dataType="System.String"
+                      description="The mappings between the parameters in the SQL command and variables."
+                      name="ParameterMapping"></property>
+                  </properties>
+                  <connections>
+                    <connection
+                      refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Connections[OleDbConnection]"
+                      connectionManagerID="Package.ConnectionManagers[step.stepview]"
+                      connectionManagerRefId="Package.ConnectionManagers[step.stepview]"
+                      description="The OLE DB runtime connection used to access the database."
+                      name="OleDbConnection" />
+                  </connections>
+                  <outputs>
+                    <output
+                      refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output]"
+                      name="OLE DB Source Output">
+                      <outputColumns>
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].Columns[PRODUCTSOURCEID]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[PRODUCTSOURCEID]"
+                          length="40"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].Columns[PRODUCTSOURCEID]"
+                          name="PRODUCTSOURCEID"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].Columns[PRODUCTID]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[PRODUCTID]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].Columns[PRODUCTID]"
+                          name="PRODUCTID"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].Columns[PRODUCTCODE]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[PRODUCTCODE]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].Columns[PRODUCTCODE]"
+                          name="PRODUCTCODE"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].Columns[SOURCECODE]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[SOURCECODE]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].Columns[SOURCECODE]"
+                          name="SOURCECODE"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].Columns[SOURCENAME]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[SOURCENAME]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].Columns[SOURCENAME]"
+                          name="SOURCENAME"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].Columns[SOURCETYPE]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[SOURCETYPE]"
+                          length="40"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].Columns[SOURCETYPE]"
+                          name="SOURCETYPE"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].Columns[CERTIFICATIONEXTERNALNOTES]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[CERTIFICATIONEXTERNALNOTES]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].Columns[CERTIFICATIONEXTERNALNOTES]"
+                          name="CERTIFICATIONEXTERNALNOTES"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].Columns[LINKTYPE]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[LINKTYPE]"
+                          length="9"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].Columns[LINKTYPE]"
+                          name="LINKTYPE"
+                          truncationRowDisposition="FailComponent" />
+                      </outputColumns>
+                      <externalMetadataColumns
+                        isUsed="True">
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[PRODUCTSOURCEID]"
+                          dataType="wstr"
+                          length="40"
+                          name="PRODUCTSOURCEID" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[PRODUCTID]"
+                          dataType="wstr"
+                          length="4000"
+                          name="PRODUCTID" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[PRODUCTCODE]"
+                          dataType="wstr"
+                          length="4000"
+                          name="PRODUCTCODE" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[SOURCECODE]"
+                          dataType="wstr"
+                          length="4000"
+                          name="SOURCECODE" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[SOURCENAME]"
+                          dataType="wstr"
+                          length="4000"
+                          name="SOURCENAME" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[SOURCETYPE]"
+                          dataType="wstr"
+                          length="40"
+                          name="SOURCETYPE" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[CERTIFICATIONEXTERNALNOTES]"
+                          dataType="wstr"
+                          length="4000"
+                          name="CERTIFICATIONEXTERNALNOTES" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[LINKTYPE]"
+                          dataType="wstr"
+                          length="9"
+                          name="LINKTYPE" />
+                      </externalMetadataColumns>
+                    </output>
+                    <output
+                      refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Error Output]"
+                      isErrorOut="true"
+                      name="OLE DB Source Error Output">
+                      <outputColumns>
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[PRODUCTSOURCEID]"
+                          dataType="wstr"
+                          length="40"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[PRODUCTSOURCEID]"
+                          name="PRODUCTSOURCEID" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[PRODUCTID]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[PRODUCTID]"
+                          name="PRODUCTID" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[PRODUCTCODE]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[PRODUCTCODE]"
+                          name="PRODUCTCODE" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[SOURCECODE]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[SOURCECODE]"
+                          name="SOURCECODE" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[SOURCENAME]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[SOURCENAME]"
+                          name="SOURCENAME" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[SOURCETYPE]"
+                          dataType="wstr"
+                          length="40"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[SOURCETYPE]"
+                          name="SOURCETYPE" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[CERTIFICATIONEXTERNALNOTES]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[CERTIFICATIONEXTERNALNOTES]"
+                          name="CERTIFICATIONEXTERNALNOTES" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[LINKTYPE]"
+                          dataType="wstr"
+                          length="9"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[LINKTYPE]"
+                          name="LINKTYPE" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ErrorCode]"
+                          dataType="i4"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ErrorCode]"
+                          name="ErrorCode"
+                          specialFlags="1" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ErrorColumn]"
+                          dataType="i4"
+                          lineageId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ErrorColumn]"
+                          name="ErrorColumn"
+                          specialFlags="2" />
+                      </outputColumns>
+                      <externalMetadataColumns />
+                    </output>
+                  </outputs>
+                </component>
+              </components>
+              <paths>
+                <path
+                  refId="Package\Sequence Container\Copy ProductSourceView.Paths[OLE DB Source Output]"
+                  endId="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM.Inputs[OLE DB Destination Input]"
+                  name="OLE DB Source Output"
+                  startId="Package\Sequence Container\Copy ProductSourceView\Oracle Query.Outputs[OLE DB Source Output]" />
+              </paths>
+            </pipeline>
+          </DTS:ObjectData>
+        </DTS:Executable>
+        <DTS:Executable
+          DTS:refId="Package\Sequence Container\Setting Oracle Session Varaible"
+          DTS:CreationName="Microsoft.SqlServer.Dts.Tasks.ExecuteSQLTask.ExecuteSQLTask, Microsoft.SqlServer.SQLTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+          DTS:Description="Execute SQL Task"
+          DTS:DTSID="{9CABAAC6-8792-4E8C-8A8E-99A0A9946C61}"
+          DTS:ExecutableType="Microsoft.SqlServer.Dts.Tasks.ExecuteSQLTask.ExecuteSQLTask, Microsoft.SqlServer.SQLTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+          DTS:LocaleID="-1"
+          DTS:ObjectName="Setting Oracle Session Varaible"
+          DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2012; © 2007 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+          DTS:ThreadHint="0">
+          <DTS:Variables />
+          <DTS:ObjectData>
+            <SQLTask:SqlTaskData
+              SQLTask:Connection="{6280328F-A55F-40D7-8D5A-6BA9BE0BC938}"
+              SQLTask:BypassPrepare="False"
+              SQLTask:SqlStatementSource="begin pimviewapipck.setviewcontext('Context1','Approved') ; end;" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+          </DTS:ObjectData>
+        </DTS:Executable>
+      </DTS:Executables>
+      <DTS:PrecedenceConstraints>
+        <DTS:PrecedenceConstraint
+          DTS:refId="Package\Sequence Container.PrecedenceConstraints[Constraint]"
+          DTS:CreationName=""
+          DTS:DTSID="{C787EA13-3E4C-4DCB-A6EF-92D7F9371019}"
+          DTS:From="Package\Sequence Container\Setting Oracle Session Varaible"
+          DTS:LogicalAnd="True"
+          DTS:ObjectName="Constraint"
+          DTS:To="Package\Sequence Container\Copy ProductSourceView" />
+      </DTS:PrecedenceConstraints>
+    </DTS:Executable>
+    <DTS:Executable
+      DTS:refId="Package\Truncate ProductSourceView"
+      DTS:CreationName="Microsoft.SqlServer.Dts.Tasks.ExecuteSQLTask.ExecuteSQLTask, Microsoft.SqlServer.SQLTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+      DTS:Description="Execute SQL Task"
+      DTS:DTSID="{7D1B0FB9-6F8B-424C-A224-ABBA36A22BBC}"
+      DTS:ExecutableType="Microsoft.SqlServer.Dts.Tasks.ExecuteSQLTask.ExecuteSQLTask, Microsoft.SqlServer.SQLTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Truncate ProductSourceView"
+      DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2012; © 2007 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{8D6DB1AA-86B9-44CA-AAC3-F419A009453B}"
+          SQLTask:BypassPrepare="False"
+          SQLTask:SqlStatementSource="TRUNCATE TABLE dbo.ProductSourceView" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+  </DTS:Executables>
+  <DTS:PrecedenceConstraints>
+    <DTS:PrecedenceConstraint
+      DTS:refId="Package.PrecedenceConstraints[Constraint]"
+      DTS:CreationName=""
+      DTS:DTSID="{837C8E7C-1E21-412B-8E82-38F833DE4F14}"
+      DTS:From="Package\Truncate ProductSourceView"
+      DTS:LogicalAnd="True"
+      DTS:ObjectName="Constraint"
+      DTS:To="Package\Sequence Container" />
+  </DTS:PrecedenceConstraints>
+  <DTS:DesignTimeProperties><![CDATA[<?xml version="1.0"?>
+<!--This CDATA section contains the layout information of the package. The section includes information such as (x,y) coordinates, width, and height.-->
+<!--If you manually edit this section and make a mistake, you can delete it. -->
+<!--The package will still be able to load normally but the previous layout information will be lost and the designer will automatically re-arrange the elements on the design surface.-->
+<Objects
+  Version="sql11">
+  <!--Each node below will contain properties that do not affect runtime behavior.-->
+  <Package
+    design-time-name="Package">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="8" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
+        <NodeLayout
+          Size="196.8,41.6"
+          Id="Package\Sequence Container\Copy ProductSourceView"
+          TopLeft="48.8000026566643,126.400004083969" />
+        <NodeLayout
+          Size="225.6,41.6"
+          Id="Package\Sequence Container\Setting Oracle Session Varaible"
+          TopLeft="32.8000023841859,30.3529439134169" />
+        <EdgeLayout
+          Id="Package\Sequence Container.PrecedenceConstraints[Constraint]"
+          TopLeft="146.400002520425,71.9529439134169">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,54.4470601705521"
+              Start="0,0"
+              End="0,46.9470601705521">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,46.9470601705521" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+        <ContainerLayout
+          HeaderHeight="43"
+          IsExpanded="True"
+          PanelSize="281.6,218.4"
+          Size="281.6,261.6"
+          Id="Package\Sequence Container"
+          TopLeft="107.428573258069,127.247060608122" />
+        <NodeLayout
+          Size="216,41.6"
+          Id="Package\Truncate ProductSourceView"
+          TopLeft="142.857145289985,29.1764710086441" />
+        <EdgeLayout
+          Id="Package.PrecedenceConstraints[Constraint]"
+          TopLeft="249.542859274027,70.7764710086441">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,56.4705895994779"
+              Start="0,0"
+              End="0,48.9705895994779">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,48.9705895994779" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+      </GraphLayout>
+    </LayoutInfo>
+  </Package>
+  <TaskHost
+    design-time-name="Package\Sequence Container\Copy ProductSourceView">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="4" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
+        <NodeLayout
+          Size="176,41.6"
+          Id="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM"
+          TopLeft="266.285718820533,189.035296768796" />
+        <NodeLayout
+          Size="142.4,41.6"
+          Id="Package\Sequence Container\Copy ProductSourceView\Oracle Query"
+          TopLeft="278.857147606052,67.9058833052955" />
+        <EdgeLayout
+          Id="Package\Sequence Container\Copy ProductSourceView.Paths[OLE DB Source Output]"
+          TopLeft="352.171433213292,109.505883305295">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,79.5294134635002"
+              Start="0,0"
+              End="0,72.0294134635002">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,72.0294134635002" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+      </GraphLayout>
+    </LayoutInfo>
+  </TaskHost>
+  <PipelineComponentMetadata
+    design-time-name="Package\Sequence Container\Copy ProductSourceView\DataWarehouse PIM">
+    <Properties>
+      <Property>
+        <Name>DataSourceViewID</Name>
+      </Property>
+      <Property>
+        <Name>TableInfoObjectType</Name>
+        <Value
+          type="q2:string">Table</Value>
+      </Property>
+    </Properties>
+  </PipelineComponentMetadata>
+  <PipelineComponentMetadata
+    design-time-name="Package\Sequence Container\Copy ProductSourceView\Oracle Query">
+    <Properties>
+      <Property>
+        <Name>DataSourceViewID</Name>
+      </Property>
+    </Properties>
+  </PipelineComponentMetadata>
+</Objects>]]></DTS:DesignTimeProperties>
+</DTS:Executable>

@@ -1,0 +1,29 @@
+Microsoft Visual Studio Solution File, Format Version 8.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Walkthrough_WebService", "http://localhost/Walkthrough_WebService/Walkthrough_WebService.csproj", "{7989BE69-31B1-4153-AE25-B90455E5F6FE}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Walkthrough_Test_WebService", "http://localhost/Walkthrough_Test_WebService/Walkthrough_Test_WebService.csproj", "{13418C18-C226-46A9-9290-F44D308464B0}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		Debug = Debug
+		Release = Release
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{7989BE69-31B1-4153-AE25-B90455E5F6FE}.Debug.ActiveCfg = Debug|.NET
+		{7989BE69-31B1-4153-AE25-B90455E5F6FE}.Debug.Build.0 = Debug|.NET
+		{7989BE69-31B1-4153-AE25-B90455E5F6FE}.Release.ActiveCfg = Release|.NET
+		{7989BE69-31B1-4153-AE25-B90455E5F6FE}.Release.Build.0 = Release|.NET
+		{13418C18-C226-46A9-9290-F44D308464B0}.Debug.ActiveCfg = Debug|.NET
+		{13418C18-C226-46A9-9290-F44D308464B0}.Debug.Build.0 = Debug|.NET
+		{13418C18-C226-46A9-9290-F44D308464B0}.Release.ActiveCfg = Release|.NET
+		{13418C18-C226-46A9-9290-F44D308464B0}.Release.Build.0 = Release|.NET
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal

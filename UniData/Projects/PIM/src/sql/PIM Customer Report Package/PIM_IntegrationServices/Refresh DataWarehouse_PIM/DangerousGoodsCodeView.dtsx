@@ -1,0 +1,732 @@
+﻿<?xml version="1.0"?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:refId="Package"
+  DTS:CreationDate="3/4/2016 5:11:59 PM"
+  DTS:CreationName="SSIS.Package.3"
+  DTS:CreatorComputerName="63RJGV1"
+  DTS:CreatorName="CORP\juntan"
+  DTS:DTSID="{0C57ABAA-A1DF-498E-A3A8-0CF1741C5F49}"
+  DTS:ExecutableType="SSIS.Package.3"
+  DTS:LastModifiedProductVersion="11.0.5583.0"
+  DTS:LocaleID="4105"
+  DTS:ObjectName="DangerousGoodsCodeView"
+  DTS:PackageType="5"
+  DTS:ProtectionLevel="0"
+  DTS:VersionBuild="30"
+  DTS:VersionGUID="{84ED8557-148C-4A9B-A0F1-397FBCCEC7E6}">
+  <DTS:Property
+    DTS:Name="PackageFormatVersion">6</DTS:Property>
+  <DTS:ConnectionManagers>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[step.stepview]"
+      DTS:CreationName="OLEDB"
+      DTS:DTSID="{6280328F-A55F-40D7-8D5A-6BA9BE0BC938}"
+      DTS:ObjectName="step.stepview">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:Retain="True"
+          DTS:ConnectionString="Data Source=step;User ID=stepview;Provider=OraOLEDB.Oracle.1;Persist Security Info=True;">
+          <DTS:Password
+            DTS:Name="Password"
+            Sensitive="1"></DTS:Password>
+        </DTS:ConnectionManager>
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+  </DTS:ConnectionManagers>
+  <DTS:Variables />
+  <DTS:Executables>
+    <DTS:Executable
+      DTS:refId="Package\Sequence Container"
+      DTS:CreationName="STOCK:SEQUENCE"
+      DTS:Description="Sequence Container"
+      DTS:DTSID="{24BC2EFE-0980-47A4-BCE6-876EE95A3ABE}"
+      DTS:ExecutableType="STOCK:SEQUENCE"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Sequence Container">
+      <DTS:Variables />
+      <DTS:Executables>
+        <DTS:Executable
+          DTS:refId="Package\Sequence Container\Copy DangerousGoodsCodeView"
+          DTS:CreationName="SSIS.Pipeline.3"
+          DTS:Description="Data Flow Task"
+          DTS:DTSID="{7FF4F629-1C84-45AA-BD74-40907E857148}"
+          DTS:ExecutableType="SSIS.Pipeline.3"
+          DTS:LocaleID="-1"
+          DTS:ObjectName="Copy DangerousGoodsCodeView"
+          DTS:TaskContact="Performs high-performance data extraction, transformation and loading;Microsoft Corporation; Microsoft SQL Server; (C) 2007 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1">
+          <DTS:Variables />
+          <DTS:ObjectData>
+            <pipeline
+              version="1">
+              <components>
+                <component
+                  refId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM"
+                  componentClassID="{4ADA7EAA-136C-4215-8098-D7A7C27FC0D1}"
+                  contactInfo="OLE DB Destination;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;4"
+                  description="OLE DB Destination"
+                  name="DataWarehouse PIM"
+                  usesDispositions="true"
+                  version="4">
+                  <properties>
+                    <property
+                      dataType="System.Int32"
+                      description="The number of seconds before a command times out.  A value of 0 indicates an infinite time-out."
+                      name="CommandTimeout">0</property>
+                    <property
+                      dataType="System.String"
+                      description="Specifies the name of the database object used to open a rowset."
+                      name="OpenRowset">[dbo].[DangerousGoodsCodeView]</property>
+                    <property
+                      dataType="System.String"
+                      description="Specifies the variable that contains the name of the database object used to open a rowset."
+                      name="OpenRowsetVariable"></property>
+                    <property
+                      dataType="System.String"
+                      description="The SQL command to be executed."
+                      name="SqlCommand"
+                      UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor, Microsoft.DataTransformationServices.Controls, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"></property>
+                    <property
+                      dataType="System.Int32"
+                      description="Specifies the column code page to use when code page information is unavailable from the data source."
+                      name="DefaultCodePage">1252</property>
+                    <property
+                      dataType="System.Boolean"
+                      description="Forces the use of the DefaultCodePage property value when describing character data."
+                      name="AlwaysUseDefaultCodePage">false</property>
+                    <property
+                      dataType="System.Int32"
+                      description="Specifies the mode used to access the database."
+                      name="AccessMode"
+                      typeConverter="AccessMode">3</property>
+                    <property
+                      dataType="System.Boolean"
+                      description="Indicates whether the values supplied for identity columns will be copied to the destination. If false, values for identity columns will be auto-generated at the destination. Applies only if fast load is turned on."
+                      name="FastLoadKeepIdentity">false</property>
+                    <property
+                      dataType="System.Boolean"
+                      description="Indicates whether the columns containing null will have null inserted in the destination. If false, columns containing null will have their default values inserted at the destination. Applies only if fast load is turned on."
+                      name="FastLoadKeepNulls">false</property>
+                    <property
+                      dataType="System.String"
+                      description="Specifies options to be used with fast load.  Applies only if fast load is turned on."
+                      name="FastLoadOptions">TABLOCK</property>
+                    <property
+                      dataType="System.Int32"
+                      description="Specifies when commits are issued during data insertion.  A value of 0 specifies that one commit will be issued at the end of data insertion.  Applies only if fast load is turned on."
+                      name="FastLoadMaxInsertCommitSize">2147483647</property>
+                  </properties>
+                  <connections>
+                    <connection
+                      refId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Connections[OleDbConnection]"
+                      connectionManagerID="{8D6DB1AA-86B9-44CA-AAC3-F419A009453B}:external"
+                      connectionManagerRefId="Project.ConnectionManagers[sql11.DataWarehouse_PIM]"
+                      description="The OLE DB runtime connection used to access the database."
+                      name="OleDbConnection" />
+                  </connections>
+                  <inputs>
+                    <input
+                      refId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input]"
+                      errorOrTruncationOperation="Insert"
+                      errorRowDisposition="FailComponent"
+                      hasSideEffects="true"
+                      name="OLE DB Destination Input">
+                      <inputColumns>
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[DGCODEID]"
+                          cachedDataType="wstr"
+                          cachedLength="40"
+                          cachedName="DGCODEID"
+                          externalMetadataColumnId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[DGCodeID]"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[DGCODEID]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[DGCODE]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="DGCODE"
+                          externalMetadataColumnId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[DGCode]"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[DGCODE]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[DGCODECODE]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="DGCODECODE"
+                          externalMetadataColumnId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[DGCodeCode]"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[DGCODECODE]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[DESCRIPTION]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="DESCRIPTION"
+                          externalMetadataColumnId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[Description]"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[DESCRIPTION]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[MESSAGE]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="MESSAGE"
+                          externalMetadataColumnId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[Message]"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[MESSAGE]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[PRINTMESSAGEONBOL]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="PRINTMESSAGEONBOL"
+                          externalMetadataColumnId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[PrintMessageOnBOL]"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[PRINTMESSAGEONBOL]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[UNCODES]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="UNCODES"
+                          externalMetadataColumnId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[UNCodes]"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[UNCODES]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[UNCODEWEIGHTS]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="UNCODEWEIGHTS"
+                          externalMetadataColumnId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[UNCodeWeights]"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[UNCODEWEIGHTS]" />
+                      </inputColumns>
+                      <externalMetadataColumns
+                        isUsed="True">
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[DGCodeID]"
+                          dataType="wstr"
+                          length="255"
+                          name="DGCodeID" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[DGCode]"
+                          dataType="wstr"
+                          length="255"
+                          name="DGCode" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[DGCodeCode]"
+                          dataType="wstr"
+                          length="255"
+                          name="DGCodeCode" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[Description]"
+                          dataType="wstr"
+                          length="255"
+                          name="Description" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[Message]"
+                          dataType="wstr"
+                          length="255"
+                          name="Message" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[PrintMessageOnBOL]"
+                          dataType="wstr"
+                          length="255"
+                          name="PrintMessageOnBOL" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[UNCodes]"
+                          dataType="wstr"
+                          length="255"
+                          name="UNCodes" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[UNCodeWeights]"
+                          dataType="wstr"
+                          length="255"
+                          name="UNCodeWeights" />
+                      </externalMetadataColumns>
+                    </input>
+                  </inputs>
+                  <outputs>
+                    <output
+                      refId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Outputs[OLE DB Destination Error Output]"
+                      exclusionGroup="1"
+                      isErrorOut="true"
+                      name="OLE DB Destination Error Output"
+                      synchronousInputId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input]">
+                      <outputColumns>
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
+                          dataType="i4"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
+                          name="ErrorCode"
+                          specialFlags="1" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
+                          dataType="i4"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
+                          name="ErrorColumn"
+                          specialFlags="2" />
+                      </outputColumns>
+                      <externalMetadataColumns />
+                    </output>
+                  </outputs>
+                </component>
+                <component
+                  refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query"
+                  componentClassID="{165A526D-D5DE-47FF-96A6-F8274C19826B}"
+                  contactInfo="OLE DB Source;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;7"
+                  description="OLE DB Source"
+                  name="Oracle Query"
+                  usesDispositions="true"
+                  version="7">
+                  <properties>
+                    <property
+                      dataType="System.Int32"
+                      description="The number of seconds before a command times out.  A value of 0 indicates an infinite time-out."
+                      name="CommandTimeout">0</property>
+                    <property
+                      dataType="System.String"
+                      description="Specifies the name of the database object used to open a rowset."
+                      name="OpenRowset"></property>
+                    <property
+                      dataType="System.String"
+                      description="Specifies the variable that contains the name of the database object used to open a rowset."
+                      name="OpenRowsetVariable"></property>
+                    <property
+                      dataType="System.String"
+                      description="The SQL command to be executed."
+                      name="SqlCommand"
+                      UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor, Microsoft.DataTransformationServices.Controls, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91">select name DGCodeID, pimviewapipck.getcontextname(id) DGCode, 
+  pimviewapipck.getcontextvalue4node(id,1753649) DGCodeCode,
+  pimviewapipck.getcontextvalue4node(id,1753625) Description,
+  pimviewapipck.getcontextvalue4node(id,1753756) Message,
+  pimviewapipck.getcontextvalue4node(id,1754392) PrintMessageOnBOL,
+  REPLACE(pimviewapipck.getcontextvalues4node_multisep(id,1753692), '&lt;multisep/&gt;', ';') UNCodes,
+  REPLACE(pimviewapipck.getcontextvalues4node_multisep(id,1754380), '&lt;multisep/&gt;', ';') UNCodeWeights
+from entity_all where subtypeid=1753473</property>
+                    <property
+                      dataType="System.String"
+                      description="The variable that contains the SQL command to be executed."
+                      name="SqlCommandVariable"></property>
+                    <property
+                      dataType="System.Int32"
+                      description="Specifies the column code page to use when code page information is unavailable from the data source."
+                      name="DefaultCodePage">1252</property>
+                    <property
+                      dataType="System.Boolean"
+                      description="Forces the use of the DefaultCodePage property value when describing character data."
+                      name="AlwaysUseDefaultCodePage">false</property>
+                    <property
+                      dataType="System.Int32"
+                      description="Specifies the mode used to access the database."
+                      name="AccessMode"
+                      typeConverter="AccessMode">2</property>
+                    <property
+                      dataType="System.String"
+                      description="The mappings between the parameters in the SQL command and variables."
+                      name="ParameterMapping"></property>
+                  </properties>
+                  <connections>
+                    <connection
+                      refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Connections[OleDbConnection]"
+                      connectionManagerID="Package.ConnectionManagers[step.stepview]"
+                      connectionManagerRefId="Package.ConnectionManagers[step.stepview]"
+                      description="The OLE DB runtime connection used to access the database."
+                      name="OleDbConnection" />
+                  </connections>
+                  <outputs>
+                    <output
+                      refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output]"
+                      name="OLE DB Source Output">
+                      <outputColumns>
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[DGCODEID]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[DGCODEID]"
+                          length="40"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[DGCODEID]"
+                          name="DGCODEID"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[DGCODE]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[DGCODE]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[DGCODE]"
+                          name="DGCODE"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[DGCODECODE]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[DGCODECODE]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[DGCODECODE]"
+                          name="DGCODECODE"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[DESCRIPTION]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[DESCRIPTION]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[DESCRIPTION]"
+                          name="DESCRIPTION"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[MESSAGE]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[MESSAGE]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[MESSAGE]"
+                          name="MESSAGE"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[PRINTMESSAGEONBOL]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[PRINTMESSAGEONBOL]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[PRINTMESSAGEONBOL]"
+                          name="PRINTMESSAGEONBOL"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[UNCODES]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[UNCODES]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[UNCODES]"
+                          name="UNCODES"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[UNCODEWEIGHTS]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[UNCODEWEIGHTS]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].Columns[UNCODEWEIGHTS]"
+                          name="UNCODEWEIGHTS"
+                          truncationRowDisposition="FailComponent" />
+                      </outputColumns>
+                      <externalMetadataColumns
+                        isUsed="True">
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[DGCODEID]"
+                          dataType="wstr"
+                          length="40"
+                          name="DGCODEID" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[DGCODE]"
+                          dataType="wstr"
+                          length="4000"
+                          name="DGCODE" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[DGCODECODE]"
+                          dataType="wstr"
+                          length="4000"
+                          name="DGCODECODE" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[DESCRIPTION]"
+                          dataType="wstr"
+                          length="4000"
+                          name="DESCRIPTION" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[MESSAGE]"
+                          dataType="wstr"
+                          length="4000"
+                          name="MESSAGE" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[PRINTMESSAGEONBOL]"
+                          dataType="wstr"
+                          length="4000"
+                          name="PRINTMESSAGEONBOL" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[UNCODES]"
+                          dataType="wstr"
+                          length="4000"
+                          name="UNCODES" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[UNCODEWEIGHTS]"
+                          dataType="wstr"
+                          length="4000"
+                          name="UNCODEWEIGHTS" />
+                      </externalMetadataColumns>
+                    </output>
+                    <output
+                      refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Error Output]"
+                      isErrorOut="true"
+                      name="OLE DB Source Error Output">
+                      <outputColumns>
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[DGCODEID]"
+                          dataType="wstr"
+                          length="40"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[DGCODEID]"
+                          name="DGCODEID" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[DGCODE]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[DGCODE]"
+                          name="DGCODE" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[DGCODECODE]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[DGCODECODE]"
+                          name="DGCODECODE" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[DESCRIPTION]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[DESCRIPTION]"
+                          name="DESCRIPTION" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[MESSAGE]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[MESSAGE]"
+                          name="MESSAGE" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[PRINTMESSAGEONBOL]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[PRINTMESSAGEONBOL]"
+                          name="PRINTMESSAGEONBOL" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[UNCODES]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[UNCODES]"
+                          name="UNCODES" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[UNCODEWEIGHTS]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[UNCODEWEIGHTS]"
+                          name="UNCODEWEIGHTS" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ErrorCode]"
+                          dataType="i4"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ErrorCode]"
+                          name="ErrorCode"
+                          specialFlags="1" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ErrorColumn]"
+                          dataType="i4"
+                          lineageId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ErrorColumn]"
+                          name="ErrorColumn"
+                          specialFlags="2" />
+                      </outputColumns>
+                      <externalMetadataColumns />
+                    </output>
+                  </outputs>
+                </component>
+              </components>
+              <paths>
+                <path
+                  refId="Package\Sequence Container\Copy DangerousGoodsCodeView.Paths[OLE DB Source Output]"
+                  endId="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM.Inputs[OLE DB Destination Input]"
+                  name="OLE DB Source Output"
+                  startId="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query.Outputs[OLE DB Source Output]" />
+              </paths>
+            </pipeline>
+          </DTS:ObjectData>
+        </DTS:Executable>
+        <DTS:Executable
+          DTS:refId="Package\Sequence Container\Setting Oracle Session Varaible"
+          DTS:CreationName="Microsoft.SqlServer.Dts.Tasks.ExecuteSQLTask.ExecuteSQLTask, Microsoft.SqlServer.SQLTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+          DTS:Description="Execute SQL Task"
+          DTS:DTSID="{39D961D8-6165-4BAF-BAED-E60E83A2F710}"
+          DTS:ExecutableType="Microsoft.SqlServer.Dts.Tasks.ExecuteSQLTask.ExecuteSQLTask, Microsoft.SqlServer.SQLTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+          DTS:LocaleID="-1"
+          DTS:ObjectName="Setting Oracle Session Varaible"
+          DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2012; © 2007 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+          DTS:ThreadHint="0">
+          <DTS:Variables />
+          <DTS:ObjectData>
+            <SQLTask:SqlTaskData
+              SQLTask:Connection="{6280328F-A55F-40D7-8D5A-6BA9BE0BC938}"
+              SQLTask:BypassPrepare="False"
+              SQLTask:SqlStatementSource="begin pimviewapipck.setviewcontext('Context1','Approved') ; end;" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+          </DTS:ObjectData>
+        </DTS:Executable>
+      </DTS:Executables>
+      <DTS:PrecedenceConstraints>
+        <DTS:PrecedenceConstraint
+          DTS:refId="Package\Sequence Container.PrecedenceConstraints[Constraint]"
+          DTS:CreationName=""
+          DTS:DTSID="{3E37A13D-2781-4306-94D3-0FD96D43E5FA}"
+          DTS:From="Package\Sequence Container\Setting Oracle Session Varaible"
+          DTS:LogicalAnd="True"
+          DTS:ObjectName="Constraint"
+          DTS:To="Package\Sequence Container\Copy DangerousGoodsCodeView" />
+      </DTS:PrecedenceConstraints>
+    </DTS:Executable>
+    <DTS:Executable
+      DTS:refId="Package\Truncate DangerousGoodsCodeView"
+      DTS:CreationName="Microsoft.SqlServer.Dts.Tasks.ExecuteSQLTask.ExecuteSQLTask, Microsoft.SqlServer.SQLTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+      DTS:Description="Execute SQL Task"
+      DTS:DTSID="{B412E566-1345-423A-8527-28F18CDE87C2}"
+      DTS:ExecutableType="Microsoft.SqlServer.Dts.Tasks.ExecuteSQLTask.ExecuteSQLTask, Microsoft.SqlServer.SQLTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Truncate DangerousGoodsCodeView"
+      DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2012; © 2007 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{8D6DB1AA-86B9-44CA-AAC3-F419A009453B}"
+          SQLTask:BypassPrepare="False"
+          SQLTask:SqlStatementSource="TRUNCATE TABLE dbo.DangerousGoodsCodeView" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+  </DTS:Executables>
+  <DTS:PrecedenceConstraints>
+    <DTS:PrecedenceConstraint
+      DTS:refId="Package.PrecedenceConstraints[Constraint]"
+      DTS:CreationName=""
+      DTS:DTSID="{4FA78A51-84A2-4B2B-89C4-54175FD23AC6}"
+      DTS:From="Package\Truncate DangerousGoodsCodeView"
+      DTS:LogicalAnd="True"
+      DTS:ObjectName="Constraint"
+      DTS:To="Package\Sequence Container" />
+  </DTS:PrecedenceConstraints>
+  <DTS:DesignTimeProperties><![CDATA[<?xml version="1.0"?>
+<!--This CDATA section contains the layout information of the package. The section includes information such as (x,y) coordinates, width, and height.-->
+<!--If you manually edit this section and make a mistake, you can delete it. -->
+<!--The package will still be able to load normally but the previous layout information will be lost and the designer will automatically re-arrange the elements on the design surface.-->
+<Objects
+  Version="sql11">
+  <!--Each node below will contain properties that do not affect runtime behavior.-->
+  <Package
+    design-time-name="Package">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="8" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
+        <NodeLayout
+          Size="233.6,41.6"
+          Id="Package\Sequence Container\Copy DangerousGoodsCodeView"
+          TopLeft="34.5142881276656,138.635298373212" />
+        <NodeLayout
+          Size="225.6,41.6"
+          Id="Package\Sequence Container\Setting Oracle Session Varaible"
+          TopLeft="38.5142881957853,30.3529439134169" />
+        <EdgeLayout
+          Id="Package\Sequence Container.PrecedenceConstraints[Constraint]"
+          TopLeft="151.314288161725,71.9529439134169">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,66.6823544597951"
+              Start="0,0"
+              End="0,59.1823544597951">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,59.1823544597951" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+        <ContainerLayout
+          HeaderHeight="43"
+          IsExpanded="True"
+          PanelSize="304.8,233.6"
+          Size="304.8,276.8"
+          Id="Package\Sequence Container"
+          TopLeft="107.428573258069,127.247060608122" />
+        <NodeLayout
+          Size="251.2,41.6"
+          Id="Package\Truncate DangerousGoodsCodeView"
+          TopLeft="129.142859342147,34.0705887243411" />
+        <EdgeLayout
+          Id="Package.PrecedenceConstraints[Constraint]"
+          TopLeft="257.285716300108,75.6705887243411">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,51.5764718837809"
+              Start="0,0"
+              End="0,44.0764718837809">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,44.0764718837809" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+      </GraphLayout>
+    </LayoutInfo>
+  </Package>
+  <TaskHost
+    design-time-name="Package\Sequence Container\Copy DangerousGoodsCodeView">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="4" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
+        <NodeLayout
+          Size="176,41.6"
+          Id="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM"
+          TopLeft="272.799999727522,197.929411859083" />
+        <NodeLayout
+          Size="142.4,41.6"
+          Id="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query"
+          TopLeft="285.142861998812,66.6823538763713" />
+        <EdgeLayout
+          Id="Package\Sequence Container\Copy DangerousGoodsCodeView.Paths[OLE DB Source Output]"
+          TopLeft="358.571430863167,108.282353876371">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,89.647057982712"
+              Start="0,0"
+              End="0,82.147057982712">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,82.147057982712" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+      </GraphLayout>
+    </LayoutInfo>
+  </TaskHost>
+  <PipelineComponentMetadata
+    design-time-name="Package\Sequence Container\Copy DangerousGoodsCodeView\DataWarehouse PIM">
+    <Properties>
+      <Property>
+        <Name>DataSourceViewID</Name>
+      </Property>
+      <Property>
+        <Name>TableInfoObjectType</Name>
+        <Value
+          type="q2:string">Table</Value>
+      </Property>
+    </Properties>
+  </PipelineComponentMetadata>
+  <PipelineComponentMetadata
+    design-time-name="Package\Sequence Container\Copy DangerousGoodsCodeView\Oracle Query">
+    <Properties>
+      <Property>
+        <Name>DataSourceViewID</Name>
+      </Property>
+    </Properties>
+  </PipelineComponentMetadata>
+</Objects>]]></DTS:DesignTimeProperties>
+</DTS:Executable>

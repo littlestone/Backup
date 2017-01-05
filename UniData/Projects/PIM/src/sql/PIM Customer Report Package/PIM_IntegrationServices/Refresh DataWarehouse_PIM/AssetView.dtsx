@@ -1,0 +1,768 @@
+﻿<?xml version="1.0"?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:refId="Package"
+  DTS:CreationDate="3/4/2016 5:11:59 PM"
+  DTS:CreationName="SSIS.Package.3"
+  DTS:CreatorComputerName="63RJGV1"
+  DTS:CreatorName="CORP\juntan"
+  DTS:DTSID="{68405C11-F304-40FE-B45D-581A2A92DC47}"
+  DTS:ExecutableType="SSIS.Package.3"
+  DTS:LastModifiedProductVersion="11.0.5583.0"
+  DTS:LocaleID="4105"
+  DTS:ObjectName="AssetView"
+  DTS:PackageType="5"
+  DTS:ProtectionLevel="0"
+  DTS:VersionBuild="31"
+  DTS:VersionGUID="{63A1C529-2756-4664-B242-11D0F9553B0E}">
+  <DTS:Property
+    DTS:Name="PackageFormatVersion">6</DTS:Property>
+  <DTS:ConnectionManagers>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[step.stepview]"
+      DTS:CreationName="OLEDB"
+      DTS:DTSID="{6280328F-A55F-40D7-8D5A-6BA9BE0BC938}"
+      DTS:ObjectName="step.stepview">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:Retain="True"
+          DTS:ConnectionString="Data Source=step;User ID=stepview;Provider=OraOLEDB.Oracle.1;Persist Security Info=True;">
+          <DTS:Password
+            DTS:Name="Password"
+            Sensitive="1"></DTS:Password>
+        </DTS:ConnectionManager>
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+  </DTS:ConnectionManagers>
+  <DTS:Variables />
+  <DTS:Executables>
+    <DTS:Executable
+      DTS:refId="Package\Sequence Container"
+      DTS:CreationName="STOCK:SEQUENCE"
+      DTS:Description="Sequence Container"
+      DTS:DTSID="{4F2D4ED0-4465-49B3-8BD8-4F1F6FF7F551}"
+      DTS:ExecutableType="STOCK:SEQUENCE"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Sequence Container">
+      <DTS:Variables />
+      <DTS:Executables>
+        <DTS:Executable
+          DTS:refId="Package\Sequence Container\Copy AssetView"
+          DTS:CreationName="SSIS.Pipeline.3"
+          DTS:Description="Data Flow Task"
+          DTS:DTSID="{B3F016E2-E41E-446D-8D62-B69205FD4889}"
+          DTS:ExecutableType="SSIS.Pipeline.3"
+          DTS:LocaleID="-1"
+          DTS:ObjectName="Copy AssetView"
+          DTS:TaskContact="Performs high-performance data extraction, transformation and loading;Microsoft Corporation; Microsoft SQL Server; (C) 2007 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1">
+          <DTS:Variables />
+          <DTS:ObjectData>
+            <pipeline
+              version="1">
+              <components>
+                <component
+                  refId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM"
+                  componentClassID="{4ADA7EAA-136C-4215-8098-D7A7C27FC0D1}"
+                  contactInfo="OLE DB Destination;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;4"
+                  description="OLE DB Destination"
+                  name="DataWarehouse PIM"
+                  usesDispositions="true"
+                  version="4">
+                  <properties>
+                    <property
+                      dataType="System.Int32"
+                      description="The number of seconds before a command times out.  A value of 0 indicates an infinite time-out."
+                      name="CommandTimeout">0</property>
+                    <property
+                      dataType="System.String"
+                      description="Specifies the name of the database object used to open a rowset."
+                      name="OpenRowset">[dbo].[AssetView]</property>
+                    <property
+                      dataType="System.String"
+                      description="Specifies the variable that contains the name of the database object used to open a rowset."
+                      name="OpenRowsetVariable"></property>
+                    <property
+                      dataType="System.String"
+                      description="The SQL command to be executed."
+                      name="SqlCommand"
+                      UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor, Microsoft.DataTransformationServices.Controls, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"></property>
+                    <property
+                      dataType="System.Int32"
+                      description="Specifies the column code page to use when code page information is unavailable from the data source."
+                      name="DefaultCodePage">1252</property>
+                    <property
+                      dataType="System.Boolean"
+                      description="Forces the use of the DefaultCodePage property value when describing character data."
+                      name="AlwaysUseDefaultCodePage">false</property>
+                    <property
+                      dataType="System.Int32"
+                      description="Specifies the mode used to access the database."
+                      name="AccessMode"
+                      typeConverter="AccessMode">3</property>
+                    <property
+                      dataType="System.Boolean"
+                      description="Indicates whether the values supplied for identity columns will be copied to the destination. If false, values for identity columns will be auto-generated at the destination. Applies only if fast load is turned on."
+                      name="FastLoadKeepIdentity">false</property>
+                    <property
+                      dataType="System.Boolean"
+                      description="Indicates whether the columns containing null will have null inserted in the destination. If false, columns containing null will have their default values inserted at the destination. Applies only if fast load is turned on."
+                      name="FastLoadKeepNulls">false</property>
+                    <property
+                      dataType="System.String"
+                      description="Specifies options to be used with fast load.  Applies only if fast load is turned on."
+                      name="FastLoadOptions">TABLOCK</property>
+                    <property
+                      dataType="System.Int32"
+                      description="Specifies when commits are issued during data insertion.  A value of 0 specifies that one commit will be issued at the end of data insertion.  Applies only if fast load is turned on."
+                      name="FastLoadMaxInsertCommitSize">2147483647</property>
+                  </properties>
+                  <connections>
+                    <connection
+                      refId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Connections[OleDbConnection]"
+                      connectionManagerID="{8D6DB1AA-86B9-44CA-AAC3-F419A009453B}:external"
+                      connectionManagerRefId="Project.ConnectionManagers[sql11.DataWarehouse_PIM]"
+                      description="The OLE DB runtime connection used to access the database."
+                      name="OleDbConnection" />
+                  </connections>
+                  <inputs>
+                    <input
+                      refId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input]"
+                      errorOrTruncationOperation="Insert"
+                      errorRowDisposition="FailComponent"
+                      hasSideEffects="true"
+                      name="OLE DB Destination Input">
+                      <inputColumns>
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[ASSETID]"
+                          cachedDataType="wstr"
+                          cachedLength="40"
+                          cachedName="ASSETID"
+                          externalMetadataColumnId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[AssetID]"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].Columns[ASSETID]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[ASSETNAME]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="ASSETNAME"
+                          externalMetadataColumnId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[AssetName]"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].Columns[ASSETNAME]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[ASSETLONGNAME]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="ASSETLONGNAME"
+                          externalMetadataColumnId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[AssetLongName]"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].Columns[ASSETLONGNAME]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[ASSETFILENAME]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="ASSETFILENAME"
+                          externalMetadataColumnId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[AssetFilename]"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].Columns[ASSETFILENAME]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[ASSETFILEFORMAT]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="ASSETFILEFORMAT"
+                          externalMetadataColumnId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[AssetFileFormat]"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].Columns[ASSETFILEFORMAT]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[ASSETMIMETYPE]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="ASSETMIMETYPE"
+                          externalMetadataColumnId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[AssetMimeType]"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].Columns[ASSETMIMETYPE]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[ASSETSIZE]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="ASSETSIZE"
+                          externalMetadataColumnId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[AssetSize]"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].Columns[ASSETSIZE]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[IMAGEHEIGHT]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="IMAGEHEIGHT"
+                          externalMetadataColumnId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[ImageHeight]"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].Columns[IMAGEHEIGHT]" />
+                        <inputColumn
+                          refId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input].Columns[IMAGEWIDTH]"
+                          cachedDataType="wstr"
+                          cachedLength="4000"
+                          cachedName="IMAGEWIDTH"
+                          externalMetadataColumnId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[ImageWidth]"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].Columns[IMAGEWIDTH]" />
+                      </inputColumns>
+                      <externalMetadataColumns
+                        isUsed="True">
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[AssetID]"
+                          dataType="wstr"
+                          length="255"
+                          name="AssetID" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[AssetName]"
+                          dataType="wstr"
+                          length="255"
+                          name="AssetName" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[AssetLongName]"
+                          dataType="wstr"
+                          length="255"
+                          name="AssetLongName" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[AssetFilename]"
+                          dataType="nText"
+                          name="AssetFilename" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[AssetFileFormat]"
+                          dataType="wstr"
+                          length="255"
+                          name="AssetFileFormat" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[AssetMimeType]"
+                          dataType="wstr"
+                          length="255"
+                          name="AssetMimeType" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[AssetSize]"
+                          dataType="wstr"
+                          length="255"
+                          name="AssetSize" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[ImageHeight]"
+                          dataType="wstr"
+                          length="255"
+                          name="ImageHeight" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input].ExternalColumns[ImageWidth]"
+                          dataType="wstr"
+                          length="255"
+                          name="ImageWidth" />
+                      </externalMetadataColumns>
+                    </input>
+                  </inputs>
+                  <outputs>
+                    <output
+                      refId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Outputs[OLE DB Destination Error Output]"
+                      exclusionGroup="1"
+                      isErrorOut="true"
+                      name="OLE DB Destination Error Output"
+                      synchronousInputId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input]">
+                      <outputColumns>
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
+                          dataType="i4"
+                          lineageId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
+                          name="ErrorCode"
+                          specialFlags="1" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
+                          dataType="i4"
+                          lineageId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
+                          name="ErrorColumn"
+                          specialFlags="2" />
+                      </outputColumns>
+                      <externalMetadataColumns />
+                    </output>
+                  </outputs>
+                </component>
+                <component
+                  refId="Package\Sequence Container\Copy AssetView\Oracle Query"
+                  componentClassID="{165A526D-D5DE-47FF-96A6-F8274C19826B}"
+                  contactInfo="OLE DB Source;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;7"
+                  description="OLE DB Source"
+                  name="Oracle Query"
+                  usesDispositions="true"
+                  version="7">
+                  <properties>
+                    <property
+                      dataType="System.Int32"
+                      description="The number of seconds before a command times out.  A value of 0 indicates an infinite time-out."
+                      name="CommandTimeout">0</property>
+                    <property
+                      dataType="System.String"
+                      description="Specifies the name of the database object used to open a rowset."
+                      name="OpenRowset"></property>
+                    <property
+                      dataType="System.String"
+                      description="Specifies the variable that contains the name of the database object used to open a rowset."
+                      name="OpenRowsetVariable"></property>
+                    <property
+                      dataType="System.String"
+                      description="The SQL command to be executed."
+                      name="SqlCommand"
+                      UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor, Microsoft.DataTransformationServices.Controls, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91">select ass.name AssetID,
+  pimviewapipck.getcontextname(ass.id) AssetName,
+  pimviewapipck.getcontextvalue4node(ass.id,1754364) AssetLongName,
+  pimviewapipck.getcontextvalue4node(ass.id,1338634) AssetFilename,
+  pimviewapipck.getcontextvalue4node(ass.id,1277) AssetFileFormat,
+  pimviewapipck.getcontextvalue4node(ass.id,1208380) AssetMimeType,
+  pimviewapipck.getcontextvalue4node(ass.id,1208388) AssetSize,
+  pimviewapipck.getcontextvalue4node(ass.id,1211558) ImageHeight,
+  pimviewapipck.getcontextvalue4node(ass.id,1211604) ImageWidth
+from asset_v ass
+  left join pimsubtype_all st on st.id = ass.subtypeid
+where st.id in (1752835,1752898,1752729,1752723,1752728,1757375,1752760,1752701,1752700,1752724,1752756,1752899,1752704,1752767,1752722,1752758,1752768,1752702,1752725,1752705,1752757,1752759,1752703)</property>
+                    <property
+                      dataType="System.String"
+                      description="The variable that contains the SQL command to be executed."
+                      name="SqlCommandVariable"></property>
+                    <property
+                      dataType="System.Int32"
+                      description="Specifies the column code page to use when code page information is unavailable from the data source."
+                      name="DefaultCodePage">1252</property>
+                    <property
+                      dataType="System.Boolean"
+                      description="Forces the use of the DefaultCodePage property value when describing character data."
+                      name="AlwaysUseDefaultCodePage">false</property>
+                    <property
+                      dataType="System.Int32"
+                      description="Specifies the mode used to access the database."
+                      name="AccessMode"
+                      typeConverter="AccessMode">2</property>
+                    <property
+                      dataType="System.String"
+                      description="The mappings between the parameters in the SQL command and variables."
+                      name="ParameterMapping"></property>
+                  </properties>
+                  <connections>
+                    <connection
+                      refId="Package\Sequence Container\Copy AssetView\Oracle Query.Connections[OleDbConnection]"
+                      connectionManagerID="Package.ConnectionManagers[step.stepview]"
+                      connectionManagerRefId="Package.ConnectionManagers[step.stepview]"
+                      description="The OLE DB runtime connection used to access the database."
+                      name="OleDbConnection" />
+                  </connections>
+                  <outputs>
+                    <output
+                      refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output]"
+                      name="OLE DB Source Output">
+                      <outputColumns>
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].Columns[ASSETID]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[ASSETID]"
+                          length="40"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].Columns[ASSETID]"
+                          name="ASSETID"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].Columns[ASSETNAME]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[ASSETNAME]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].Columns[ASSETNAME]"
+                          name="ASSETNAME"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].Columns[ASSETLONGNAME]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[ASSETLONGNAME]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].Columns[ASSETLONGNAME]"
+                          name="ASSETLONGNAME"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].Columns[ASSETFILENAME]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[ASSETFILENAME]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].Columns[ASSETFILENAME]"
+                          name="ASSETFILENAME"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].Columns[ASSETFILEFORMAT]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[ASSETFILEFORMAT]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].Columns[ASSETFILEFORMAT]"
+                          name="ASSETFILEFORMAT"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].Columns[ASSETMIMETYPE]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[ASSETMIMETYPE]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].Columns[ASSETMIMETYPE]"
+                          name="ASSETMIMETYPE"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].Columns[ASSETSIZE]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[ASSETSIZE]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].Columns[ASSETSIZE]"
+                          name="ASSETSIZE"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].Columns[IMAGEHEIGHT]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[IMAGEHEIGHT]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].Columns[IMAGEHEIGHT]"
+                          name="IMAGEHEIGHT"
+                          truncationRowDisposition="FailComponent" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].Columns[IMAGEWIDTH]"
+                          dataType="wstr"
+                          errorOrTruncationOperation="Conversion"
+                          errorRowDisposition="FailComponent"
+                          externalMetadataColumnId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[IMAGEWIDTH]"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].Columns[IMAGEWIDTH]"
+                          name="IMAGEWIDTH"
+                          truncationRowDisposition="FailComponent" />
+                      </outputColumns>
+                      <externalMetadataColumns
+                        isUsed="True">
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[ASSETID]"
+                          dataType="wstr"
+                          length="40"
+                          name="ASSETID" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[ASSETNAME]"
+                          dataType="wstr"
+                          length="4000"
+                          name="ASSETNAME" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[ASSETLONGNAME]"
+                          dataType="wstr"
+                          length="4000"
+                          name="ASSETLONGNAME" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[ASSETFILENAME]"
+                          dataType="wstr"
+                          length="4000"
+                          name="ASSETFILENAME" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[ASSETFILEFORMAT]"
+                          dataType="wstr"
+                          length="4000"
+                          name="ASSETFILEFORMAT" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[ASSETMIMETYPE]"
+                          dataType="wstr"
+                          length="4000"
+                          name="ASSETMIMETYPE" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[ASSETSIZE]"
+                          dataType="wstr"
+                          length="4000"
+                          name="ASSETSIZE" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[IMAGEHEIGHT]"
+                          dataType="wstr"
+                          length="4000"
+                          name="IMAGEHEIGHT" />
+                        <externalMetadataColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output].ExternalColumns[IMAGEWIDTH]"
+                          dataType="wstr"
+                          length="4000"
+                          name="IMAGEWIDTH" />
+                      </externalMetadataColumns>
+                    </output>
+                    <output
+                      refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Error Output]"
+                      isErrorOut="true"
+                      name="OLE DB Source Error Output">
+                      <outputColumns>
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ASSETID]"
+                          dataType="wstr"
+                          length="40"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ASSETID]"
+                          name="ASSETID" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ASSETNAME]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ASSETNAME]"
+                          name="ASSETNAME" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ASSETLONGNAME]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ASSETLONGNAME]"
+                          name="ASSETLONGNAME" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ASSETFILENAME]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ASSETFILENAME]"
+                          name="ASSETFILENAME" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ASSETFILEFORMAT]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ASSETFILEFORMAT]"
+                          name="ASSETFILEFORMAT" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ASSETMIMETYPE]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ASSETMIMETYPE]"
+                          name="ASSETMIMETYPE" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ASSETSIZE]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ASSETSIZE]"
+                          name="ASSETSIZE" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[IMAGEHEIGHT]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[IMAGEHEIGHT]"
+                          name="IMAGEHEIGHT" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[IMAGEWIDTH]"
+                          dataType="wstr"
+                          length="4000"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[IMAGEWIDTH]"
+                          name="IMAGEWIDTH" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ErrorCode]"
+                          dataType="i4"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ErrorCode]"
+                          name="ErrorCode"
+                          specialFlags="1" />
+                        <outputColumn
+                          refId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ErrorColumn]"
+                          dataType="i4"
+                          lineageId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Error Output].Columns[ErrorColumn]"
+                          name="ErrorColumn"
+                          specialFlags="2" />
+                      </outputColumns>
+                      <externalMetadataColumns />
+                    </output>
+                  </outputs>
+                </component>
+              </components>
+              <paths>
+                <path
+                  refId="Package\Sequence Container\Copy AssetView.Paths[OLE DB Source Output]"
+                  endId="Package\Sequence Container\Copy AssetView\DataWarehouse PIM.Inputs[OLE DB Destination Input]"
+                  name="OLE DB Source Output"
+                  startId="Package\Sequence Container\Copy AssetView\Oracle Query.Outputs[OLE DB Source Output]" />
+              </paths>
+            </pipeline>
+          </DTS:ObjectData>
+        </DTS:Executable>
+        <DTS:Executable
+          DTS:refId="Package\Sequence Container\Setting Oracle Session Varaible"
+          DTS:CreationName="Microsoft.SqlServer.Dts.Tasks.ExecuteSQLTask.ExecuteSQLTask, Microsoft.SqlServer.SQLTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+          DTS:Description="Execute SQL Task"
+          DTS:DTSID="{E118499D-6067-4264-A508-5C942AC40E80}"
+          DTS:ExecutableType="Microsoft.SqlServer.Dts.Tasks.ExecuteSQLTask.ExecuteSQLTask, Microsoft.SqlServer.SQLTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+          DTS:LocaleID="-1"
+          DTS:ObjectName="Setting Oracle Session Varaible"
+          DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2012; © 2007 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+          DTS:ThreadHint="0">
+          <DTS:Variables />
+          <DTS:ObjectData>
+            <SQLTask:SqlTaskData
+              SQLTask:Connection="{6280328F-A55F-40D7-8D5A-6BA9BE0BC938}"
+              SQLTask:BypassPrepare="False"
+              SQLTask:SqlStatementSource="begin pimviewapipck.setviewcontext('Context1','Approved') ; end;" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+          </DTS:ObjectData>
+        </DTS:Executable>
+      </DTS:Executables>
+      <DTS:PrecedenceConstraints>
+        <DTS:PrecedenceConstraint
+          DTS:refId="Package\Sequence Container.PrecedenceConstraints[Constraint]"
+          DTS:CreationName=""
+          DTS:DTSID="{3A6B4BB4-50E9-4923-A017-B8C76F6C3994}"
+          DTS:From="Package\Sequence Container\Setting Oracle Session Varaible"
+          DTS:LogicalAnd="True"
+          DTS:ObjectName="Constraint"
+          DTS:To="Package\Sequence Container\Copy AssetView" />
+      </DTS:PrecedenceConstraints>
+    </DTS:Executable>
+    <DTS:Executable
+      DTS:refId="Package\Truncate AssetView"
+      DTS:CreationName="Microsoft.SqlServer.Dts.Tasks.ExecuteSQLTask.ExecuteSQLTask, Microsoft.SqlServer.SQLTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+      DTS:Description="Execute SQL Task"
+      DTS:DTSID="{180F87C9-E07D-42B3-8A45-8970DFED8DB1}"
+      DTS:ExecutableType="Microsoft.SqlServer.Dts.Tasks.ExecuteSQLTask.ExecuteSQLTask, Microsoft.SqlServer.SQLTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Truncate AssetView"
+      DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2012; © 2007 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{8D6DB1AA-86B9-44CA-AAC3-F419A009453B}"
+          SQLTask:BypassPrepare="False"
+          SQLTask:SqlStatementSource="TRUNCATE TABLE dbo.AssetView" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+  </DTS:Executables>
+  <DTS:PrecedenceConstraints>
+    <DTS:PrecedenceConstraint
+      DTS:refId="Package.PrecedenceConstraints[Constraint]"
+      DTS:CreationName=""
+      DTS:DTSID="{32B353AD-19E8-4A91-B470-00B346B09E81}"
+      DTS:From="Package\Truncate AssetView"
+      DTS:LogicalAnd="True"
+      DTS:ObjectName="Constraint"
+      DTS:To="Package\Sequence Container" />
+  </DTS:PrecedenceConstraints>
+  <DTS:DesignTimeProperties><![CDATA[<?xml version="1.0"?>
+<!--This CDATA section contains the layout information of the package. The section includes information such as (x,y) coordinates, width, and height.-->
+<!--If you manually edit this section and make a mistake, you can delete it. -->
+<!--The package will still be able to load normally but the previous layout information will be lost and the designer will automatically re-arrange the elements on the design surface.-->
+<Objects
+  Version="sql11">
+  <!--Each node below will contain properties that do not affect runtime behavior.-->
+  <Package
+    design-time-name="Package">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="8" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
+        <NodeLayout
+          Size="155.2,41.6"
+          Id="Package\Sequence Container\Copy AssetView"
+          TopLeft="65.9428600914625,123.952945226121" />
+        <NodeLayout
+          Size="225.6,41.6"
+          Id="Package\Sequence Container\Setting Oracle Session Varaible"
+          TopLeft="31.085716640706,30.3529439134169" />
+        <EdgeLayout
+          Id="Package\Sequence Container.PrecedenceConstraints[Constraint]"
+          TopLeft="143.714288366084,71.9529439134169">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,52.0000013127041"
+              Start="0,0"
+              End="0,44.5000013127041">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,44.5000013127041" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+        <ContainerLayout
+          HeaderHeight="43"
+          IsExpanded="True"
+          PanelSize="281.6,218.4"
+          Size="281.6,261.6"
+          Id="Package\Sequence Container"
+          TopLeft="107.428573258069,127.247060608122" />
+        <NodeLayout
+          Size="172.8,41.6"
+          Id="Package\Truncate AssetView"
+          TopLeft="158.857145562464,29.7882357231062" />
+        <EdgeLayout
+          Id="Package.PrecedenceConstraints[Constraint]"
+          TopLeft="246.742859410267,71.3882357231062">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,55.8588248850158"
+              Start="0,0"
+              End="0,48.3588248850158">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,48.3588248850158" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+      </GraphLayout>
+    </LayoutInfo>
+  </Package>
+  <TaskHost
+    design-time-name="Package\Sequence Container\Copy AssetView">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="4" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
+        <NodeLayout
+          Size="142.4,41.6"
+          Id="Package\Sequence Container\Copy AssetView\Oracle Query"
+          TopLeft="280.228571078242,60.6117647144621" />
+        <NodeLayout
+          Size="176,41.6"
+          Id="Package\Sequence Container\Copy AssetView\DataWarehouse PIM"
+          TopLeft="268.228571078242,191.811764714462" />
+        <EdgeLayout
+          Id="Package\Sequence Container\Copy AssetView.Paths[OLE DB Source Output]"
+          TopLeft="353.828571078242,102.211764714462">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,89.6"
+              Start="0,0"
+              End="0,82.1">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,82.1" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+      </GraphLayout>
+    </LayoutInfo>
+  </TaskHost>
+  <PipelineComponentMetadata
+    design-time-name="Package\Sequence Container\Copy AssetView\DataWarehouse PIM">
+    <Properties>
+      <Property>
+        <Name>DataSourceViewID</Name>
+      </Property>
+      <Property>
+        <Name>TableInfoObjectType</Name>
+        <Value
+          type="q2:string">Table</Value>
+      </Property>
+    </Properties>
+  </PipelineComponentMetadata>
+  <PipelineComponentMetadata
+    design-time-name="Package\Sequence Container\Copy AssetView\Oracle Query">
+    <Properties>
+      <Property>
+        <Name>DataSourceViewID</Name>
+      </Property>
+    </Properties>
+  </PipelineComponentMetadata>
+</Objects>]]></DTS:DesignTimeProperties>
+</DTS:Executable>

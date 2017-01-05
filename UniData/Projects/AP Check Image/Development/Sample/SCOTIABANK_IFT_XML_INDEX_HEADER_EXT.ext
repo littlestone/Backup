@@ -1,0 +1,28 @@
+<?xml version = "1.0"?>
+<U2xml_extraction xmlns:U2xml="http://www.ibm.com/U2-xml">
+<U2xml:file_extraction start="/index_file/header" dictionary = "" null = "EMPTY" />
+<U2xml:field_extraction field="version" path="version/text()" />
+<U2xml:field_extraction field="customer_name" path="customer_name/text()" />
+<U2xml:field_extraction field="todo_group_name" path="todo_group_name/text()" />
+<U2xml:field_extraction field="translation_name" path="translation_name/text()" />
+<U2xml:field_extraction field="scheduled_date" path="scheduled_date/text()" />
+<U2xml:field_extraction field="extract_period_start" path="extract_period_start/text()" />
+<U2xml:field_extraction field="extract_period_end" path="extract_period_end/text()" />
+<U2xml:field_extraction field="text_encoding" path="text_encoding/text()" />
+<U2xml:field_extraction field="content_type" path="content_type/text()" />
+<U2xml:field_extraction field="checksum_field_name" path="checksum_field_name/text()" />
+<U2xml:field_extraction field="data_file_name" path="data_file_name/text()" />
+<U2xml:field_extraction field="data_file_name_2" path="data_file_name_2/text()" />
+</U2xml_extraction>
+<!--position index 1 = version-->
+<!--position index 2 = customer_name-->
+<!--position index 3 = todo_group_name-->
+<!--position index 4 = translation_name-->
+<!--position index 5 = scheduled_date-->
+<!--position index 6 = extract_period_start-->
+<!--position index 7 = extract_period_end-->
+<!--position index 8 = text_encoding-->
+<!--position index 9 = content_type-->
+<!--position index 10 = checksum_field_name-->
+<!--position index 11 = data_file_name-->
+<!--position index 12 = data_file_name_2-->

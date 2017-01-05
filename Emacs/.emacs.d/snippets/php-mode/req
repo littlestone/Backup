@@ -1,0 +1,5 @@
+﻿# -*- mode: snippet -*-
+# name: req
+# key: req
+# --
+require_once(dirname(__FILE__) . "/$1.php");$0

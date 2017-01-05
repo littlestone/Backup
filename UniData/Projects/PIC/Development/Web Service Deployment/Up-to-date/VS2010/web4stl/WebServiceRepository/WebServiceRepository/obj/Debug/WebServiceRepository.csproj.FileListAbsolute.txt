@@ -1,0 +1,23 @@
+C:\Users\juntan\Desktop\PIC\IpexServiceRepository\IpexServiceRepository\bin\Debug\WebServiceRepository.dll.config
+C:\Users\juntan\Desktop\PIC\IpexServiceRepository\IpexServiceRepository\bin\Debug\WebServiceRepository.dll
+C:\Users\juntan\Desktop\PIC\IpexServiceRepository\IpexServiceRepository\bin\Debug\WebServiceRepository.pdb
+C:\Users\juntan\Desktop\PIC\IpexServiceRepository\IpexServiceRepository\bin\Debug\UODOTNET.dll
+C:\Users\juntan\Desktop\PIC\IpexServiceRepository\IpexServiceRepository\bin\Debug\UODOTNET.xml
+C:\Users\juntan\Desktop\PIC\IpexServiceRepository\IpexServiceRepository\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\juntan\Desktop\PIC\IpexServiceRepository\IpexServiceRepository\obj\Debug\WebServiceRepository.dll
+C:\Users\juntan\Desktop\PIC\IpexServiceRepository\IpexServiceRepository\obj\Debug\WebServiceRepository.pdb
+C:\Users\juntan\Desktop\PIC\WebServiceRepository\WebServiceRepository\bin\Debug\WebServiceRepository.dll.config
+C:\Users\juntan\Desktop\PIC\WebServiceRepository\WebServiceRepository\bin\Debug\WebServiceRepository.dll
+C:\Users\juntan\Desktop\PIC\WebServiceRepository\WebServiceRepository\bin\Debug\WebServiceRepository.pdb
+C:\Users\juntan\Desktop\PIC\WebServiceRepository\WebServiceRepository\bin\Debug\UODOTNET.dll
+C:\Users\juntan\Desktop\PIC\WebServiceRepository\WebServiceRepository\bin\Debug\UODOTNET.xml
+C:\Users\juntan\Desktop\PIC\WebServiceRepository\WebServiceRepository\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\juntan\Desktop\PIC\WebServiceRepository\WebServiceRepository\obj\Debug\WebServiceRepository.dll
+C:\Users\juntan\Desktop\PIC\WebServiceRepository\WebServiceRepository\obj\Debug\WebServiceRepository.pdb
+C:\GNU\home\GitHub\Backup\Infoflo\Projects\PIC\Development\Web Service Deployment\Up-to-date\VS2010\web4stl\WebServiceRepository\WebServiceRepository\bin\Debug\WebServiceRepository.dll.config
+C:\GNU\home\GitHub\Backup\Infoflo\Projects\PIC\Development\Web Service Deployment\Up-to-date\VS2010\web4stl\WebServiceRepository\WebServiceRepository\bin\Debug\WebServiceRepository.dll
+C:\GNU\home\GitHub\Backup\Infoflo\Projects\PIC\Development\Web Service Deployment\Up-to-date\VS2010\web4stl\WebServiceRepository\WebServiceRepository\bin\Debug\WebServiceRepository.pdb
+C:\GNU\home\GitHub\Backup\Infoflo\Projects\PIC\Development\Web Service Deployment\Up-to-date\VS2010\web4stl\WebServiceRepository\WebServiceRepository\bin\Debug\UODOTNET.xml
+C:\GNU\home\GitHub\Backup\Infoflo\Projects\PIC\Development\Web Service Deployment\Up-to-date\VS2010\web4stl\WebServiceRepository\WebServiceRepository\obj\Debug\WebServiceRepository.csprojResolveAssemblyReference.cache
+C:\GNU\home\GitHub\Backup\Infoflo\Projects\PIC\Development\Web Service Deployment\Up-to-date\VS2010\web4stl\WebServiceRepository\WebServiceRepository\obj\Debug\WebServiceRepository.dll
+C:\GNU\home\GitHub\Backup\Infoflo\Projects\PIC\Development\Web Service Deployment\Up-to-date\VS2010\web4stl\WebServiceRepository\WebServiceRepository\obj\Debug\WebServiceRepository.pdb

@@ -1,0 +1,12 @@
+<?xml version = "1.0"?>
+<U2xml_extraction xmlns:U2xml="http://www.ibm.com/U2-xml">
+<U2xml:file_extraction start="/index_file/body" dictionary = "" null = "EMPTY" />
+<U2xml:field_extraction field="field_value" path="item,field,field_value/text()" />
+<U2xml:field_extraction field="data_offset" path="item,data_offset/text()" />
+<U2xml:field_extraction field="data_length" path="item,data_length/text()" />
+</U2xml_extraction>
+<!--cheque record hierarchy-->
+<!--multi value item as per cheque record-->
+<!--multi-sub value field_value as per field of an item-->
+<!--multi value data_offset as per item-->
+<!--multi value data_length as per item-->

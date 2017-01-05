@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: readv
+# key: rv
+# --
+READV $1 FROM $2, $3, $4 ELSE $0

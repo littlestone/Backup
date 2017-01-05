@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<BuildLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <ProjectInfo>
+    <Name>PIM Customer Reports Package</Name>
+    <LastWriteTime>2016-05-03T18:54:26.7084702Z</LastWriteTime>
+    <LastKnownProtectionLevel>DontSaveSensitive</LastKnownProtectionLevel>
+  </ProjectInfo>
+  <LastBuildInfos>
+    <ProjectBuildItemInfo>
+      <Name>PIM_BuildCustomerStandardProductsReportPackage_CA.dtsx</Name>
+      <LastWriteTime>2016-04-18T14:50:05.3300503Z</LastWriteTime>
+      <LastKnownProtectionLevel>DontSaveSensitive</LastKnownProtectionLevel>
+    </ProjectBuildItemInfo>
+    <ProjectBuildItemInfo>
+      <Name>PIM_BuildCustomerStandardProductsReportPackage_US.dtsx</Name>
+      <LastWriteTime>2016-05-03T18:57:51.0205665Z</LastWriteTime>
+      <LastKnownProtectionLevel>DontSaveSensitive</LastKnownProtectionLevel>
+    </ProjectBuildItemInfo>
+    <ProjectBuildItemInfo>
+      <Name>PIM_BuildCustomerTradeServiceReportPackage.dtsx</Name>
+      <LastWriteTime>2016-04-15T14:30:34.4605259Z</LastWriteTime>
+      <LastKnownProtectionLevel>DontSaveSensitive</LastKnownProtectionLevel>
+    </ProjectBuildItemInfo>
+    <ProjectBuildItemInfo>
+      <Name>PIM_BuildIDWAssetsReportPackage_CA.dtsx</Name>
+      <LastWriteTime>2016-05-03T18:29:43.0158713Z</LastWriteTime>
+      <LastKnownProtectionLevel>DontSaveSensitive</LastKnownProtectionLevel>
+    </ProjectBuildItemInfo>
+    <ProjectBuildItemInfo>
+      <Name>PIM_BuildIDWAssetsReportPackage_US.dtsx</Name>
+      <LastWriteTime>2016-05-03T18:29:43.031471Z</LastWriteTime>
+      <LastKnownProtectionLevel>DontSaveSensitive</LastKnownProtectionLevel>
+    </ProjectBuildItemInfo>
+    <ProjectBuildItemInfo>
+      <Name>PIM_BuildSPSAssetsReportPackage.dtsx</Name>
+      <LastWriteTime>2016-05-03T18:29:43.031471Z</LastWriteTime>
+      <LastKnownProtectionLevel>DontSaveSensitive</LastKnownProtectionLevel>
+    </ProjectBuildItemInfo>
+    <ProjectBuildItemInfo>
+      <Name>PIM_BuildSPSReportPackage.dtsx</Name>
+      <LastWriteTime>2016-05-03T19:07:57.1844943Z</LastWriteTime>
+      <LastKnownProtectionLevel>DontSaveSensitive</LastKnownProtectionLevel>
+    </ProjectBuildItemInfo>
+  </LastBuildInfos>
+</BuildLog>
