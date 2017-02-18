@@ -49,12 +49,14 @@ re-downloaded in order to locate PACKAGE."
 ;; Install extensions if they're missing
 (defun init--install-packages ()
   (packages-install
-   '(2048-game                          ; play 2048 in Emacs
+   '(0xc                                ; Base conversion made easy
+     2048-game                          ; play 2048 in Emacs
      ace-jump-mode                      ; a quick cursor location minor mode for emacs
      ace-mc                             ; Add multiple cursors quickly using ace jump
      ascii                              ; ASCII code display.
      aggressive-indent                  ; Minor mode to aggressively keep your code always indented
      anaconda-mode                      ; Code navigation, documentation lookup and completion for Python
+     buffer-flip                        ; Use key-chord to cycle through buffers like Alt-Tab in Windows
      browse-kill-ring                   ; interactively insert items from kill-ring
      buffer-move                        ; easily swap buffers
      charmap                            ; Unicode table for Emacs
@@ -69,6 +71,9 @@ re-downloaded in order to locate PACKAGE."
      elisp-lint                         ; basic linting for Emacs Lisp
      elmacro                            ; Convert keyboard macros to elisp
      elpy                               ; Emacs Python Development Environment
+     evil                               ; Extensible Vi layer for Emacs.
+     evil-numbers                       ; increment/decrement numbers like in vim
+     evil-vimish-fold                   ; Integrate vimish-fold with evil
      expand-region                      ; Increase selected region by semantic units.
      fill-column-indicator              ; Graphically indicate the fill column
      find-file-in-project               ; Find files in a project quickly, on any OS
@@ -91,6 +96,7 @@ re-downloaded in order to locate PACKAGE."
      ido-ubiquitous                     ; Use ido (nearly) everywhere.
      ido-vertical-mode                  ; Makes ido-mode display vertically.
      iedit                              ; Edit multiple regions in the same way simultaneously.
+     image-dired+                       ; Image-dired extensions
      imenu-anywhere                     ; ido/helm imenu tag selection across all buffers with the same mode
      impatient-mode                     ; Serve buffers live over HTTP
      info+                              ; Extensions to `info.el'.

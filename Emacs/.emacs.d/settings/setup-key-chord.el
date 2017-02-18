@@ -9,7 +9,7 @@
 
 (setq key-chord-one-key-delay 0.16)
 (key-chord-define-global ",," 'ibuffer)
-(key-chord-define-global ",a" 'ace-jump-char-mode)
+(key-chord-define-global ",a" 'ascii-display)
 (key-chord-define-global ",b" 'goto-scratch)
 (key-chord-define-global ",c" 'cleanup-buffer)
 (key-chord-define-global ",d" 'kill-this-buffer-unless-scratch)
@@ -23,7 +23,11 @@
 (key-chord-define-global ",t" 'neotree-toggle)
 (key-chord-define-global ",w" 'whitespace-mode)
 (key-chord-define-global ",z" 'eshell)
+(key-chord-define-global "aj" 'ace-jump-char-mode)
 (key-chord-define-global "JJ" 'quick-switch-buffer)
+
+;; Flip through Emacs buffers Alt-Tab style
+(buffer-flip-mode)
 
 (provide 'setup-key-chord)
 ;;; setup-key-chord.el ends here

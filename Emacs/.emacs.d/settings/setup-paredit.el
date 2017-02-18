@@ -37,6 +37,7 @@
 (add-hook 'slime-repl-mode-hook (lambda () (enable-paredit-mode)))
 (add-hook 'emacs-lisp-mode-hook (lambda () (enable-paredit-mode)))
 
+(define-key paredit-mode-map (kbd "C-j") nil)
 (define-key paredit-mode-map (kbd "M-(") 'paredit-wrap-round)
 (define-key paredit-mode-map (kbd "M-)") 'paredit-wrap-round-from-behind)
 (define-key paredit-mode-map (kbd "M-s-8") 'paredit-wrap-square)

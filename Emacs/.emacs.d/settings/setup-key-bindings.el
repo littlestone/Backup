@@ -334,8 +334,8 @@
 ;; Smart compile
 (global-set-key (kbd "<s-f5>") 'smart-compile)
 
-;; ASCII display
-(global-set-key (kbd "<f6>") 'ascii-display)
+;; Handy hex convert
+(global-set-key (kbd "<f6>") '0xc-convert)
 
 ;; Hexadecimal editing of data files
 (global-set-key (kbd "<s-f6>") 'hexl-mode)

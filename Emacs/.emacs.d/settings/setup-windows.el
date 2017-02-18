@@ -4,8 +4,15 @@
 
 ;;; Code:
 
-;; Make Emacs C source directory permanent
+;; Make Emacs C source directory permanent and read-only by default
 (setq find-function-C-source-directory "C:/GNU/bin/emacs/src")
+(dir-locals-set-class-variables
+ 'emacs
+ '((nil . ((buffer-read-only . t)
+           (show-trailing-whitespace . nil)
+           (tab-width . 8)
+           (eval . (whitespace-mode -1))))))
+(dir-locals-set-directory-class find-function-C-source-directory 'emacs)
 
 ;; Flycheck clang include path
 (setq flycheck-clang-include-path (list "C:/cygwin/usr/include"))

@@ -27,6 +27,7 @@
 
 ;; Auto refresh buffers
 (global-auto-revert-mode 1)
+(setq auto-revert-remote-files t)
 
 ;; Also auto refresh dired, but be quiet about it
 (setq global-auto-revert-non-file-buffers t)
@@ -55,6 +56,7 @@
 (set-terminal-coding-system 'utf-8-unix) ; pretty
 (set-keyboard-coding-system 'utf-8-unix) ; pretty
 (setq default-buffer-file-coding-system 'utf-8-unix) ; please
+(setq default-file-name-coding-system 'gb2312) ; chinese
 (prefer-coding-system 'utf-8-unix) ; with sugar on top
 
 ;; Enable prettify symbols mode

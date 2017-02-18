@@ -18,6 +18,7 @@
 (eval-after-load "yasnippet" '(diminish 'yas-minor-mode))
 (eval-after-load "google-this" '(diminish 'google-this-mode))
 (eval-after-load "golden-ratio" '(diminish 'golden-ratio-mode))
+(eval-after-load "evil-vimish-fold" '(diminish 'evil-vimish-fold-mode))
 (eval-after-load "whitespace-cleanup-mode" '(diminish 'whitespace-cleanup-mode))
 
 (defmacro rename-modeline (package-name mode new-name)

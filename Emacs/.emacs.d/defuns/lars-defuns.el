@@ -18,7 +18,7 @@ the buffer is buried."
 
 (defun cycle-themes ()
   "Returns a function that lets you cycle your themes."
-  (lexical-let ((themes '#1=(monokai darkokai solarized-dark planet deep-blue default-black emacs-21 prez leuven . #1#)))
+  (lexical-let ((themes '#1=(default-black monokai deep-blue . #1#)))
     (lambda ()
       (interactive)
       ;; Rotates the theme cycle and changes the current theme.

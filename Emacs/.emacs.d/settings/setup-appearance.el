@@ -47,7 +47,7 @@
   (mapc #'disable-theme custom-enabled-themes))
 
 ;; Load default theme
-(load-theme 'monokai t)
+(load-theme 'default-black t)
 
 (provide 'setup-appearance)
 ;;; setup-appearance.el ends here
