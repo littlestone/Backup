@@ -9,6 +9,10 @@
     <Language>C#</Language>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <Name>NewUserAdminWF</Name>
+    <SccProjectName>SAK</SccProjectName>
+    <SccProvider>SAK</SccProvider>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccLocalPath>SAK</SccLocalPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <IncludeDebugInformation>true</IncludeDebugInformation>
@@ -20,5 +24,31 @@
     <OutputPath>bin\Release\</OutputPath>
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="ApprovalProcess.kprx">
+      <SubType>Content</SubType>
+      <Excluded>True</Excluded>
+    </None>
+    <None Include="ApproverTask.kprx">
+      <SubType>Content</SubType>
+      <Excluded>True</Excluded>
+    </None>
+    <None Include="ImplementationProcess.kprx">
+      <SubType>Content</SubType>
+      <Excluded>True</Excluded>
+    </None>
+    <None Include="NewUserCreationProcess.kprx">
+      <SubType>Content</SubType>
+      <Excluded>True</Excluded>
+    </None>
+    <None Include="NotificationProcess.kprx">
+      <SubType>Content</SubType>
+      <Excluded>True</Excluded>
+    </None>
+    <None Include="OperatorTask.kprx">
+      <SubType>Content</SubType>
+      <Excluded>True</Excluded>
+    </None>
+  </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\SourceCode\v3.5\ProjectSystem.targets" />
 </Project>

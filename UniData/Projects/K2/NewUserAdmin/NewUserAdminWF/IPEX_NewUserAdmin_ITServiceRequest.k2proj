@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Name>IPEX_NewUserAdmin_ITServiceRequest</Name>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{fb7dc2e3-a558-452a-adeb-ca9b0f735dda}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>IPEX_NewUserAdmin_ITServiceRequest</RootNamespace>
+    <AssemblyName>IPEX_NewUserAdmin_ITServiceRequest</AssemblyName>
+    <Language>C#</Language>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <SelectedEnvironment>Development</SelectedEnvironment>
+    <DeploymentLabelName>CORP\juntan - 2015-07-21 3:06:27 PM</DeploymentLabelName>
+    <DeploymentLabelDescription />
+    <SmartObjectConnectionStringProperty>$Field=SmartObject Server</SmartObjectConnectionStringProperty>
+    <WorkflowManagementConnectionStringProperty>$Field=Workflow Management Server</WorkflowManagementConnectionStringProperty>
+    <HistoryIsAdvanced>Advanced</HistoryIsAdvanced>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <IncludeDebugInformation>true</IncludeDebugInformation>
+    <OutputPath>bin\Debug\</OutputPath>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <IncludeDebugInformation>false</IncludeDebugInformation>
+    <OutputPath>bin\Release\</OutputPath>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="ApprovalProcess.kprx">
+      <Excluded>True</Excluded>
+    </Content>
+    <Content Include="ApproverTask.kprx">
+      <Excluded>True</Excluded>
+    </Content>
+    <Content Include="ImplementationProcess.kprx">
+      <Excluded>True</Excluded>
+    </Content>
+    <Content Include="NewUserCreationProcess.kprx">
+      <Excluded>True</Excluded>
+    </Content>
+    <Content Include="NotificationProcess.kprx">
+      <Excluded>True</Excluded>
+    </Content>
+    <Content Include="OperatorTask.kprx">
+      <Excluded>True</Excluded>
+    </Content>
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath)\SourceCode\v3.5\ProjectSystem.targets" />
+</Project>

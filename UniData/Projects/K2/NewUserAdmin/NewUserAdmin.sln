@@ -1,8 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.40629.0
-MinimumVisualStudioVersion = 10.0.40219.1
+# Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NewUserAdminWS", "NewUserAdminWS\NewUserAdminWS.csproj", "{FD4708AE-DC9B-43E2-9611-6A295FA82065}"
 EndProject
 Project("{D50D8A3F-5CE1-4E89-9491-F84FAB0E386A}") = "NewUserAdminSO", "NewUserAdminSO\NewUserAdminSO.k2proj", "{F5588215-0389-4121-AAB5-C552A9203883}"
@@ -10,6 +8,21 @@ EndProject
 Project("{D50D8A3F-5CE1-4E89-9491-F84FAB0E386A}") = "NewUserAdminWF", "NewUserAdminWF\NewUserAdminWF.k2proj", "{FD5527F8-6D74-4E7D-BCE5-E3CFD24B8779}"
 EndProject
 Global
+	GlobalSection(TeamFoundationVersionControl) = preSolution
+		SccNumberOfProjects = 4
+		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
+		SccTeamFoundationServer = http://sql11:8080/tfs/project%20collection
+		SccLocalPath0 = .
+		SccProjectUniqueName1 = NewUserAdminSO\\NewUserAdminSO.k2proj
+		SccProjectName1 = NewUserAdminSO
+		SccLocalPath1 = NewUserAdminSO
+		SccProjectUniqueName2 = NewUserAdminWS\\NewUserAdminWS.csproj
+		SccProjectName2 = NewUserAdminWS
+		SccLocalPath2 = NewUserAdminWS
+		SccProjectUniqueName3 = NewUserAdminWF\\NewUserAdminWF.k2proj
+		SccProjectName3 = NewUserAdminWF
+		SccLocalPath3 = NewUserAdminWF
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -31,10 +44,10 @@ Global
 		{FD5527F8-6D74-4E7D-BCE5-E3CFD24B8779}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FD5527F8-6D74-4E7D-BCE5-E3CFD24B8779}.Release|Any CPU.Build.0 = Release|Any CPU
 		{FD5527F8-6D74-4E7D-BCE5-E3CFD24B8779}.Release|Any CPU.Deploy.0 = Release|Any CPU
-		{D80F4A2F-CE68-44A4-88B2-C6BF1BA7B042}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D80F4A2F-CE68-44A4-88B2-C6BF1BA7B042}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D80F4A2F-CE68-44A4-88B2-C6BF1BA7B042}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D80F4A2F-CE68-44A4-88B2-C6BF1BA7B042}.Release|Any CPU.Build.0 = Release|Any CPU
+		{472E3125-9140-4205-A522-210AD15BA4C8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{472E3125-9140-4205-A522-210AD15BA4C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{472E3125-9140-4205-A522-210AD15BA4C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{472E3125-9140-4205-A522-210AD15BA4C8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
