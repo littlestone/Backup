@@ -7,6 +7,11 @@ Project("{D50D8A3F-5CE1-4E89-9491-F84FAB0E386A}") = "NewUserAdminSO", "NewUserAd
 EndProject
 Project("{D50D8A3F-5CE1-4E89-9491-F84FAB0E386A}") = "NewUserAdminWF", "NewUserAdminWF\NewUserAdminWF.k2proj", "{FD5527F8-6D74-4E7D-BCE5-E3CFD24B8779}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "K2 Package", "K2 Package", "{D9441860-EBC2-4547-A781-BA149CEB14A5}"
+	ProjectSection(SolutionItems) = preProject
+		K2 Package - NewUserAdmin.kspx = K2 Package - NewUserAdmin.kspx
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(TeamFoundationVersionControl) = preSolution
 		SccNumberOfProjects = 4
@@ -44,10 +49,10 @@ Global
 		{FD5527F8-6D74-4E7D-BCE5-E3CFD24B8779}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FD5527F8-6D74-4E7D-BCE5-E3CFD24B8779}.Release|Any CPU.Build.0 = Release|Any CPU
 		{FD5527F8-6D74-4E7D-BCE5-E3CFD24B8779}.Release|Any CPU.Deploy.0 = Release|Any CPU
-		{472E3125-9140-4205-A522-210AD15BA4C8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{472E3125-9140-4205-A522-210AD15BA4C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{472E3125-9140-4205-A522-210AD15BA4C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{472E3125-9140-4205-A522-210AD15BA4C8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CC1046A0-ADFF-4FC3-B2AF-3F68F148BE5F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC1046A0-ADFF-4FC3-B2AF-3F68F148BE5F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC1046A0-ADFF-4FC3-B2AF-3F68F148BE5F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC1046A0-ADFF-4FC3-B2AF-3F68F148BE5F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

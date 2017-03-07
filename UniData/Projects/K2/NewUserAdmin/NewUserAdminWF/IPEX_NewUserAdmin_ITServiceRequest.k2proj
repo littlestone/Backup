@@ -28,24 +28,12 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="ApprovalProcess.kprx">
-      <Excluded>True</Excluded>
-    </Content>
-    <Content Include="ApproverTask.kprx">
-      <Excluded>True</Excluded>
-    </Content>
-    <Content Include="ImplementationProcess.kprx">
-      <Excluded>True</Excluded>
-    </Content>
-    <Content Include="NewUserCreationProcess.kprx">
-      <Excluded>True</Excluded>
-    </Content>
-    <Content Include="NotificationProcess.kprx">
-      <Excluded>True</Excluded>
-    </Content>
-    <Content Include="OperatorTask.kprx">
-      <Excluded>True</Excluded>
-    </Content>
+    <Content Include="ApprovalProcess.kprx" />
+    <Content Include="ApproverTask.kprx" />
+    <Content Include="ImplementationProcess.kprx" />
+    <Content Include="NewUserCreationProcess.kprx" />
+    <Content Include="NotificationProcess.kprx" />
+    <Content Include="OperatorTask.kprx" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\SourceCode\v3.5\ProjectSystem.targets" />
 </Project>
