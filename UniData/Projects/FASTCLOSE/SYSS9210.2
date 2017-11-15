@@ -1,0 +1,336 @@
+     SUBROUTINE SYSS9210.2
+* Month-End Fast Closing Process Pre-Check.
+* VERSION 8.2.3
+*
+* 11 MAR 13 8.2.3 juntan PRJ*FIN002D.6-(Sub #6) MONTH END FAST CLOSE PROJECT
+*
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+     $INCLUDE IIPLUS.TOP
+     PROGRAM='SYSS9210.2'
+     $INCLUDE IIPLUS.TEXTLOAD
+     $INCLUDE IIPLUS.DEBUG
+
+     $INCLUDE TUBP TU.API.H
+     $INCLUDE TUBP ROC.H
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*              This program is used to do the following 3 pre-validations
+*              before the job MTH_FASTCLOSE can be launched for running
+*              the Month-End fast closing process.
+*
+*              1. Check SYSLOCK file, the SYSLOCK file should be empty
+*                 before the job MTH_FASTCLOSE can be launched.
+*
+*              2. Check SYSCON record FAST.CLOST.REVAL.GO.FLAG, the flag
+*                 has to be Y (by default) before the job MTH_FASTCLOSE
+*                 can be launched.
+*
+*              3. Check Month-End accounting fiscal period and dates, all
+*                 must be matched before the job MTH_FASTCLOSE can be
+*                 lanuched.
+*
+*              !!!!!!Caution!!!!!!
+*              If any of the pre-validatioin above failed, DO NOT launch
+*              the job MTH_FASTCLOSE until the issue(s) has been resolved.
+*
+* MODIFICATIONS:
+* ==============
+*              2013/01/07 juntan FIN002D - Initial creation.
+*
+**************************************************************************
+
+A100_MAIN:
+
+   PRINTER OFF
+
+   GOSUB A200_INITIALIZATION
+   IF L_RTN_FLAG # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF L_RTN_FLAG # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF L_RTN_FLAG # "" THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+   GO A500_CONCLUSION
+
+****************************************
+* Definition of local variables & initialization of other variables.
+****************************************
+A200_INITIALIZATION:
+
+   RTN.FLAG = 0
+
+   L_RTN_FLAG = ''
+   L_SYSCON_KEY = 'FAST.CLOSE.REVAL.GO.FLAG'
+   L_SYSCON_REC = ''
+   L_COMPMST_KEY = ''
+   L_COMPMST_REC = ''
+   L_FISCAL_YEAR = ''
+   L_FISCAL_MONTH = ''
+   L_CURRENT_CLOSING_FISCAL_PERIOD = ''
+   L_CURRENT_CLOSING_MONTH_BEGIN_DATE = ''
+   L_CURRENT_CLOSING_MONTH_END_DATE = ''
+   L_NEXT_OPENING_FISCAL_PERIOD = ''
+   L_NEXT_OPENING_DATE = ''
+   L_PREVIOUS_CLOSING_FISCAL_PERIOD = ''
+   L_PREVIOUS_CLOSING_MONTH_END_DATE = ''
+   L_JUNK = ""
+   L_POS = 0
+
+A200_EXIT:
+   RETURN
+
+****************************************
+* Open the files needed in this subroutine.
+****************************************
+A300_OPEN_FILES:
+
+   FILE.ERR = 0
+
+   CALL SB.OPEN.FILE("SYSCON",SYSCON,FILE.ERR)
+   IF FILE.ERR THEN
+      L_RTN_FLAG = "A300-ERROR-1"
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("COMPMST",COMPMST,FILE.ERR)
+   IF FILE.ERR THEN
+      L_RTN_FLAG = "A300-ERROR-2"
+      GO A300_EXIT
+   END
+
+A300_EXIT:
+   RETURN
+
+****************************************
+* Main process logic sturcture.
+****************************************
+A400_MAIN_PROCESS:
+   
+   PRINT "************************************************************************"
+   PRINT "* Start running pre-validation for Month-End revaluation fast closing. *"
+   PRINT "************************************************************************"
+   PRINT
+
+   GOSUB B100_CHECK_SYSLOCK_FILE
+   IF L_RTN_FLAG # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B200_CHECK_FASTCLOSE_REVAL_GO_FLAG
+   IF L_RTN_FLAG # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B300_CHECK_MONTH_END_ACCOUTING_PERIOD_AND_DATE
+   IF L_RTN_FLAG # "" THEN
+      GO A400_EXIT
+   END
+
+A400_EXIT:
+   RETURN
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+   IF L_RTN_FLAG # "" THEN
+      BEGIN CASE
+         CASE L_RTN_FLAG = "A300-ERROR-1"
+            CALL SB.PROCESS("SYS0061,IP2564\":"SYSCON")
+         CASE L_RTN_FLAG = "A300-ERROR-2"
+            CALL SB.PROCESS("SYS0061,IP2564\":"COMPMST")
+         CASE L_RTN_FLAG = "B100-ERROR-1"
+            PRINT "===> Caution! SYSLOCK file must be empty, DO NOT launch job MTH_FASTCLOSE!!!"
+         CASE L_RTN_FLAG = "B200-ERROR-1"
+            CALL SB.PROCESS('SYS0061,IP2434\':L_SYSCON_KEY)
+         CASE L_RTN_FLAG = "B200-ERROR-2"
+            CALL SB.PROCESS('SYS0061,6308\':L_SYSCON_KEY)
+         CASE L_RTN_FLAG = "B200-ERROR-3"
+            PRINT "===> Caution! SYSCON record ":L_SYSCON_KEY:" must be set to Y, DO NOT launch job MTH_FASTCLOSE."
+         CASE L_RTN_FLAG = "B300-ERROR-1"
+            CALL SB.PROCESS('SYS0061,IP0499\':L_SYSCON_KEY)
+         CASE L_RTN_FLAG = "B300-ERROR-2"
+            CALL SB.PROCESS('SYS0061,IP0500\':OCONV(DATE(),"D2/"))
+      END CASE
+      RTN.FLAG = 1
+   END ELSE
+      RTN.FLAG = 0
+   END
+
+   PRINT
+   PRINT "*************************************************************************"
+   PRINT "* Finish running pre-validation for Month-End revaluation fast closing. *"
+   PRINT "*************************************************************************"
+
+A500_EXIT:
+   REFRESH = -2
+   GO 9999
+
+****************************************
+* Checking SYSLOCK file.
+****************************************
+B100_CHECK_SYSLOCK_FILE:
+
+   EXECUTE "SELECT SYSLOCK" CAPTURING L_JUNK
+   IF @SYSTEM.RETURN.CODE # 0 THEN
+      L_RTN_FLAG = "B100-ERROR-1"
+      GO B100_EXIT
+   END
+   PRINT "===> SYSLOCK file check is OK."
+   PRINT
+
+B100_EXIT:
+   RETURN
+
+
+****************************************
+* Checking fast closing reval go flag in SYSCON.
+****************************************
+B200_CHECK_FASTCLOSE_REVAL_GO_FLAG:
+
+   READ L_SYSCON_REC FROM SYSCON, L_SYSCON_KEY
+   ON ERROR
+      L_RTN_FLAG = "B200-ERROR-1"
+   END THEN
+      IF UPCASE(TRIM(FIELD(L_SYSCON_REC<1>,';',0))) = "Y" THEN
+         PRINT "===> SYSCON record ":L_SYSCON_KEY:" check is OK."
+         PRINT
+      END ELSE
+         L_RTN_FLAG = "B200-ERROR-3"
+      END
+   END ELSE
+      L_RTN_FLAG = "B200-ERROR-2"
+   END
+
+B200_EXIT:
+   RETURN
+
+****************************************
+* Checking Month-End accouting period and date.
+****************************************
+B300_CHECK_MONTH_END_ACCOUTING_PERIOD_AND_DATE:
+
+   L_COMPMST_KEY = '01'
+   READ L_COMPMST_REC FROM COMPMST, L_COMPMST_KEY
+   ON ERROR
+      L_RTN_FLAG = "B300-ERROR-1"
+   END THEN
+      *** Update the current closing fiscal period ***
+      L_CURRENT_CLOSING_FISCAL_PERIOD = L_COMPMST_REC<12>
+
+      *** Update the begin and end date for the current closing fiscal period ***
+      LOCATE L_CURRENT_CLOSING_FISCAL_PERIOD IN L_COMPMST_REC<5> SETTING L_POS THEN
+         L_CURRENT_CLOSING_MONTH_BEGIN_DATE = OCONV(L_COMPMST_REC<6,L_POS>,"D2/")
+         L_CURRENT_CLOSING_MONTH_END_DATE = OCONV(L_COMPMST_REC<7,L_POS>,"D2/")
+      END
+
+      *** Get the next opening fiscal period ***
+      GOSUB B301_GET_NEXT_OPENING_FISCAL_PERIOD
+
+      *** Update the begin date for the next opening fiscal period ***
+      LOCATE L_NEXT_OPENING_FISCAL_PERIOD IN L_COMPMST_REC<5> SETTING L_POS THEN
+         L_NEXT_OPENING_DATE = OCONV(L_COMPMST_REC<6,L_POS>,"D2/")
+      END
+
+      *** Get the previous closing fiscal period ***
+      GOSUB B302_GET_PREVIOUS_CLOSING_FISCAL_PERIOD
+
+      *** Update the end date for the previous closing fiscal period ***
+      LOCATE L_PREVIOUS_CLOSING_FISCAL_PERIOD IN L_COMPMST_REC<5> SETTING L_POS THEN
+         L_PREVIOUS_CLOSING_MONTH_END_DATE = OCONV(L_COMPMST_REC<7,L_POS>,"D2/")
+      END
+   END ELSE
+      L_RTN_FLAG = "B300-ERROR-2"
+   END
+
+   PRINT "===> Please also double check the Fiscal Calendar against the data below:"
+   PRINT
+   PRINT "     Current Closing Fiscal Period    -> ":L_CURRENT_CLOSING_FISCAL_PERIOD
+   PRINT "     Current Closing Month Begin Date -> ":L_CURRENT_CLOSING_MONTH_BEGIN_DATE
+   PRINT "     Current Closing Month End Date   -> ":L_CURRENT_CLOSING_MONTH_END_DATE
+   PRINT "     Next Opening Fiscal Period       -> ":L_NEXT_OPENING_FISCAL_PERIOD
+   PRINT "     Next Opening Date                -> ":L_NEXT_OPENING_DATE
+   PRINT "     Previous Cloing Fiscal Period    -> ":L_PREVIOUS_CLOSING_FISCAL_PERIOD
+   PRINT "     Previous Closing Month End Date  -> ":L_PREVIOUS_CLOSING_MONTH_END_DATE
+
+B300_EXIT:
+   RETURN
+
+****************************************
+* Get next opening fiscal period 
+****************************************
+B301_GET_NEXT_OPENING_FISCAL_PERIOD:
+
+   L_FISCAL_YEAR = TRIM(FIELD(L_CURRENT_CLOSING_FISCAL_PERIOD,"-",1))
+   L_FISCAL_MONTH = TRIM(FIELD(L_CURRENT_CLOSING_FISCAL_PERIOD,"-",2))
+
+   IF L_FISCAL_MONTH = "12" THEN
+      L_FISCAL_YEAR += 1
+      L_FISCAL_MONTH = "01"
+   END ELSE
+      L_FISCAL_MONTH += 1
+      IF L_FISCAL_MONTH < 10 THEN
+         L_FISCAL_MONTH = "0":L_FISCAL_MONTH
+      END
+   END
+   L_NEXT_OPENING_FISCAL_PERIOD = L_FISCAL_YEAR:"-":L_FISCAL_MONTH
+   
+B301_EXIT:
+   RETURN
+
+****************************************
+* Get previous closing fiscal period 
+****************************************
+B302_GET_PREVIOUS_CLOSING_FISCAL_PERIOD:
+
+   L_FISCAL_YEAR = TRIM(FIELD(L_CURRENT_CLOSING_FISCAL_PERIOD,"-",1))
+   L_FISCAL_MONTH = TRIM(FIELD(L_CURRENT_CLOSING_FISCAL_PERIOD,"-",2))
+
+   IF L_FISCAL_MONTH = "01" THEN
+      L_FISCAL_YEAR -= 1
+      L_FISCAL_MONTH = "12"
+   END ELSE
+      L_FISCAL_MONTH -= 1
+      IF L_FISCAL_MONTH < 10 THEN
+         L_FISCAL_MONTH = "0":L_FISCAL_MONTH
+      END
+   END
+   L_PREVIOUS_CLOSING_FISCAL_PERIOD = L_FISCAL_YEAR:"-":L_FISCAL_MONTH
+   
+B302_EXIT:
+   RETURN
+
+****************************************
+* Exit  
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END
+*

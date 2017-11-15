@@ -1,0 +1,360 @@
+     SUBROUTINE SYSS9210.1
+* Run various reports during the Month-End weekend as a batch.
+* VERSION 8.2.3
+*
+* 18 MAR 13 8.2.3 juntan PRJ*FIN002D.6-(Sub #6) MONTH END FAST CLOSE PROJECT
+* 21 JAN 13 8.2.3 juntan PRJ*FIN002D-MONTH END FAST CLOSE PROJECT
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+     $INCLUDE IIPLUS.TOP
+     PROGRAM='SYSS9210.1'
+     $INCLUDE IIPLUS.TEXTLOAD
+     $INCLUDE IIPLUS.DEBUG
+
+     $INCLUDE TUBP TU.API.H
+     $INCLUDE TUBP ROC.H
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ============
+*              This program is used to run various finance reports during
+*              the Month-End weekend as a batch for a fact of fast closing.
+*
+* MODIFICATIONS:
+* ==============
+*              2013/01/07 juntan FIN002D - Initial creation.
+*
+**************************************************************************
+
+A100_MAIN:
+
+   PRINTER OFF
+
+   GOSUB A200_INITIALIZATION
+   IF L_RTN_FLAG # "" THEN
+      GO A100_EXIT
+   END
+
+   PRINT 
+   PRINT "*************************************************************************"
+   PRINT "*   Start running SYSS9210.1 for fast closing at ":OCONV(TIME(),"MTS"):" on ":OCONV(DATE(),"D2/"):"   *"
+   PRINT "*************************************************************************"
+   PRINT 
+
+   GOSUB A300_OPEN_FILES
+   IF L_RTN_FLAG # "" THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF L_RTN_FLAG # "" THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+   GO A500_CONCLUSION
+
+****************************************
+* Definition of local variables & initialization of other variables.
+****************************************
+A200_INITIALIZATION:
+
+   RTN.FLAG = 0
+
+   L_RTN_FLAG = ''
+   L_SYSCON_KEY = PARAM<1>
+   L_SYSCON_RECORD = ''
+   L_COMPMST_KEY = ''
+   L_COMPMST_RECORD = ''
+   L_REPORT_PROCESS_NAME_LIST = ''
+   L_REPORT_PARAMETERS_LIST = ''
+   L_REPORT_PROCESS_NAME = ''
+   L_REPORT_PARAMETERS = ''
+   L_FISCAL_YEAR = ''
+   L_FISCAL_MONTH = ''
+   L_CURRENT_CLOSING_FISCAL_PERIOD = ''
+   L_CURRENT_CLOSING_MONTH_BEGIN_DATE = ''
+   L_CURRENT_CLOSING_MONTH_END_DATE = ''
+   L_NEXT_OPENING_FISCAL_PERIOD = ''
+   L_NEXT_OPENING_DATE = ''
+   L_PREVIOUS_CLOSING_FISCAL_PERIOD = ''
+   L_PREVIOUS_CLOSING_MONTH_END_DATE = ''
+   L_INC = 0
+   L_CNT = 0
+   L_POS = 0
+
+A200_EXIT:
+   RETURN
+
+****************************************
+* Open the files needed in this subroutine.
+****************************************
+A300_OPEN_FILES:
+
+   FILE.ERR = 0
+
+   CALL SB.OPEN.FILE("SYSCON",SYSCON,FILE.ERR)
+   IF FILE.ERR THEN
+      L_RTN_FLAG = "A300-ERROR-1"
+      GO A300_EXIT
+   END
+
+   CALL SB.OPEN.FILE("COMPMST",COMPMST,FILE.ERR)
+   IF FILE.ERR THEN
+      L_RTN_FLAG = "A300-ERROR-2"
+      GO A300_EXIT
+   END
+
+A300_EXIT:
+   RETURN
+
+****************************************
+* Main process logic sturcture.
+****************************************
+A400_MAIN_PROCESS:
+
+   IF USER.ID # "BATCH" THEN
+      L_RTN_FLAG = "A400-ERROR-1"
+      GO A400_EXIT
+   END
+
+   GOSUB B100_READ_SYSCON_CONTROL_RECORD
+   IF L_RTN_FLAG # "" THEN
+      GO A400_EXIT
+   END
+
+   GOSUB B200_RUN_BATCH_REPORT
+   IF L_RTN_FLAG # "" THEN
+      GO A400_EXIT
+   END
+
+A400_EXIT:
+   RETURN
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+   IF L_RTN_FLAG # "" THEN
+      PRINT "===> [At ":OCONV(TIME(),"MTS"):"] Fast closing process SYSS9210.1 aborted!"
+      PRINT "===> Error code detected is ":L_RTN_FLAG:"."
+      BEGIN CASE
+         CASE L_RTN_FLAG = "A300-ERROR-1"
+            CALL SB.PROCESS("SYS0061,IP2564\":"SYSCON")
+         CASE L_RTN_FLAG = "A300-ERROR-2"
+            CALL SB.PROCESS("SYS0061,IP2564\":"COMPMST")
+         CASE L_RTN_FLAG = "A400-ERROR-1"
+            PRINT "===> Can only be run under username BATCH."
+         CASE L_RTN_FLAG = "B100-ERROR-1"
+            CALL SB.PROCESS('SYS0061,IP2434\':L_SYSCON_KEY)
+         CASE L_RTN_FLAG = "B100-ERROR-2"
+            CALL SB.PROCESS('SYS0061,6308\':L_SYSCON_KEY)
+         CASE L_RTN_FLAG = "B200-ERROR-1"
+            PRINT "===> Screen process ":L_REPORT_PROCESS_NAME:" failed with RTN.FLAG set to 1."
+         CASE L_RTN_FLAG = "B201-ERROR-1"
+            CALL SB.PROCESS('SYS0061,IP0499\':L_SYSCON_KEY)
+         CASE L_RTN_FLAG = "B201-ERROR-2"
+            CALL SB.PROCESS('SYS0061,IP0500\':OCONV(DATE(),"D2/"))
+      END CASE
+      RTN.FLAG = 1
+   END ELSE
+      PRINT ">>>> [At ":OCONV(TIME(),"MTS"):"] Finish processing SYSCON record ":'"':L_SYSCON_KEY:'". <<<<'
+      RTN.FLAG = 0
+   END
+
+   PRINT
+   PRINT "*************************************************************************"
+   PRINT "*  Finish running SYSS9210.1 for fast closing at ":OCONV(TIME(),"MTS"):" on ":OCONV(DATE(),"D2/"):"   *"
+   PRINT "*************************************************************************"
+   PRINT
+
+A500_EXIT:
+   REFRESH = -2
+   GO 9999
+
+****************************************
+* Read SYSCON record which defines and controls the master batch process.
+****************************************
+B100_READ_SYSCON_CONTROL_RECORD:
+
+   READ L_SYSCON_RECORD FROM SYSCON, L_SYSCON_KEY
+   ON ERROR
+      L_RTN_FLAG = "B100-ERROR-1"
+   END THEN
+      PRINT ">>>> [At ":OCONV(TIME(),"MTS"):"] Start processing SYSCON record ":'"':L_SYSCON_KEY:'". <<<<'
+      PRINT
+      GOSUB B101_PARSE_SYSCON_RECORD
+   END ELSE
+      L_RTN_FLAG = "B100-ERROR-2"
+   END
+
+B100_EXIT:
+   RETURN
+
+****************************************
+* Parse each record in SYSCON table and store in sequence order.
+****************************************
+B101_PARSE_SYSCON_RECORD:
+
+   FOR L_INC = 1 TO DCOUNT(L_SYSCON_RECORD,@FM)
+      IF L_SYSCON_RECORD<L_INC> # "" THEN
+         L_CNT += 1
+         L_REPORT_PROCESS_NAME_LIST<L_CNT> = TRIM(FIELD(L_SYSCON_RECORD<L_INC>,'*',2))
+         L_REPORT_PARAMETERS_LIST<L_CNT> = TRIM(FIELD(L_SYSCON_RECORD<L_INC>,';',1))
+      END
+   NEXT L_INC
+
+B101_EXIT:
+   RETURN
+
+****************************************
+* Run each report in sequence order defined on SYSCON table based on the parameters list.
+****************************************
+B200_RUN_BATCH_REPORT:
+
+   FOR L_INC = 1 TO DCOUNT(L_REPORT_PROCESS_NAME_LIST,@FM)
+      *** Parepare parameters for data stack ***
+      L_REPORT_PROCESS_NAME = L_REPORT_PROCESS_NAME_LIST<L_INC>
+      L_REPORT_PARAMETERS = L_REPORT_PARAMETERS_LIST<L_INC>
+
+      GOSUB B201_UPDATE_ACCOUNTING_FISCAL_PERIOD_INFORMATION
+
+      *** Log per report parameters list ***
+      SWAP @VM WITH "," IN L_REPORT_PARAMETERS
+      PRINT "---> [At ":OCONV(TIME(),"MTS"):"] Start running screen process ":L_REPORT_PROCESS_NAME:" with parameters ":'"':L_REPORT_PARAMETERS:'" for attribute <':L_INC:">."
+      SWAP "," WITH @VM IN L_REPORT_PARAMETERS
+
+      *** Data stack parameters ***
+      FOR L_CNT = 1 TO DCOUNT(L_REPORT_PARAMETERS,@VM)
+         DATA L_REPORT_PARAMETERS<1,L_CNT>
+      NEXT L_CNT
+
+      *** Populate parameters onto screen from data stack ***
+      CALL SB.PROCESS(L_REPORT_PROCESS_NAME)
+      IF RTN.FLAG THEN
+         L_RTN_FALG = "B200-ERROR-1"
+         GO B200_EXIT
+      END ELSE
+         SWAP @VM WITH "," IN L_REPORT_PARAMETERS
+         PRINT "---> [At ":OCONV(TIME(),"MTS"):"] Finish running screen process ":L_REPORT_PROCESS_NAME:" with parameters ":'"':L_REPORT_PARAMETERS:'" for attribute <':L_INC:">."
+         PRINT
+         SWAP "," WITH @VM IN L_REPORT_PARAMETERS
+      END
+   NEXT L_INC
+
+B200_EXIT:
+   RETURN
+
+****************************************
+* Update accounting fiscal period information in the parameters list. 
+****************************************
+B201_UPDATE_ACCOUNTING_FISCAL_PERIOD_INFORMATION:
+
+   L_COMPMST_KEY = L_REPORT_PARAMETERS<1,1>
+   READ L_COMPMST_RECORD FROM COMPMST, L_COMPMST_KEY
+   ON ERROR
+      L_RTN_FLAG = "B201-ERROR-1"
+   END THEN
+      *** Update the current closing fiscal period ***
+      L_CURRENT_CLOSING_FISCAL_PERIOD = L_COMPMST_RECORD<12>
+      SWAP "CURRENT_CLOSING_FISCAL_PERIOD" WITH L_CURRENT_CLOSING_FISCAL_PERIOD IN L_REPORT_PARAMETERS
+
+      *** Update the begin and end date for the current closing fiscal period ***
+      LOCATE L_CURRENT_CLOSING_FISCAL_PERIOD IN L_COMPMST_RECORD<5> SETTING L_POS THEN
+         L_CURRENT_CLOSING_MONTH_BEGIN_DATE = OCONV(L_COMPMST_RECORD<6,L_POS>,"D2/")
+         SWAP "CURRENT_CLOSING_MONTH_BEGIN_DATE" WITH L_CURRENT_CLOSING_MONTH_BEGIN_DATE IN L_REPORT_PARAMETERS
+
+         L_CURRENT_CLOSING_MONTH_END_DATE = OCONV(L_COMPMST_RECORD<7,L_POS>,"D2/")
+         SWAP "CURRENT_CLOSING_MONTH_END_DATE" WITH L_CURRENT_CLOSING_MONTH_END_DATE IN L_REPORT_PARAMETERS
+      END
+
+      *** Get and update the next opening fiscal period ***
+      GOSUB B202_GET_NEXT_OPENING_FISCAL_PERIOD
+      SWAP "NEXT_OPENING_FISCAL_PERIOD" WITH L_NEXT_OPENING_FISCAL_PERIOD IN L_REPORT_PARAMETERS
+
+      *** Update the begin date for the next opening fiscal period ***
+      LOCATE L_NEXT_OPENING_FISCAL_PERIOD IN L_COMPMST_RECORD<5> SETTING L_POS THEN
+         L_NEXT_OPENING_DATE = OCONV(L_COMPMST_RECORD<6,L_POS>,"D2/")
+         SWAP "NEXT_OPENING_DATE" WITH L_NEXT_OPENING_DATE IN L_REPORT_PARAMETERS
+      END
+
+      *** Get the previous closing fiscal period ***
+      GOSUB B203_GET_PREVIOUS_CLOSING_FISCAL_PERIOD
+
+      *** Update the end date for the previous closing fiscal period ***
+      LOCATE L_PREVIOUS_CLOSING_FISCAL_PERIOD IN L_COMPMST_RECORD<5> SETTING L_POS THEN
+         L_PREVIOUS_CLOSING_MONTH_END_DATE = OCONV(L_COMPMST_RECORD<7,L_POS>,"D2/")
+         SWAP "PREVIOUS_CLOSING_MONTH_END_DATE" WITH L_PREVIOUS_CLOSING_MONTH_END_DATE IN L_REPORT_PARAMETERS
+      END
+   END ELSE
+      L_RTN_FLAG = "B201-ERROR-2"
+   END
+
+B201_EXIT:
+   RETURN
+
+****************************************
+* Get next opening fiscal period 
+****************************************
+B202_GET_NEXT_OPENING_FISCAL_PERIOD:
+
+   L_FISCAL_YEAR = TRIM(FIELD(L_CURRENT_CLOSING_FISCAL_PERIOD,"-",1))
+   L_FISCAL_MONTH = TRIM(FIELD(L_CURRENT_CLOSING_FISCAL_PERIOD,"-",2))
+
+   IF L_FISCAL_MONTH = "12" THEN
+      L_FISCAL_YEAR += 1
+      L_FISCAL_MONTH = "01"
+   END ELSE
+      L_FISCAL_MONTH += 1
+      IF L_FISCAL_MONTH < 10 THEN
+         L_FISCAL_MONTH = "0":L_FISCAL_MONTH
+      END
+   END
+   L_NEXT_OPENING_FISCAL_PERIOD = L_FISCAL_YEAR:"-":L_FISCAL_MONTH
+   
+B202_EXIT:
+   RETURN
+
+****************************************
+* Get previous closing fiscal period 
+****************************************
+B203_GET_PREVIOUS_CLOSING_FISCAL_PERIOD:
+
+   L_FISCAL_YEAR = TRIM(FIELD(L_CURRENT_CLOSING_FISCAL_PERIOD,"-",1))
+   L_FISCAL_MONTH = TRIM(FIELD(L_CURRENT_CLOSING_FISCAL_PERIOD,"-",2))
+
+   IF L_FISCAL_MONTH = "01" THEN
+      L_FISCAL_YEAR -= 1
+      L_FISCAL_MONTH = "12"
+   END ELSE
+      L_FISCAL_MONTH -= 1
+      IF L_FISCAL_MONTH < 10 THEN
+         L_FISCAL_MONTH = "0":L_FISCAL_MONTH
+      END
+   END
+   L_PREVIOUS_CLOSING_FISCAL_PERIOD = L_FISCAL_YEAR:"-":L_FISCAL_MONTH
+   
+B203_EXIT:
+   RETURN
+
+****************************************
+* Exit  
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END

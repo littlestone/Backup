@@ -1,0 +1,144 @@
+     SUBROUTINE PURS4017.2
+* Email Supplier Quote Excel File Template
+* VERSION 8.2.3
+*
+* 11 FEB 11 8.2.3 juntan PRJ*PUR073D-Ability to upload Vendor Quotes (vendor pricing) from E
+*
+*
+*
+*
+*
+*
+****************************************
+*
+*   IPEX Inc. - INFOFLO Release 8.2
+*
+*    Copyright (c) 1998, Ipex Inc.
+*
+*         All Rights Reserved
+*
+****************************************
+     $INCLUDE IIPLUS.TOP
+     PROGRAM='PURS4017.2'
+     $INCLUDE IIPLUS.TEXTLOAD
+     $INCLUDE IIPLUS.DEBUG
+
+**************************************************************************
+*
+* DESCRIPTION:
+* ===========
+*              This program is used to send the supplier quote excel
+*              template to user by email.
+*
+* MODIFICATIONS:
+* =============
+*              2011/02/10 juntan PUR073D - Initial Creation.
+*
+**************************************************************************
+
+A100_MAIN:
+
+   GOSUB A200_INITIALIZATION
+   IF RTN.FLAG THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A300_OPEN_FILES
+   IF RTN.FLAG THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A400_MAIN_PROCESS
+   IF RTN.FLAG THEN
+      GO A100_EXIT
+   END
+
+   GOSUB A500_CONCLUSION
+   IF RTN.FLAG THEN
+      GO A100_EXIT
+   END
+
+A100_EXIT:
+   GO 9999
+
+
+****************************************
+* Definition of local variables & initialization of other variables.
+****************************************
+A200_INITIALIZATION:
+
+
+A200_EXIT:
+   RETURN
+
+
+****************************************
+* Open the files needed in this subroutine.
+****************************************
+A300_OPEN_FILES:
+
+
+A300_EXIT:
+   RETURN
+
+
+****************************************
+* Short desc of what the main process does.
+****************************************
+A400_MAIN_PROCESS:
+
+   CALL SB.PROCESS("PURX4017.1")
+   IF OTHER(18) = 13 OR OTHER(18) = 14 THEN
+      GO A400_EXIT
+   END
+   L_REPORT_NAME = VALUE
+   ARG_EMAIL = ''
+   CALL SYSS9300.1(ARG_EMAIL,USER.ID)
+
+   PARAM    =  ""
+   PARAM<1> =  ""
+   PARAM<2> =  "Vendor Quote Excel Template - ":L_REPORT_NAME
+   PARAM<3> =  ARG_EMAIL
+   PARAM<4> =  "ADHOC_XLS"
+   PARAM<5> =  L_REPORT_NAME
+
+   CALL SB.PROCESS("SYSS9060.2")
+
+   IF RTN.FLAG THEN
+      CALL SB.PROCESS("SYS0061,IP2563\":"SYSS9060.1")
+      GO A400_EXIT
+   END
+
+   IF PARAM<6> > 0 THEN   ;* This means there was an error sending the email...
+      CALL SB.PROCESS("SYS0061,IP2563\":"SYSS9060.1")
+      RTN.FLAG = 1
+      GO A400_EXIT
+   END
+
+   IF NOT(RTN.FLAG) THEN
+      CALL SB.PROCESS('SYS0061,IP0784\':ARG_EMAIL)
+   END ELSE
+      RTN.FLAG = 0
+   END
+
+A400_EXIT:
+   RETURN
+
+
+****************************************
+* Final processing.
+****************************************
+A500_CONCLUSION:
+
+
+A500_EXIT:
+   RETURN
+
+****************************************
+* Exit  
+****************************************
+
+   $INCLUDE IIPLUS.BOTTOM
+
+END
+*
