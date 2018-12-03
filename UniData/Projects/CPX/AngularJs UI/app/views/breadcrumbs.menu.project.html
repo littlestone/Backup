@@ -1,0 +1,17 @@
+
+<div style="border-width: 1px; border-color: black; border-style: solid; padding: 8px"  layout="column">
+
+  <div ng-click="cBCPrjMenu.newProject()">New Project... </div>
+  <div style="margin-top:4px;" ng-click="cBCPrjMenu.newAFE()">New AFE... </div>
+  <div ng-show="false" style="margin-top:4px;" ng-click="createNewTransaction($event)">New Transfert... </div>
+  <md-divider style="margin-top:5px; margin-bottom:5px;"></md-divider>
+
+  <md-content style="height:150px; background-color:white;" layout="column">
+
+    <a ng-repeat="x in cBCPrjMenu.shortList" ui-sref="projectEdit({prjId: {{x.projectID}}})">{{x.projectNumber}}
+      <md-tooltip md-direction="top">
+        {{x.projectDescription}}
+      </md-tooltip>
+    </a>
+  </md-content>
+</div>

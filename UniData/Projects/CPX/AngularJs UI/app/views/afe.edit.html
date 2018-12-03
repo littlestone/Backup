@@ -1,0 +1,103 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Edit AFE</title>
+    <style>
+      body {
+        background-color: lightgray;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div layout="row">
+      <div flex>
+        <md-tabs md-dynamic-height md-border-bottom  class="md-primary md-hue-1">
+          <md-tab ng-click="showOverview()">
+            <md-tab-label>
+              Header
+            </md-tab-label>
+            <md-tab-body>
+              <div ui-view="afeHeader"></div>
+            </md-tab-body>
+          </md-tab>
+
+          <md-tab ng-disabled="cAfeEdit.afe.id <= 0">
+            <md-tab-label>
+              Details
+            </md-tab-label>
+            <md-tab-body>
+              <div ng-if="cAfeEdit.afe.id > 0" ui-view="afeDetails"></div>
+            </md-tab-body>
+          </md-tab>
+
+          <md-tab ng-disabled="cAfeEdit.afe.id <= 0" ng-click="showOverview()">
+            <md-tab-label>
+              Phasing
+            </md-tab-label>
+            <md-tab-body>
+              <div ng-if="cAfeEdit.afe.id > 0" ui-view="afeBudgetForecast"></div>
+            </md-tab-body>
+          </md-tab>
+
+          <md-tab ng-disabled="cAfeEdit.afe.id <= 0" ng-click="hideOverview()">
+            <md-tab-label>
+              Assets
+            </md-tab-label>
+            <md-tab-body>
+              <div ng-if="cAfeEdit.afe.id > 0" ui-view="afePos"></div>
+            </md-tab-body>
+          </md-tab>
+
+          <md-tab ng-disabled="cAfeEdit.afe.id <= 0">
+            <md-tab-label>
+              Action
+            </md-tab-label>
+            <md-tab-body>
+              <div ng-if="cAfeEdit.afe.id > 0" ui-view="afeAction"></div>
+            </md-tab-body>
+          </md-tab>
+        </md-tabs>
+      </div>
+
+      <!--Right Panel-->
+      <div style="border-width: 1px; border-color: darkgrey; background-color:white " class="prjOverview" layout="column" ng-style="prjOverviewStyle" md-whiteframe="3">
+        <div  style="height:49px;" md-colors="{background:'primary-hue-1'}">
+          <md-button ng-click="toggleOverview()" class="md-fab md-mini md-primary md-hue-3">
+            <md-tooltip md-direction="bottom">
+              Overview
+            </md-tooltip>
+            <span style="color:white;" class="glyphicon glyphicon-usd"></span>
+          </md-button>
+          <span ng-show="isOverviewOpen" style="margin-left:12px; color:white;">Overview</span>
+        </div>
+        <div ng-style="formStyle" ng-show="isOverviewOpen">
+          <md-tabs md-dynamic-height class="md-accent md-hue-2">
+            <md-tab ng-if="cAfeEdit.afe.id > 0">
+              <md-tab-label>
+                <b>AFE</b>
+              </md-tab-label>
+              <md-tab-body>
+                <md-content ng-style="contentStyle">
+                  <div ui-view="afeoverview"></div>
+                </md-content>
+              </md-tab-body>
+            </md-tab>
+
+            <md-tab>
+              <md-tab-label>
+                <b>Project</b>
+              </md-tab-label>
+              <md-tab-body>
+                <md-content ng-style="contentStyle">
+                  <div ui-view="afeprjoverview"></div>
+                </md-content>
+              </md-tab-body>
+            </md-tab>
+          </md-tabs>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

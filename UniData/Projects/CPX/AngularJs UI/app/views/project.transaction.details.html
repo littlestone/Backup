@@ -1,0 +1,70 @@
+<md-dialog aria-label="Transaction details dialog" style="width:700px;">
+  <form name="transactionDetailsForm" novalidate ng-cloak>
+    <md-toolbar>
+      <div class="md-toolbar-tools">
+        <h5>Transaction Details Display</h5>
+        <span flex></span>
+        <md-button class="md-icon-button" aria-lable="Attachments" ng-click="showAttachmentUtility()">
+          <md-tooltip>Attachments Utility</md-tooltip>
+          <md-icon md-svg-src="../images/icons/ic_attach_file_white_24px.svg"></md-icon>
+        </md-button>
+      </div>
+    </md-toolbar>
+    <md-dialog-content style="margin:12px; background-color: white;">
+      <div style="margin: 0px 8px 0px 8px;" layout="row">
+        <div flex="30" layout="column" style="margin-right: 8px;">
+          <md-input-container>
+            <label>Project number</label>
+            <input type="text" value="{{transaction.projectNumber}}" ng-readonly="true">
+          </md-input-container>
+        </div>
+        <div flex="70" layout="column">
+          <md-input-container>
+            <label>Description</label>
+            <input type="text" value="{{transaction.projectName}}" ng-readonly="true">
+          </md-input-container>
+        </div>
+      </div>
+      <div style="margin: 0px 8px 0px 8px;" layout="row">
+        <div flex="25" layout="column" style="margin-right: 8px;">
+          <md-input-container>
+            <label>Amount($)</label>
+            <input type="text" value="{{transaction.amount | currency}}" ng-readonly="true">
+          </md-input-container>
+        </div>
+        <div flex="15" layout="column" style="margin-right: 8px;">
+          <md-input-container>
+            <label>Currency</label>
+            <input type="text" value="{{project.companyCurrencyCode}}" ng-readonly="true">
+          </md-input-container>
+        </div>
+        <div flex="40" layout="column" style="margin-right: 8px;">
+          <md-input-container>
+            <label>Created by</label>
+            <input type="text" value="{{transaction.createdByDisplayName}}" ng-readonly="true">
+          </md-input-container>
+        </div>
+        <div flex="20" layout="column">
+          <md-input-container>
+            <label>Created on</label>
+            <input type="text" value="{{transaction.createdOn | date}}" ng-readonly="true">
+          </md-input-container>
+        </div>
+      </div>
+      <div style="margin: 0px 8px 0px 8px;" layout="row">
+        <div flex layout="column" style="margin-right: 8px;">
+          <md-input-container>
+            <label>Comments</label>
+            <textarea rows="5" md-select-on-focus ng-readonly="true">{{transaction.comments}}</textarea>
+          </md-input-container>
+        </div>
+      </div>
+    </md-dialog-content>
+  </form>
+  <md-dialog-actions layout="row">
+    <span flex></span>
+    <md-button ng-click="closeDialog()" class="md-raised" style="margin:0px 8px 0px 8px;">
+      Close
+    </md-button>
+  </md-dialog-actions>
+</md-dialog>

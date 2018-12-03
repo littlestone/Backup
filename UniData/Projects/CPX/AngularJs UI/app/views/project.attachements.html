@@ -1,0 +1,228 @@
+<div style="margin: 12px; border-color: darkgray; border-radius: 5px; border-width: 1px; border-style: solid; background-color: white" layout="column" md-whiteframe="3" ng-style="contentStyle">
+
+  <div style="height:353px; border-color: darkgray; border-style: solid; border-width: 1px; border-radius: 5px; margin:15px">
+    <md-content layout="column">
+      <ix-attachments ng-readonly="false" entity-type-id="1" entity-record-id="{{curProject.id}}" userid="{{appUsers.userName}}"></ix-attachments>
+    </md-content>
+
+    <!-- <div style="height:50px; background-color: lightgray;" layout="column">
+         <div layout="row">
+         <h5 style="margin-top:8px; padding-top:8px;margin-left:4px;" flex>Attachments</h5>
+         <md-menu>
+         <md-button aria-label="AttachementMenu" class="md-icon-button" ng-click="$mdOpenMenu()">
+         <span class="glyphicon glyphicon-option-vertical"></span>
+         <md-tooltip md-direction="top">Menu</md-tooltip>
+         </md-button>
+         <md-menu-content width="4">
+         <md-menu-item>
+         <md-button ng-click="showNotAvailableAlert()"><span class="glyphicon glyphicon-usd"></span> <span md-menu-align-target>Add a Financial attachment...</span></md-button>
+         </md-menu-item>
+
+         <md-menu-item>
+         <md-button ng-click="showNotAvailableAlert()"><span class="glyphicon glyphicon-file"></span> <span md-menu-align-target>Add a General attachment...</span></md-button>
+         </md-menu-item>
+
+         <md-menu-item>
+         <md-button ng-click="showNotAvailableAlert()"><span class="glyphicon glyphicon-briefcase"></span> <span md-menu-align-target>Add a Business Cases/Project Updates attachment...</span></md-button>
+         </md-menu-item>
+         <md-divider></md-divider>
+         <md-menu-item>
+         <md-button ng-click="null"><span class="glyphicon glyphicon-refresh"></span> <span md-menu-align-target>Refresh</span></md-button>
+         </md-menu-item>
+         </md-menu-content>
+         </md-menu>
+         </div>
+         </div>
+         <md-content style="height:300px;">
+         <md-list class="md-dense" flex>
+         <md-list-item class="md-3-line" ng-click="null">
+         <div layout="row" flex="100">
+         <div>
+         <span style="margin-right: 10px;" class="glyphicon glyphicon-usd" md-colors="{color: 'primary'}"></span>
+         <md-tooltip md-direction="top">Financial attachment</md-tooltip>
+         </div>
+
+         <div class="md-list-item-text" layout="column">
+         <h3 md-colors="{color: 'primary'}"><b>Title - Financial Attachment</b> <i>(filename.doc)</i></h3>
+         <h4>Added by: Eric Gauthier on 2017-10-29</h4>
+         <h4>Short description. In tortor dui, semper a lacus vel, elementum scelerisque tellus.</h4>
+         </div>
+
+         <md-button class="md-icon-button" ng-click="showNotAvailableAlert()">
+         <span class="glyphicon glyphicon-download-alt"></span>
+         <md-tooltip md-direction="top">download</md-tooltip>
+         </md-button>
+         </div>
+         </md-list-item>
+
+         <md-list-item class="md-3-line" ng-click="null">
+         <div layout="row" flex="100">
+         <div>
+         <span style="margin-right: 10px;" class="glyphicon glyphicon-file" md-colors="{color: 'primary'}"></span>
+         <md-tooltip md-direction="top">General attachment</md-tooltip>
+         </div>
+
+         <div class="md-list-item-text" layout="column">
+         <h3 md-colors="{color: 'primary'}"><b>Title - General Attachment</b> <i>(filename.doc)</i></h3>
+         <h4>Added by: Eric Gauthier on 2017-10-29</h4>
+         <h4>Short description. In tortor dui, semper a lacus vel, elementum scelerisque tellus.</h4>
+         </div>
+
+         <md-button class="md-icon-button" ng-click="showNotAvailableAlert()">
+         <span class="glyphicon glyphicon-download-alt"></span>
+         <md-tooltip md-direction="top">download</md-tooltip>
+         </md-button>
+         </div>
+         </md-list-item>
+
+
+         <md-list-item class="md-3-line" ng-click="null">
+         <div layout="row" flex="100">
+         <div>
+         <span style="margin-right: 10px;" class="glyphicon glyphicon-briefcase" md-colors="{color: 'primary'}"></span>
+         <md-tooltip md-direction="top">Business Cases / Project Updates attachment</md-tooltip>
+         </div>
+
+         <div class="md-list-item-text" layout="column">
+         <h3 md-colors="{color: 'primary'}"><b>Title - Business Cases / Project Updates Attachment</b> <i>(filename.doc)</i></h3>
+         <h4>Added by: Eric Gauthier on 2017-10-29</h4>
+         <h4>Short description. In tortor dui, semper a lacus vel, elementum scelerisque tellus.</h4>
+         </div>
+
+         <md-button class="md-icon-button" ng-click="showNotAvailableAlert()">
+         <span class="glyphicon glyphicon-download-alt"></span>
+         <md-tooltip md-direction="top">download</md-tooltip>
+         </md-button>
+         </div>
+         </md-list-item>
+
+
+
+         </md-list>
+         </md-content> -->
+  </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <!-- <div style="margin:12px 12px 8px 12px;" layout="row">
+       <div style="height:290px; border-color: darkgray; border-style: solid; border-width: 1px; border-radius: 5px; margin-right:6px" flex="50">
+       <div style="height:50px; background-color: lightgray;" layout="column">
+       <div layout="row">
+       <h5 style="margin-top:8px; padding-top:8px;margin-left:4px;"flex>General Attachments</h5>
+
+       <md-menu>
+       <md-button aria-label="AttachementMenu" class="md-icon-button" ng-click="$mdOpenMenu()">
+       <span class="glyphicon glyphicon-option-vertical"></span>
+       <md-tooltip md-direction="top">Menu</md-tooltip>
+       </md-button>
+       <md-menu-content width="4">
+       <md-menu-item>
+       <md-button ng-click="showNotAvailableAlert()"> <span md-menu-align-target>Add Attachment...</span></md-button>
+       </md-menu-item>
+       <md-menu-item>
+       <md-button ng-click="null"><span class="glyphicon glyphicon-refresh"></span> <span md-menu-align-target>Refresh</span></md-button>
+       </md-menu-item>
+       </md-menu-content>
+       </md-menu>
+       </div>
+       </div>
+       <md-content style="height:236px;">
+       <md-list class="md-dense" flex>
+       General Attachments
+       </md-list>
+       </md-content>
+       </div>
+
+       <div style="height:290px; border-color: darkgray; border-style: solid; border-width: 1px; border-radius: 5px; margin-left:6px;" flex="50">
+       <div style="height:50px; background-color: lightgray;" layout="column">
+       <div layout="row">
+       <h5 style="margin-top:8px; padding-top:8px;margin-left:4px;"flex>Financial Attachments</h5>
+
+       <md-menu>
+       <md-button aria-label="finAttachementMenu" class="md-icon-button" ng-click="$mdOpenMenu()">
+       <span class="glyphicon glyphicon-option-vertical"></span>
+       <md-tooltip md-direction="top">Menu</md-tooltip>
+       </md-button>
+       <md-menu-content width="4">
+       <md-menu-item>
+       <md-button ng-click="null"><span class="glyphicon glyphicon-refresh"></span> <span md-menu-align-target>Refresh</span></md-button>
+       </md-menu-item>
+       </md-menu-content>
+       </md-menu>
+       </div>
+       </div>
+       <md-content style="height:236px;">
+       <md-list class="md-dense" flex>
+       Financial Attachments
+       </md-list>
+       </md-content>
+       </div>
+       </div>
+
+       <div style="margin:4px 12px 8px 12px;" layout="row">
+       <div style="height:290px; border-color: darkgray; border-style: solid; border-width: 1px; border-radius: 5px; margin-right:6px;" flex="50">
+       <div style="height:50px; background-color: lightgray;" layout="column">
+       <div layout="row">
+       <h5 style="margin-top:8px; padding-top:8px;margin-left:4px;"flex>Business Cases / Project Updates</h5>
+
+       <md-menu>
+       <md-button aria-label="AttachementMenu" class="md-icon-button" ng-click="$mdOpenMenu()">
+       <span class="glyphicon glyphicon-option-vertical"></span>
+       <md-tooltip md-direction="top">Menu</md-tooltip>
+       </md-button>
+       <md-menu-content width="4">
+       <md-menu-item>
+       <md-button ng-click="showNotAvailableAlert()"> <span md-menu-align-target>Add Attachment...</span></md-button>
+       </md-menu-item>
+       <md-menu-item>
+       <md-button ng-click="null"><span class="glyphicon glyphicon-refresh"></span> <span md-menu-align-target>Refresh</span></md-button>
+       </md-menu-item>
+       </md-menu-content>
+       </md-menu>
+       </div>
+       </div>
+       <md-content style="height:236px;">
+       <md-list class="md-dense" flex>
+       Business Cases / Project Updates
+       </md-list>
+       </md-content>
+       </div>
+       <div style="margin-left:6px;" flex="50"></div>
+       </div> -->
+
+
+
+
+
+
+</div>
+
+
+<!--<md-content style="margin: 12px; border-color: darkgray; border-radius: 5px; border-width: 1px; border-style: solid; background-color: white" layout="column" md-whiteframe="3" ng-style="contentStyle">
+     <fusioncharts
+     width="75%"
+     height="75%"
+     type="msstackedcolumn2dlinedy"
+     datasource="{{chartConfig}}">
+     </fusioncharts>
+
+
+     Chart Config: {{chartConfig}}
+     </md-content>-->

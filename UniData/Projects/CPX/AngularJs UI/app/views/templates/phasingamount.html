@@ -1,0 +1,18 @@
+<md-input-container >
+  <label ng-style="{'color': (actual == 'true' ? ixColorActuals : ixColorForecast), 'font-style': (actual == 'true' ? 'italic' : 'normal')}" class="xlcLabel">{{label}}</label>
+
+  <md-tooltip md-direction="top">{{actual == 'true' ? 'Actual Value' : 'Forecast Value'}}</md-tooltip>
+  <input class="phAmountInput"
+    name="amountValue"
+    ng-style="{'color': (actual == 'true' ? ixColorActuals : ixColorForecast), 'font-style': (actual == 'true' ? 'italic' : 'normal')}"
+    type="text"
+    ng-model="ngModel"
+    required
+    ng-readonly="ngReadonly"
+    ng-pattern="/^(?!-0(\.0+)?$)-?(0|[1-9]\d*)(\.\d+)?$/">
+
+  <div ng-messages="form.$error" role="alert">
+    <div ng-message="required" class="my-message">Please enter a value.</div>
+    <div ng-message="pattern">Please enter a NUMERICAL value.</div>
+  </div>
+</md-input-container>

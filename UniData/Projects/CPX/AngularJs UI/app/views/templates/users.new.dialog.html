@@ -1,0 +1,34 @@
+<md-dialog aria-label="newUser">
+    <form  name="userNew.form" ng-cloak>
+        <md-toolbar>
+            <div class="md-toolbar-tools" style="width:450px;">
+                <h5>Select a User</h5>
+            </div>
+        </md-toolbar>
+        <md-dialog-content>
+            <div style="margin:12px; width:400px; height:120px; background-color: white;" layout-padding flex>
+                <div layout='row'>
+                    <div style='margin-left:8px; width:300px;'>
+                      <ix-ad-lookup
+                        label="User"
+                        ng-Readonly="false"
+                        form="userNew.form"
+                        selected-Item="selectedUser"
+                        flex>
+                      </ix-ad-lookup>
+                    </div>
+                </div>
+            </div>
+        </md-dialog-content>
+        <md-dialog-actions layout="row" style="padding:0px 10px 4px 0px;">
+            <span flex></span>
+            <md-button class="md-raised md-accent" ng-click="answer(selectedUser)" ng-disabled="selectedUser === null">
+                Select
+            </md-button>
+            
+            <md-button class="md-raised md-accent" ng-click="answer({userName: '', displayName:'', title: ''})">
+                Cancel
+            </md-button>
+        </md-dialog-actions>
+    </form>
+</md-dialog>

@@ -1,0 +1,148 @@
+{
+    "elements": {
+        "md-expansion-panel-group": {
+            "attributes": {
+                "md-component-id": {},
+                "multiple": {}
+            }
+        },
+        "md-divider": {
+            "attributes": {
+                "style": {}
+            }
+        },
+        "md-tab-label": {},
+        "md-expansion-panel-content": {},
+        "md-tab": {},
+        "md-menu-divider": {},
+        "md-menu": {
+            "attributes": {
+                "md-offset": {},
+                "style": {}
+            }
+        },
+        "md-expansion-panel": {
+            "attributes": {
+                "md-component-id": {}
+            }
+        },
+        "md-list": {},
+        "md-expansion-panel-footer": {},
+        "md-content": {
+            "attributes": {
+                "layout-padding": {},
+                "style": {}
+            }
+        },
+        "md-expansion-panel-expanded": {},
+        "md-expansion-panel-collapsed": {},
+        "md-dialog-content": {},
+        "md-progress-linear": {
+            "attributes": {
+                "md-mode": {},
+                "class": {}
+            }
+        },
+        "md-dialog": {},
+        "md-menu-content": {},
+        "md-menu-item": {},
+        "md-button": {
+            "attributes": {
+                "ng-show": {},
+                "ng-click": {},
+                "md-no-ink": {},
+                "class": {},
+                "aria-label": {}
+            }
+        },
+        "md-virtual-repeat-container": {},
+        "md-expansion-panel-header": {
+            "attributes": {
+                "md-no-sticky": {}
+            }
+        },
+        "nvd3": {
+            "attributes": {
+                "data": {},
+                "options": {},
+                "config": {}
+            }
+        },
+        "md-toolbar": {
+            "attributes": {
+                "class": {}
+            }
+        },
+        "md-tabs": {},
+        "md-tooltip": {
+            "attributes": {
+                "md-direction": {}
+            }
+        },
+        "md-tab-body": {},
+        "md-item-template": {},
+        "md-expansion-panel-icon": {},
+        "ix-ad-lookup": {},
+        "md-autocomplete": {
+            "attributes": {
+                "md-input-name": {},
+                "md-require-match": {},
+                "md-clear-button": {},
+                "md-delay": {},
+                "md-search-text": {},
+                "required": {},
+                "md-item-text": {},
+                "md-input-minlength": {},
+                "md-input-maxlength": {},
+                "md-selected-item": {},
+                "ng-trim": {},
+                "name": {},
+                "ng-readonly": {},
+                "ng-required": {},
+                "md-floating-label": {},
+                "md-no-cache": {},
+                "md-items": {}
+            }
+        },
+        "md-input-container": {
+            "attributes": {
+                "ng-show": {},
+                "style": {}
+            }
+        },
+        "breadcrumbs": {}
+    },
+    "attributes": {
+        "md-menu-align-target": {
+            "context": "span"
+        },
+        "md-virtual-repeat": {},
+        "ng-style": {},
+        "ng-click": {},
+        "md-colors": {
+            "context": "tr"
+        },
+        "ui-view": {
+            "context": "div"
+        },
+        "ng-repeat": {},
+        "ui-sref": {
+            "context": "a"
+        },
+        "ng-disabled": {},
+        "layout": {
+            "context": "div"
+        },
+        "ng-show": {},
+        "md-whiteframe": {
+            "context": "div"
+        },
+        "flex": {
+            "context": "h5"
+        },
+        "md-highlight-text": {
+            "context": "span"
+        },
+        "width": {}
+    }
+}

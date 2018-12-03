@@ -1,0 +1,43 @@
+<style>
+  .highlight {
+    color: red;
+    background: #eee;
+    border: 1px solid red;
+    border-radius: 2px;
+    margin: -1px;
+  }
+</style>
+
+<div>
+  <md-autocomplete
+    name="adLookupAutoComplete"
+    md-input-name="adLookup"
+    md-input-minlength="3"
+    md-input-maxlength="50"
+    md-selected-item="selectedItem"
+    md-search-text="searchText"
+    md-items="item in adLookup(searchText)"
+    md-item-text="item.displayName"
+    md-require-match
+    md-no-cache="true"
+    md-floating-label={{label}}
+    ng-readonly="ngReadonly"
+    md-clear-button="false"
+    ng-trim="false"
+    md-delay="300"
+    ng-required='isRequired'>
+    <md-item-template>
+      <b><span style="display: block; line-height: 2;" md-highlight-text="searchText" md-highlight-flags="i">{{item.displayName}}</span></b>
+      <span style="display: block; line-height: 1;"><i>{{item.title}}</i></span>
+    </md-item-template>
+
+    <div ng-messages="form.adLookupAutoComplete.$error" role="alert">
+      <div ng-message="required">You <b>must</b> select a name</div>
+      <div ng-message="md-require-match">Please select an existing employee.</div>
+      <div ng-message="minlength">Your entry is not long enough.</div>
+      <div ng-message="maxlength">Your entry is too long.</div>
+    </div>
+  </md-autocomplete>
+
+  <md-tooltip md-direction="top">Start typing an employee name</md-tooltip>
+</div>

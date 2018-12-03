@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Capex Management System</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width">
+    <meta http-equiv="X-UA-Compatible" content="IE=11" />
+
+    <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
+    <!-- build:css(.) styles/vendor.css -->
+    <!-- bower:css -->
+    <link rel='stylesheet' href='bower_components/angular-material/angular-material.css' />
+    <link rel='stylesheet' href='bower_components/angular-loading-bar/build/loading-bar.css' />
+    <link rel='stylesheet' href='bower_components/angular-material-expansion-panel/dist/md-expansion-panel.css' />
+    <link rel='stylesheet' href='bower_components/bootstrap/dist/css/bootstrap.css' />
+    <!-- endbower -->
+    <!-- endbuild -->
+    <!-- build:css(.tmp) styles/main.css -->
+    <link rel="stylesheet" href="styles/main.css">
+    <!-- endbuild -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700,400italic">
+
+    <!-- <script src="env.js"></script> -->
+  </head>
+  <body ng-app="cpxUiApp">
+    <div ui-view>
+      <!--div ui-view-->
+      <div style="padding-top:50px;" class="container">
+        <img style="padding-bottom:50px;" src="IPEXLogo.png" alt="IPEX" >
+        <div class="jumbotron" md-whiteframe="6">
+          <h1>CPX</h1>
+          <h2>CAPEX<br> Management System  (RC1)</h2>
+          <div style="height: 35px"></div>
+          <md-progress-linear md-mode="indeterminate" class="md-hue-1"></md-progress-linear>
+          <h6>please wait...</h6>
+        </div>
+      </div>
+    </div>
+
+    <!-- build:js(.) scripts/vendor.js -->
+    <!-- bower:js -->
+    <script src="bower_components/jquery/dist/jquery.js"></script>
+    <script src="bower_components/angular/angular.js"></script>
+    <script src="bower_components/angular-animate/angular-animate.js"></script>
+    <script src="bower_components/angular-aria/angular-aria.js"></script>
+    <script src="bower_components/angular-cookies/angular-cookies.js"></script>
+    <script src="bower_components/angular-messages/angular-messages.js"></script>
+    <script src="bower_components/angular-resource/angular-resource.js"></script>
+    <script src="bower_components/angular-route/angular-route.js"></script>
+    <script src="bower_components/angular-sanitize/angular-sanitize.js"></script>
+    <script src="bower_components/angular-touch/angular-touch.js"></script>
+    <script src="bower_components/angular-material/angular-material.js"></script>
+    <script src="bower_components/angular-ui-router/release/angular-ui-router.js"></script>
+    <script src="bower_components/angular-loading-bar/build/loading-bar.js"></script>
+    <script src="bower_components/angular-material-expansion-panel/dist/md-expansion-panel.js"></script>
+    <script src="bower_components/bootstrap/dist/js/bootstrap.js"></script>
+    <!-- endbower -->
+    <!-- endbuild -->
+
+    <script src="bower_components/fusioncharts/fusioncharts.js"></script>
+    <script src="bower_components/angular-fusioncharts/angular-fusioncharts.min.js"></script>
+
+    <!-- Angular Material Fileinput -->
+    <link rel="stylesheet" href="bower_components/lf-ng-md-file-input/dist/lf-ng-md-file-input.css"/>
+    <script src="bower_components/lf-ng-md-file-input/dist/lf-ng-md-file-input.js"></script>
+
+    <!-- Angular FileSaver -->
+    <script src="bower_components/angular-file-saver/dist/angular-file-saver.bundle.js"></script>
+    <script src="bower_components/file-saver.js/FileSaver.js"></script>
+    <script src="bower_components/blob-polyfill/Blob.js"></script>
+
+    <!-- Angular Loading Bar -->
+    <link rel='stylesheet' href='bower_components/angular-loading-bar/build/loading-bar.min.css'/>
+    <script src='bower_components/angular-loading-bar/build/loading-bar.min.js'></script>
+
+    <!-- build:js({.tmp,app}) scripts/scripts.js -->
+    <script src="scripts/app.js"></script>
+
+    <!-- Controlers -->
+    <script src="scripts/controllers/about.js"></script>
+    <script src="scripts/controllers/adnamepicker.js"></script>
+    <script src="scripts/controllers/afe.action.js"></script>
+    <script src="scripts/controllers/afe.assets.js"></script>
+    <script src="scripts/controllers/afe.details.js"></script>
+    <script src="scripts/controllers/afe.edit.js"></script>
+    <script src="scripts/controllers/afe.header.js"></script>
+    <script src="scripts/controllers/afe.list.js"></script>
+    <script src="scripts/controllers/afe.overview.js"></script>
+    <script src="scripts/controllers/afe.phasing.js"></script>
+    <script src="scripts/controllers/afe.projectOverview.js"></script>
+    <script src="scripts/controllers/attachment.utility.js"></script>
+    <script src="scripts/controllers/breadcrumbs.directive.sctipt.js"></script>
+    <script src="scripts/controllers/breadcrumbs.js"></script>
+    <script src="scripts/controllers/breadcrumbs.menu.afe.js"></script>
+    <script src="scripts/controllers/breadcrumbs.menu.project.js"></script>
+    <script src="scripts/controllers/dashboard.action-items.js"></script>
+    <script src="scripts/controllers/dashboard.approval-list.js"></script>
+    <script src="scripts/controllers/dashboard.graph-overview.js"></script>
+    <script src="scripts/controllers/dashboard.js"></script>
+    <script src="scripts/controllers/dashboard.messages.js"></script>
+    <script src="scripts/controllers/main.js"></script>
+    <script src="scripts/controllers/menupanel.js"></script>
+    <script src="scripts/controllers/phasingamount.js"></script>
+    <script src="scripts/controllers/po.display.js"></script>
+    <script src="scripts/controllers/project.afelist.js"></script>
+    <script src="scripts/controllers/project.attachements.js"></script>
+    <script src="scripts/controllers/project.currentOverview.js"></script>
+    <script src="scripts/controllers/project.details.js"></script>
+    <script src="scripts/controllers/project.edit.js"></script>
+    <script src="scripts/controllers/project.list.js"></script>
+    <script src="scripts/controllers/project.overviewall.js"></script>
+    <script src="scripts/controllers/project.overview.js"></script>
+    <script src="scripts/controllers/project.phasing.js"></script>
+    <script src="scripts/controllers/project.transaction.create.js"></script>
+    <script src="scripts/controllers/project.transaction.details.js"></script>
+    <script src="scripts/controllers/project.transactions.js"></script>
+    <script src="scripts/controllers/search.simple.js"></script>
+    <script src="scripts/controllers/settings.currencies.js"></script>
+    <script src="scripts/controllers/settings.edit.js"></script>
+    <script src="scripts/controllers/settings.js"></script>
+    <script src="scripts/controllers/svdialogCtl.js"></script>
+    <script src="scripts/controllers/user.admin.js"></script>
+    <script src="scripts/controllers/users.new.dialog.js"></script>
+
+    <!-- Directives -->
+    <script src="scripts/directives/breadcrumbs.js"></script>
+    <script src="scripts/directives/ix-adlookup.js"></script>
+    <script src="scripts/directives/ix-attachments.js"></script>
+    <script src="scripts/directives/ix-budgetamount.js"></script>
+    <script src="scripts/directives/ix-currencyDisplay.js"></script>
+    <script src="scripts/directives/ix-currencyInput.js"></script>
+    <script src="scripts/directives/ix-phamount.js"></script>
+    <script src="scripts/directives/ix-poList.js"></script>
+    <script src="scripts/directives/ix-projectlookup.js"></script>
+    <script src="scripts/directives/ix-sec.js"></script>
+
+    <!-- Filters -->
+    <script src="scripts/filters/capitalize.js"></script>
+    <script src="scripts/filters/prjlistfilter.js"></script>
+
+    <!-- Services -->
+    <script src="scripts/services/assetsummary.js"></script>
+
+    <script src="scripts/services/res.actionItem.js"></script>
+    <script src="scripts/services/res.afe.actuals.js"></script>
+    <script src="scripts/services/res.afe.afe.js"></script>
+    <script src="scripts/services/res.afe.asset.js"></script>
+    <script src="scripts/services/res.afe.assets.js"></script>
+    <script src="scripts/services/res.afe.forecast.fullsummary.js"></script>
+    <script src="scripts/services/res.afe.forecast.js"></script>
+    <script src="scripts/services/res.afe.listByProject.js"></script>
+    <script src="scripts/services/res.afe.projectSummary.js"></script>
+    <script src="scripts/services/res.afe.sla.js"></script>
+    <script src="scripts/services/res.afe.status.js"></script>
+    <script src="scripts/services/res.afe.summary.js"></script>
+    <script src="scripts/services/res.afe.shortList.js"></script>
+
+    <script src="scripts/services/res.graph.afe.phasing.js"></script>
+    <script src="scripts/services/res.graph.prj.phasing.js"></script>
+
+    <script src="scripts/services/res.messages.js"></script>
+
+    <script src="scripts/services/res.po.details.js"></script>
+    <script src="scripts/services/res.po.lines.js"></script>
+    <script src="scripts/services/res.po.listByAfe.js"></script>
+    <script src="scripts/services/res.po.listByAsset.js"></script>
+    <script src="scripts/services/res.po.payments.js"></script>
+    <script src="scripts/services/res.po.receipt.js"></script>
+
+    <script src="scripts/services/res.prj.actuals.js"></script>
+    <script src="scripts/services/res.prj.budget.js"></script>
+    <script src="scripts/services/res.prj.budgetOwners.js"></script>
+    <script src="scripts/services/res.prj.byAfeNbr.js"></script>
+    <script src="scripts/services/res.prj.forecastEach.js"></script>
+    <script src="scripts/services/res.prj.forecastFullSummary.js"></script>
+    <script src="scripts/services/res.prj.forecast.js"></script>
+    <script src="scripts/services/res.prj.forecastSummary.js"></script>
+    <script src="scripts/services/res.prj.forecastYearAvailable.js"></script>
+    <script src="scripts/services/res.prj.List.js"></script>
+    <script src="scripts/services/res.prj.project.js"></script>
+    <script src="scripts/services/res.prj.shortList.js"></script>
+    <script src="scripts/services/res.prj.status.js"></script>
+    <script src="scripts/services/res.prj.summary.js"></script>
+    <script src="scripts/services/res.prj.transactions.js"></script>
+    <script src="scripts/services/res.prj.rpanel.info.js"></script>
+    
+
+    <script src="scripts/services/res.ref.aliaxisCategories.js"></script>
+    <script src="scripts/services/res.ref.aliaxisType.js"></script>
+    <script src="scripts/services/res.ref.analysis.js"></script>
+    <script src="scripts/services/res.ref.attachments.js"></script>
+    <script src="scripts/services/res.ref.attachmentTypes.js"></script>
+    <script src="scripts/services/res.ref.categories.js"></script>
+    <script src="scripts/services/res.ref.companies.js"></script>
+    <script src="scripts/services/res.ref.currencies.js"></script>
+    <script src="scripts/services/res.ref.currencyRate.js"></script>
+    <script src="scripts/services/res.ref.departments.js"></script>
+    <script src="scripts/services/res.ref.locations.js"></script>
+    <script src="scripts/services/res.ref.priorities.js"></script>
+    <script src="scripts/services/res.ref.subCategories.js"></script>
+
+    <script src="scripts/services/res.user.current.info.js"></script>
+    <script src="scripts/services/res.user.info.js"></script>
+    <script src="scripts/services/res.user.rolesByUser.js"></script>
+    <script src="scripts/services/res.user.roles.js"></script>
+    <script src="scripts/services/res.users.js"></script>
+
+    <script src="scripts/services/svc.afe.summary.js"></script>
+    <script src="scripts/services/svc.apiUrls.js"></script>
+    <script src="scripts/services/svc.app.busy.js"></script>
+    <script src="scripts/services/svc.appConfig.js"></script>
+    <script src="scripts/services/svc.afe.projectSummary.js"></script>
+    <script src="scripts/services/svc.crumbs.Info.js"></script>
+    <script src="scripts/services/svc.dialog.js"></script>
+    <script src="scripts/services/svc.dialog.NotAvailableAlert.js"></script>
+    <script src="scripts/services/svc.po.detail.js"></script>
+    <script src="scripts/services/svc.prj.listAccumulators.js"></script>
+    <script src="scripts/services/svc.prj.summary.js"></script>
+    <script src="scripts/services/svc.rate.selection.js"></script>
+    <script src="scripts/services/svc.rates.js"></script>
+    <script src="scripts/services/svc.references.js"></script>
+    <script src="scripts/services/svc.toast.js"></script>
+
+    <!-- endbuild -->
+  </body>
+</html>

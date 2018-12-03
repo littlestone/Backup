@@ -1,0 +1,36 @@
+<md-dialog>
+  <form ng-cloak>
+    <md-toolbar  class="md-primary md-hue-2">
+      <div class="md-toolbar-tools">
+        <h2>Settings</h2>
+      </div>
+    </md-toolbar>
+
+    <md-dialog-content>
+      <div class="md-dialog-content">
+        <md-switch class="md-accent md-hue-2">
+          <md-tooltip md-direction="top">
+            Messages will continue to appear in your message list
+          </md-tooltip>
+          Receive all e-mail notifications
+        </md-switch>
+        <md-switch class="md-accent md-hue-2">
+          <md-tooltip md-direction="top">
+            Messages will continue to appear in your message list
+          </md-tooltip>
+          Receive e-mail notification for approval requests only
+        </md-switch>
+      </div>
+    </md-dialog-content>
+
+    <md-dialog-actions layout="row">
+      <span flex></span>
+      <md-button ng-click="answer('Cancel')" class="md-raised md-accent">
+        Cancel
+      </md-button>
+      <md-button ng-click="answer('Save')" class="md-raised md-accent">
+        Save
+      </md-button>
+    </md-dialog-actions>
+  </form>
+</md-dialog>

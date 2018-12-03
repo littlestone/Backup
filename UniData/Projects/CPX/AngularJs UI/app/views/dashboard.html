@@ -1,0 +1,48 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Dashboard</title>
+    <style>
+      body {
+        background-color: lightgray;
+      }
+    </style>
+  </head>
+  <body>
+
+    <md-grid-list md-cols-gt-lg="12" md-cols-lg="12" md-cols-gt-md="8" md-gutter="8px" md-row-height="fit" style="height: 800px; margin: 12px;">
+      <md-grid-tile style="background-color: whitesmoke; border: 1px solid darkgray; border-radius: 5px;"  md-colspan="6" >
+        <md-grid-tile-header>
+          <div layout="row">
+            <div style="margin-left:5px;">Overview</div>
+            <div class="glyphicon glyphicon-option-vertical"></div>
+          </div>
+
+        </md-grid-tile-header>
+        <div style="margin-top:50px" ui-view="graph-overview"></div>
+      </md-grid-tile>
+      <md-grid-tile style="background-color: whitesmoke; border: 1px solid darkgray; border-radius: 5px;" md-colspan="6">
+        <md-grid-tile-header>
+          <div style="margin-left:5px;">Action Items</div>
+        </md-grid-tile-header>
+        <div style="margin-top:50px" ui-view="action-items"></div>
+      </md-grid-tile>
+
+      <md-grid-tile  style="background-color: whitesmoke; border: 1px solid darkgray; border-radius: 5px;" md-colspan="5">
+        <md-grid-tile-header>
+          <div style="margin-left:5px;">Approval Requests</div>
+        </md-grid-tile-header>
+        <div style="margin:8px;">No pending requests</div>
+      </md-grid-tile>
+
+      <md-grid-tile style="background-color: whitesmoke; border: 1px solid darkgray; border-radius: 5px;" md-colspan="7">
+        <md-grid-tile-header>
+          <div style="margin-left:5px;">Messages</div>
+        </md-grid-tile-header>
+        <div style="margin-top:50px" ui-view="messages" ></div>
+      </md-grid-tile>
+    </md-grid-list>
+
+  </body>
+</html>

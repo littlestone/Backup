@@ -1,0 +1,218 @@
+
+
+
+<!--<div style="height:300px;" layout="row">
+  <div style="padding:12px;" layout="column" flex="50">
+
+    <div layout="row">
+      <div flex="30">
+        <md-input-container>
+          <label>PO#</label>
+          <input type="text" ng-model="po.number" ng-readonly="true">
+        </md-input-container>
+      </div>
+      
+      <div layout="row" flex>
+        <div style="padding-left: 8px;" flex="50">
+          <md-input-container>
+            <label>PO Date</label>
+            <input type="text" ng-model="po.purchaseOrderDate" ng-readonly="true">
+          </md-input-container>
+        </div>
+        <div flex></div>
+        <h5 style="margin:30px 30px 0px 8px;" md-colors="{color: 'warn'}"><b>{{poStatus}}</b></h5>
+      </div>
+    </div>
+
+    <md-input-container style="margin-top:-4px;">
+      <label>Company</label>
+      <md-select ng-model="po.company" ng-readonly="true">
+        <md-option ng-repeat="x in companies" ng-value="x.id">
+          {{x.description}}
+        </md-option>
+      </md-select>
+    </md-input-container>
+    
+    <md-input-container>
+      <label>Location</label>
+      <md-select ng-model="po.warehouseCode" ng-readonly="true">
+        <md-option ng-repeat="x in locations" ng-value="x.id">
+          {{x.locationDescription}}
+        </md-option>
+      </md-select>
+    </md-input-container>
+
+    <div flex="30">
+      <md-input-container>
+        <label>Currency (rate)</label>
+        <input type="text" ng-model="po.currency + ' (' + po.rate.toString() + ')'" ng-readonly="true">
+      </md-input-container>
+    </div>
+    
+  </div>
+  <div style="padding:12px;" layout="column" flex="50">
+
+    <div style="border-style:solid; border-width:1px; border-color:gray; padding:8px; margin-top: 30px;">
+      
+      <div flex="30">
+        <md-input-container>
+          <label>Supplier #</label>
+          <input type="text" ng-model="po.supplierCode" ng-readonly="true">
+        </md-input-container>
+      </div>
+      
+      
+      <div style="margin-top:-20px;">
+        <div style="margin-bottom:5px;"><b>{{po.supplierName}}</b></div>
+        <div>{{po.addressLine1}}</div>
+        <div ng-if="po.addressLine2.length > 0">{{po.addressLine2}}</div>
+        <div ng-if="po.addressLine3.length > 0">{{po.addressLine3}}</div>
+        <div>{{po.cityCode}}, {{po.stateProvinceCode}}</div>
+        <div>{{po.countryCode}},<span style="margin-left:12px;">{{po.zipPostalCode}}</span></div>
+      </div>
+      
+    </div>
+  </div>
+</div>
+
+<div>
+  <md-tabs md-dynamic-height md-border-bottom  class="md-primary md-hue-1">
+    <md-tab>
+      <md-tab-label>
+        <b>Lines</b>
+      </md-tab-label>
+      <md-tab-body>
+        <div style="height:200px; background-color: lightblue;">
+          Lines
+        </div>
+      </md-tab-body>
+    </md-tab>
+    <md-tab>
+      <md-tab-label>
+        <b>Payments</b>
+      </md-tab-label>
+      <md-tab-body>
+        <div style="height:200px; background-color: lightsalmon;">
+          Payments
+        </div>
+      </md-tab-body>
+    </md-tab>
+    <md-tab>
+      <md-tab-label>
+        <b>Receipts</b>
+      </md-tab-label>
+      <md-tab-body>
+        <div style="height:200px; background-color: lightseagreen;">
+          Receipts
+        </div>
+      </md-tab-body>
+    </md-tab>
+  </md-tabs>
+</div>-->
+
+<h4 ng-click="showThePO()">Show PO</h4>
+
+
+
+
+
+<!--<md-content style="margin: 12px; border-color: darkgray; border-radius: 5px; border-width: 1px; border-style: solid; background-color: white" layout="column" md-whiteframe="3" ng-style="SettingsEditCtrl.contentStyle">
+
+  <div ui-view="userAdmin"></div>
+
+  <div layout="column" style="margin:12px; border-style: solid; border-width: 1px; width:500px; padding:8px;">
+    <md-input-container>
+      <label>Currency</label>
+      <md-select ng-model="selectedCurr" ng-change="bingo()">
+        <md-option ng-repeat="curr in currency" ng-value="curr.id">
+          {{curr.label}}
+        </md-option>
+      </md-select>
+    </md-input-container>
+  </div>
+
+  <div layout="column" style="margin:12px; border-style: solid; border-width: 1px; width:500px; padding:8px;">
+    <h4 style="margin-bottom:20px;">Currency Label</h4>
+
+    <md-input-container>
+      <label>Amount (CAD)</label>
+      <input ng-model="amount">
+    </md-input-container>
+
+    <div layout="row">
+      Amount ({{currency[selectedCurr].label}}):
+      <ix-currency-display
+        ng-model="amount"
+        rate="currency[selectedCurr].to[0]">
+      </ix-currency-display>
+    </div>
+  </div>
+
+  <div layout="column" style="margin:12px; border-style: solid; border-width: 1px; width:500px; padding:8px;">
+    <h4 style="margin-bottom:20px;">Currency Input</h4>
+
+    <ix-currency-input
+      label="Amount in currency"
+      tooltip="Enter an amount in currency"
+      rate-from="{{currency[selectedCurr].from[0]}}"
+      rate-to="{{currency[selectedCurr].to[0]}}"
+      ng-model="currModel"
+      refresh="refreshAmounts()">
+    </ix-currency-input>
+
+    <div>
+      Amount (CAD): {{currModel | currency}}
+    </div>
+    <div style="width:50px; margin-top:20px;">
+      <md-button class="md-raised md-primary" ng-click="refreshAmounts.refresh()">
+        <md-tooltip md-direction="top">Trying to avoid listeners because of the performance cost</md-tooltip>
+        Refresh
+      </md-button>
+    </div>
+  </div>
+
+  <div layout="row">
+    <div flex></div>
+    <div style="margin-right:5px;">
+      <md-button class="md-raised md-accent" ng-click="SaveData()" ng-disabled="!cProjectDetails.form.$dirty || !cProjectDetails.form.$valid">
+        <md-tooltip md-direction="top">Save settings</md-tooltip>
+        Save
+      </md-button>
+      <md-button class="md-raised md-accent" ng-click="cancelEdit()" ng-disabled="!cProjectDetails.form.$dirty">
+        <md-tooltip md-direction="top">Cancel the changes</md-tooltip>
+        Cancel
+      </md-button>
+    </div>
+  </div>
+</md-content>-->
+
+<!--<md-content style="height:658px; margin: 12px; border-color: darkgray; border-radius: 5px; border-width: 1px; border-style: solid; background-color: white" layout="row" md-whiteframe="3" ng-style="contentStyle">
+     <div style="width:150px; border-style: solid; border-width: 0px 1px 0px 0px;" md-colors="{'border-color': 'primary'}">
+     <div style="margin-top:-12px; height:65px; border-style: solid; border-width: 0px 0px 1px 0px;" md-colors="{'border-color': 'primary', 'background': 'primary'}">
+     <div style="padding:27px 0px 0px 45px;" md-colors="{'color': 'accent'}">Settings</div>
+     </div>
+     <div style="margin:10px 0px 10px 0px;">
+     <a ui-sref="userAdmin" style="margin:10px 0px 10px 12px;">
+     Application Settings
+     </a>
+     </div>
+     <md-divider></md-divider>
+     <div style="margin:10px 0px 10px 0px;">
+     <a ui-sref="userAdmin" style="margin:10px 0px 10px 12px;">
+     User Administration
+     </a>
+     </div>
+     <md-divider></md-divider>
+     <div style="margin:10px 0px 10px 0px;">
+     <a ui-sref="currencies" style="margin:10px 0px 10px 12px;">
+     Currencies
+     </a>
+     </div>
+     <md-divider></md-divider>
+     </div>
+     <div flex>
+     <div ui-view>
+
+     </div>
+     </div>
+     </md-content>-->

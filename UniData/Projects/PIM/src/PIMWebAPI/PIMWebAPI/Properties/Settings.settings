@@ -1,0 +1,145 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="PIMWebAPI.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="UD_USERID" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">webusr</Value>
+    </Setting>
+    <Setting Name="UD_PASSWORD" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">userws</Value>
+    </Setting>
+    <Setting Name="UD_HOSTNAME" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">erp.corpservices.local</Value>
+    </Setting>
+    <Setting Name="UD_ACCOUNT" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">DEV</Value>
+    </Setting>
+    <Setting Name="UD_SERVER_TYPE" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">UNIDATA</Value>
+    </Setting>
+    <Setting Name="UD_ACCESS_MODE" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">Native</Value>
+    </Setting>
+    <Setting Name="UD_RPC_SERVICE_TYPE" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">udcs</Value>
+    </Setting>
+    <Setting Name="PIM_FileTimestampFormat" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">yyyyMMddHHmmssfff</Value>
+    </Setting>
+    <Setting Name="PIM_SaveFilePrefixName" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">request_</Value>
+    </Setting>
+    <Setting Name="PIM_SaveFileExtensionNameXml" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">.xml</Value>
+    </Setting>
+    <Setting Name="PIM_ErrorFilePrefixName" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">oops_</Value>
+    </Setting>
+    <Setting Name="PIM_ErrorFileExtensionName" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">.err</Value>
+    </Setting>
+    <Setting Name="PIM_SaveFileEnabled" Type="System.Boolean" Scope="Application">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="PIM_LogFileEnabled" Type="System.Boolean" Scope="Application">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="PIM_ErrorFileEnabled" Type="System.Boolean" Scope="Application">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="ERP_ProductItemTypeCodeList" Type="System.Collections.Specialized.StringCollection" Scope="Application">
+      <Value Profile="(Default)">&lt;?xml version="1.0" encoding="utf-16"?&gt;
+&lt;ArrayOfString xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"&gt;
+  &lt;string&gt;0&lt;/string&gt;
+  &lt;string&gt;1&lt;/string&gt;
+  &lt;string&gt;2&lt;/string&gt;
+  &lt;string&gt;3&lt;/string&gt;
+  &lt;string&gt;4&lt;/string&gt;
+  &lt;string&gt;5&lt;/string&gt;
+  &lt;string&gt;6&lt;/string&gt;
+  &lt;string&gt;7&lt;/string&gt;
+  &lt;string&gt;8&lt;/string&gt;
+  &lt;string&gt;9&lt;/string&gt;
+  &lt;string&gt;A&lt;/string&gt;
+  &lt;string&gt;C&lt;/string&gt;
+  &lt;string&gt;D&lt;/string&gt;
+  &lt;string&gt;M&lt;/string&gt;
+  &lt;string&gt;W&lt;/string&gt;
+&lt;/ArrayOfString&gt;</Value>
+    </Setting>
+    <Setting Name="ERP_ProductCpnLength" Type="System.Int32" Scope="Application">
+      <Value Profile="(Default)">5</Value>
+    </Setting>
+    <Setting Name="PIM_SaveFileExtensionName_Json" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">.json</Value>
+    </Setting>
+    <Setting Name="ERP_ProductUpcLength" Type="System.Int32" Scope="Application">
+      <Value Profile="(Default)">12</Value>
+    </Setting>
+    <Setting Name="PIM_Http_MediaType_Accept" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">text/xml</Value>
+    </Setting>
+    <Setting Name="PIM_Http_AuthHeader_Schema" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">Basic</Value>
+    </Setting>
+    <Setting Name="PIM_Http_AuthHeader_Parameter" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">Q29ycFdlYkFQSTpQSU0yMDE2</Value>
+    </Setting>
+    <Setting Name="PIM_Http_Restapi_Service_Uri" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">restapi/integrationendpoints/InfofloNewProduct/upload?context=Context1&amp;workspace=Main</Value>
+    </Setting>
+    <Setting Name="PIM_StepXml_RootElementName" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">STEP-ProductInformation</Value>
+    </Setting>
+    <Setting Name="PIM_SaveFileExtensionName_Xml" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">.xml</Value>
+    </Setting>
+    <Setting Name="PIM_Http_UserHostName" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">10.6.6.31</Value>
+    </Setting>
+    <Setting Name="ERP_Http_UserHostName" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">10.1.1.1</Value>
+    </Setting>
+    <Setting Name="DEBUG_Http_UserAgentName" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">Fiddler</Value>
+    </Setting>
+    <Setting Name="UD_BASIC_PROGRAM" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">PIMS9100.1|3</Value>
+    </Setting>
+    <Setting Name="PIM_ProductIdPrefix" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">PRD</Value>
+    </Setting>
+    <Setting Name="PIM_Outbound_QueueFolderPath" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">C:\hotfolders\PIMWebAPI\DEV\data\outbound\queue</Value>
+    </Setting>
+    <Setting Name="PIM_Outbound_SaveFolderPath" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">C:\hotfolders\PIMWebAPI\DEV\data\outbound\save</Value>
+    </Setting>
+    <Setting Name="PIM_Outbound_ErrorFolderPath" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">C:\hotfolders\PIMWebAPI\DEV\data\outbound\failed</Value>
+    </Setting>
+    <Setting Name="PIM_Http_BaseAddress_Uri" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">http://dev.step.intranet.local/</Value>
+    </Setting>
+    <Setting Name="DEBUG_HttpUserHostNameList" Type="System.Collections.Specialized.StringCollection" Scope="Application">
+      <Value Profile="(Default)">&lt;?xml version="1.0" encoding="utf-16"?&gt;
+&lt;ArrayOfString xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"&gt;
+  &lt;string&gt;10.130.8.72&lt;/string&gt;
+  &lt;string&gt;10.130.8.179&lt;/string&gt;
+  &lt;string&gt;10.131.34.8&lt;/string&gt;
+  &lt;string&gt;10.131.35.4&lt;/string&gt;
+  &lt;string&gt;::1&lt;/string&gt;
+  &lt;string&gt;localhost&lt;/string&gt;
+&lt;/ArrayOfString&gt;</Value>
+    </Setting>
+    <Setting Name="PIM_Inbound_QueueFolderPath" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">C:\hotfolders\PIMWebAPI\DEV\data\Inbound\queue</Value>
+    </Setting>
+    <Setting Name="PIM_Inbound_SaveFolderPath" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">C:\hotfolders\PIMWebAPI\DEV\data\Inbound\save</Value>
+    </Setting>
+    <Setting Name="PIM_Inbound_ErrorFolderPath" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">C:\hotfolders\PIMWebAPI\DEV\data\Inbound\failed</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>

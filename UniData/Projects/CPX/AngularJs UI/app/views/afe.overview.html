@@ -1,0 +1,169 @@
+<div style="padding-left: 12px;" ng-show="true">
+  <div style="margin-right:8px;">
+    <div layout="row">
+      
+      
+      <div style="font-size: 12px; margin-right:4px;" layout="row">
+        <span style="margin:22px 4px 0px 0px;">Currency</span>
+        <md-input-container style="margin-top:12px">
+          <md-select ng-model="selectedCurr" ng-change="refreshCurrency()">
+            <md-option ng-repeat="curr in currency" ng-value="curr.id">
+              {{curr.code}}
+            </md-option>
+          </md-select>
+        </md-input-container>
+      </div>
+
+      
+      <div flex></div>
+      <div style="margin-right: 12px;">
+        <md-switch ng-model="panelsExpanded" aria-label="ShowDetail" md-invert ng-change="expandOVPanel(panelsExpanded)">
+          <div style="font-size: 11px;">Show Detail</div>
+        </md-switch>
+      </div>
+    </div>
+
+    <md-expansion-panel md-component-id="budget">
+      <md-expansion-panel-collapsed>
+        <md-tooltip md-direction="top">Click to show detail</md-tooltip>
+        <div style="font-size: 10px;"><span style="margin-right:2px;"><b>Budget ({{budgetYear}}) :</b></span>
+          <ix-currency-display ng-value={{cAfeOverview.afeSummary.bud()}} rate={{currentRate()}}></ix-currency-display>
+        </div>
+
+      </md-expansion-panel-collapsed>
+
+      <md-expansion-panel-expanded>
+        <md-expansion-panel-header ng-click="cAfeOverview.collapsePanel($panel)">
+          <md-tooltip md-direction="top">Click to hide detail</md-tooltip>
+          <div style="font-size: 10px;" >
+            <span style="margin-right:2px;">
+              <b>Budget ({{budgetYear}}) :</b>
+            </span>
+            <span>
+              <ix-currency-display ng-value={{cAfeOverview.afeSummary.bud()}} rate={{currentRate()}}></ix-currency-display>
+            </span>
+          </div>
+        </md-expansion-panel-header>
+        <md-expansion-panel-content ng-click="cAfeOverview.collapsePanel($panel)">
+          <table style="font-size: 10px; margin-left: 10px;">
+            <md-tooltip md-direction="bottom">Budget = Original Amt + Supplementals - Next Year - Previous years</md-tooltip>
+            <tr>
+              <td><div><i><b>Original Amt :</b></i></div></td>
+              <td><div><i><ix-currency-display ng-value={{cAfeOverview.afeSummary.afeTotalAmt}} rate={{currentRate()}}></ix-currency-display></i></div></td>
+            </tr>
+            <tr>
+              <td><div style="margin-top:6px;"><i><b>Supplementals :</b></i></div></td>
+              <td><div style="margin-top:6px;"><i><ix-currency-display ng-value={{cAfeOverview.afeSummary.afeSupplementals}} rate={{currentRate()}}></ix-currency-display></i></div></td>
+            </tr>
+            <tr>
+              <td><div style="margin-right:4px; margin-top:6px;"><i><b>Prev. years :</b></i></div></td>
+              <td><div style="margin-top:6px;"><i><ix-currency-display ng-value={{cAfeOverview.afeSummary.afePrevYear}} rate={{currentRate()}}></ix-currency-display></i></div></td>
+            </tr>
+            <tr>
+              <td><div style="margin-top:6px;"><i><b>Next Year :</b></i></div></td>
+              <td><div style="margin-top:6px;"><i><ix-currency-display ng-value={{cAfeOverview.afeSummary.afeNextYrPhasing}} rate={{currentRate()}}></ix-currency-display></i></div></td>
+            </tr>
+          </table>
+        </md-expansion-panel-content>
+      </md-expansion-panel-expanded>
+    </md-expansion-panel>
+
+
+    <md-expansion-panel md-component-id="PhasingAmount">
+      <md-expansion-panel-collapsed>
+        <md-tooltip md-direction="top">Click to show detail</md-tooltip>
+        <div style="font-size: 10px;">
+          <span style="margin-right:2px;"><b>Yearly Phasing. :</b></span>
+          <ix-currency-display ng-value={{cAfeOverview.afeSummary.yrlPhasing()}} rate={{currentRate()}}></ix-currency-display>
+        </div>
+      </md-expansion-panel-collapsed>
+      <md-expansion-panel-expanded>
+        <md-expansion-panel-header ng-click="cAfeOverview.collapsePanel($panel)">
+          <md-tooltip md-direction="top">Click to hide detail</md-tooltip>
+          <div style="font-size: 10px;">
+            <span style="margin-right:2px;">
+              <b>Yearly Phasing :</b>
+            </span>
+            <span>
+              <ix-currency-display ng-value={{cAfeOverview.afeSummary.yrlPhasing()}} rate={{currentRate()}}></ix-currency-display>
+            </span>
+          </div>
+        </md-expansion-panel-header>
+        <md-expansion-panel-content ng-click="cAfeOverview.collapsePanel($panel)">
+          <table style="font-size: 10px; margin-left: 10px;">
+            <md-tooltip md-direction="bottom">Yearly Phasing = Actual Amount + Forecasted Amount</md-tooltip>
+            <tr>
+              <td><span style="margin-right:4px;"><i><b>Actual Amt. :</b></i></span></td>
+              <td><i><ix-currency-display ng-value={{cAfeOverview.afeSummary.afeActual}} rate={{currentRate()}}></ix-currency-display></i></td>
+            </tr>
+            <tr>
+              <td><div style="margin-top:6px;"><i><b>Forecasted Amt. :</b></i></div></td>
+              <td><div style="margin-top:6px;"><i><ix-currency-display ng-value={{cAfeOverview.afeSummary.afeCurrentYrForecast}} rate={{currentRate()}}></ix-currency-display></i></div></td>
+            </tr>
+          </table>
+        </md-expansion-panel-content>
+      </md-expansion-panel-expanded>
+    </md-expansion-panel>
+
+    <md-expansion-panel md-component-id="availableToForecast">
+      <md-expansion-panel-collapsed ng-style="cAfeOverview.afeSummary.available() < 0 ? {'background-color': 'red', 'color': 'white'}: {'background-color': 'white', 'color': 'black'}">
+        <md-tooltip md-direction="bottom">Avail. to Forecast = Revised Amt. - Unavailable Amt. - Yearly Phasing</md-tooltip>
+        <div style="font-size: 10px;">
+          <span style="margin-right:2px;"><b>Avail. to Forecast :</b></span>
+          <ix-currency-display ng-value={{cAfeOverview.afeSummary.available()}} rate={{currentRate()}}></ix-currency-display>
+        </div>
+      </md-expansion-panel-collapsed>
+
+      <md-expansion-panel-expanded>
+        <md-expansion-panel-header ng-click="cAfeOverview.collapsePanel($panel)">
+          <md-tooltip md-direction="bottom">Avail. to Forecast = Budget - Yearly Phasing</md-tooltip>
+          <div style="font-size: 10px;" ng-style="cAfeOverview.afeSummary.available() < 0 ? {'color': 'red'}: {'color': 'black'}"><span style="margin-right:2px;"><b>Avail. to Forecast :</b></span>
+            <ix-currency-display ng-value={{cAfeOverview.afeSummary.available()}} rate={{currentRate()}}></ix-currency-display>
+          </div>
+        </md-expansion-panel-header>
+      </md-expansion-panel-expanded>
+    </md-expansion-panel>
+
+    <md-expansion-panel md-component-id="poAmount">
+      <md-expansion-panel-collapsed>
+        <md-tooltip md-direction="top">Click to show detail</md-tooltip>
+        <div style="font-size: 10px;">
+          <span style="margin-right:2px;"><b>P.O. Amount :</b></span>
+          N/A
+        </div>
+      </md-expansion-panel-collapsed>
+      <md-expansion-panel-expanded>
+        <md-expansion-panel-header ng-click="cAfeOverview.collapsePanel($panel)">
+          <md-tooltip md-direction="top">Click to hide detail</md-tooltip>
+          <div style="font-size: 10px;">
+            <span style="margin-right:2px;">
+              <b>P.O. Amount :</b>
+            </span>
+            <span>
+              N/A
+            </span>
+          </div>
+        </md-expansion-panel-header>
+        <md-expansion-panel-content ng-click="cAfeOverview.collapsePanel($panel)">
+          <table style="font-size: 10px; margin-left: 10px;">
+            <tr>
+              <td><div style="margin-top:6px;"><i><b>P.O. committed :</b></i></div></td>
+              <!--                            <td><div style="margin-top:6px;"><i>{{cAfeOverview.afeSummary.afePoCommited | currency}}</i></div></td>-->
+              <td><div style="margin-top:6px;"><i>N/A</i></div></td>
+            </tr>
+            <tr>
+              <td><div style="margin-top:6px;"><i><b>P.O. received :</b></i></div></td>
+              <!--                            <td><div style="margin-top:6px;"><i>{{cAfeOverview.afeSummary.afePoReceived | currency}}</i></div></td>-->
+              <td><div style="margin-top:6px;"><i>N/A</i></div></td>
+            </tr>
+            <tr>
+              <td><div style="margin-top:6px;"><i><b>P.O. payment :</b></i></div></td>
+              <!--                            <td><div style="margin-top:6px;"><i>{{cAfeOverview.afeSummary.afePOPayment | currency}}</i></div></td>-->
+              <td><div style="margin-top:6px;"><i>N/A</i></div></td>
+            </tr>
+          </table>
+        </md-expansion-panel-content>
+      </md-expansion-panel-expanded>
+    </md-expansion-panel>
+  </div>
+</div>

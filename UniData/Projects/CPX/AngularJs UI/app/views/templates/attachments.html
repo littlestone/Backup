@@ -1,0 +1,77 @@
+<form name="attachmentsForm" layout="column" novalidate ng-cloak>
+  <md-toolbar>
+    <div class="md-toolbar-tools">
+      <h5>Attachments Utility</h5>
+      <span flex></span>
+      <md-switch ng-model="showAttach" aria-label="SwitchShowAttach" style="margin-right: 12px;" md-invert ng-show="uploadEnabled">
+        <div style="font-size: 11px;">Attach file</div>
+      </md-switch>
+    </div>
+    <div ng-show="inProgress">
+      <md-progress-linear class="md-raised md-accent" md-mode="indeterminate" ng-disabled="false"></md-progress-linear>
+    </div>
+  </md-toolbar>
+  <md-content style="background-color: white;">
+    <div flex layout="column">
+      <div style="margin: 0px 6px 0px 6px;" layout="row">
+        <md-list style="height: 230px" class="md-dense" flex ng-show="curAttachments.length">
+          <md-list-item class="md-3-line" ng-repeat="attachment in curAttachments" ng-click="null">
+            <div layout="row" flex="100">
+              <div>
+                <span style="margin-right: 10px;" class="glyphicon glyphicon-usd"></span>
+                <md-tooltip md-direction="top">{{attachment.entityTypeDesc}}</md-tooltip>
+              </div>
+              <div class="md-list-item-text" layout="column">
+                <h3><b>Title - {{attachment.attachmentTypeDesc}}</b> <i>({{attachment.fileName}})</i></h3>
+                <h4>Added by: {{attachment.createdByFullName}} on {{attachment.createdOn | date:"MM/dd/yyyy 'at' h:mma"}}</h4>
+                <h4>{{attachment.description}}</h4>
+              </div>
+              <md-button class="md-icon-button" ng-click="download(attachment.id)" ng-show="downloadEnabled">
+                <span class="glyphicon glyphicon-download-alt"></span>
+                <md-tooltip md-direction="top">download</md-tooltip>
+              </md-button>
+              <md-button class="md-icon-button" ng-click="delete(attachment.id)" ng-show="deleteEnabled">
+                <span class="glyphicon glyphicon-remove"></span>
+                <md-tooltip md-direction="top">delete</md-tooltip>
+              </md-button>
+            </div>
+          </md-list-item>
+        </md-list>
+        <p ng-hide="curAttachments.length || showAttach || inProgress">No attachemt is currently avaliable....</p>
+      </div>
+    </div>
+    <div style="margin: 6px 12px 0px 12px; height: 250px" layout="row" ng-show="uploadEnabled && showAttach">
+      <div flex layout="column">
+        <div layout="row">
+          <div flex layout="column">
+            <md-input-container autofocus="true">
+              <label>Attachment Type</label>
+              <md-select ng-model="selectedAttachmentTypeId" required>
+                <!-- <md-option><em>None</em></md-option> -->
+                <md-option ng-repeat="type in attachmentType | filter: {id: attachmentTypeId}" ng-value="type.id" ng-selected="$index === 0">
+                  {{type.description}}
+                </md-option>
+              </md-select>
+            </md-input-container>
+          </div>
+        </div>
+        <div layout="row">
+          <div flex layout="column">
+            <md-input-container autofocus="true">
+              <label>Short Description</label>
+              <input ng-model="fileDescription" maxlength="200">
+            </md-input-container>
+          </div>
+        </div>
+        <div flex layout="row">
+          <div flex layout="column">
+            <lf-ng-md-file-input name="lf" lf-submit-label="Save" lf-files="files" lf-api="lfApi" lf-required lf-filesize="10MB" progress submit lf-on-submit-click="upload"></lf-ng-md-file-input>
+            <div ng-messages="attachmentsForm.lf.$error" style="color:red;">
+              <div ng-message="filesize">File size too large, maximum 10MB is allowed.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </md-content>
+</form>

@@ -1,0 +1,256 @@
+<!-- <div  style="height:658px; margin: 12px; border-color: darkgray; border-radius: 5px; border-width: 1px; border-style: solid; background-color: white" layout="row" md-whiteframe="3" ng-style="contentStyle"> -->
+
+<div style="height:353px; border-color: darkgray; border-style: solid; border-width: 1px; border-radius: 5px; margin:24px 12px 0px 12px;" flex>
+  <!-- <div style="height:353px; border-color: darkgray; border-style: solid; border-width: 1px; border-radius: 5px; margin:auto;" flex="50"> -->
+  <div style="height:50px; background-color: lightgray;" layout="column">
+    <div layout="row">
+      <h5 style="margin-top:8px; padding-top:8px;margin-left:4px;" flex>Budget Rates</h5>
+      <md-menu>
+        <md-button aria-label="TransactionMenu" class="md-icon-button" ng-click="$mdOpenMenu()">
+          <span class="glyphicon glyphicon-option-vertical"></span>
+          <md-tooltip md-direction="top">Menu</md-tooltip>
+        </md-button>
+        <md-menu-content width="4">
+          <md-menu-item>
+            <md-button ng-click="null"><span class="glyphicon glyphicon-refresh"></span> <span md-menu-align-target>Refresh</span></md-button>
+          </md-menu-item>
+        </md-menu-content>
+      </md-menu>
+    </div>
+  </div>
+
+  <md-content style="height:300px;">
+    <md-expansion-panel-group md-component-id="budgetRateGrp">
+      <md-expansion-panel md-component-id=1>
+        <md-expansion-panel-collapsed>
+          <table class="table table-condensed">
+            <tbody>
+              <tr>
+                <td>From: USD</td>
+                <td>To: CAD</td>
+                <td>Rate: 1.32</td>
+                <td>Effective Date: 2017/11/01</td>
+              </tr>
+            </tbody>
+          </table>
+        </md-expansion-panel-collapsed>
+
+        <md-expansion-panel-expanded>
+          <md-expansion-panel-header>
+            <div class="md-summary" layout="row">
+              <md-input-container flex="20">
+                <label>From</label>
+                <md-select name="from" ng-model="project.from" required>
+                  <md-option value="CAD">CAD</md-option>
+                  <md-option value="USD">USD</md-option>
+                  <md-option value="EUR">EUR</md-option>
+                </md-select>
+              </md-input-container>
+
+              <md-input-container flex="20">
+                <label>To</label>
+                <md-select name="to" ng-model="project.to" required>
+                  <md-option value="CAD">CAD</md-option>
+                  <md-option value="USD">USD</md-option>
+                  <md-option value="EUR">EUR</md-option>
+                </md-select>
+              </md-input-container>
+
+              <div flex="20" style="margin:22px 0px 0px 8px;">
+                <md-input-container>
+                  <label>Rate</label>
+                  <input type="text" ng-model="iRate" ng-readonly='false'>
+                </md-input-container>
+              </div>
+
+              <div flex="20" style="margin:10px 0px 0px -58px;">
+                <md-input-container>
+                  <label>Effective</label>
+                  <md-datepicker ng-model="effectiveDate"></md-datepicker>
+                </md-input-container>
+              </div>
+
+              <div flex="5" style="margin:30px 8px 0px 8px;">
+                <md-button class="md-icon-button" md-mini ng-click="showNotAvailableAlert()">
+                  <span class="glyphicon glyphicon-ok"></span>
+                </md-button>
+              </div>
+
+              <div flex="5" style="margin:30px 0px 0px 0px;">
+                <md-button class="md-icon-button" ng-click="showNotAvailableAlert()">
+                  <span class="glyphicon glyphicon-remove"></span>
+                </md-button>
+              </div>
+            </div>
+          </md-expansion-panel-header>
+
+          <md-expansion-panel-content>
+            <table class="table table-condensed table-bordered">
+              <thead>
+                <tr md-colors="{background: 'primary-50'}">
+                  <th>From</th>
+                  <th>To</th>
+                  <th>Rate</th>
+                  <th>Effective Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>USD</td>
+                  <td>CAD</td>
+                  <td>1.32</td>
+                  <td>2017/11/01</td>
+                </tr>
+                <tr>
+                  <td>USD</td>
+                  <td>CAD</td>
+                  <td>1.29</td>
+                  <td>2017/10/01</td>
+                </tr>
+              </tbody>
+            </table>
+          </md-expansion-panel-content>
+        </md-expansion-panel-expanded>
+      </md-expansion-panel>
+    </md-expansion-panel-group>
+
+    <md-expansion-panel-group md-component-id="budgetRateGrp">
+      <md-expansion-panel md-component-id=1>
+        <md-expansion-panel-collapsed>
+          <table class="table table-condensed">
+            <tbody>
+              <tr>
+                <td>From: CAD</td>
+                <td>To: USD</td>
+                <td>Rate: 0.80</td>
+                <td>Effective Date: 2017/11/01</td>
+              </tr>
+            </tbody>
+          </table>
+        </md-expansion-panel-collapsed>
+
+        <md-expansion-panel-expanded>
+          <md-expansion-panel-header>
+            <div class="md-summary" layout="row">
+              <md-input-container flex="20">
+                <label>From</label>
+                <md-select name="from" ng-model="project.from" required>
+                  <md-option value="CAD">CAD</md-option>
+                  <md-option value="USD">USD</md-option>
+                  <md-option value="EUR">EUR</md-option>
+                </md-select>
+              </md-input-container>
+
+              <md-input-container flex="20">
+                <label>To</label>
+                <md-select name="to" ng-model="project.to" required>
+                  <md-option value="CAD">CAD</md-option>
+                  <md-option value="USD">USD</md-option>
+                  <md-option value="EUR">EUR</md-option>
+                </md-select>
+              </md-input-container>
+
+              <div flex="20" style="margin:22px 0px 0px 8px;">
+                <md-input-container>
+                  <label>Rate</label>
+                  <input type="text" ng-model="iRate" ng-readonly='false'>
+                </md-input-container>
+              </div>
+
+              <div flex="20" style="margin:10px 0px 0px -58px;">
+                <md-input-container>
+                  <label>Effective</label>
+                  <md-datepicker ng-model="effectiveDate"></md-datepicker>
+                </md-input-container>
+              </div>
+
+              <div flex="5" style="margin:30px 8px 0px 8px;">
+                <md-button class="md-icon-button" md-mini ng-click="showNotAvailableAlert()">
+                  <span class="glyphicon glyphicon-ok"></span>
+                </md-button>
+              </div>
+
+              <div flex="5" style="margin:30px 0px 0px 0px;">
+                <md-button class="md-icon-button" ng-click="showNotAvailableAlert()">
+                  <span class="glyphicon glyphicon-remove"></span>
+                </md-button>
+              </div>
+            </div>
+          </md-expansion-panel-header>
+
+          <md-expansion-panel-content>
+            <table class="table table-condensed table-bordered">
+              <thead>
+                <tr md-colors="{background: 'primary-50'}">
+                  <th>From</th>
+                  <th>To</th>
+                  <th>Rate</th>
+                  <th>Effective Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>USD</td>
+                  <td>CAD</td>
+                  <td>1.32</td>
+                  <td>2017/10/01</td>
+                </tr>
+                <tr>
+                  <td>USD</td>
+                  <td>CAD</td>
+                  <td>1.29</td>
+                  <td>2017/09/01</td>
+                </tr>
+              </tbody>
+            </table>
+          </md-expansion-panel-content>
+        </md-expansion-panel-expanded>
+      </md-expansion-panel>
+
+      <md-expansion-panel md-component-id=2>
+        <md-expansion-panel-collapsed>
+          <table class="table table-condensed">
+            <tbody>
+              <tr>
+                <td>From: CAD</td>
+                <td>To: EUR</td>
+                <td>Rate: 0.77</td>
+                <td>Effective Date: 2017/11/01</td>
+              </tr>
+            </tbody>
+          </table>
+        </md-expansion-panel-collapsed>
+
+        <md-expansion-panel-expanded>
+          <md-expansion-panel-content>
+            <table class="table table-condensed table-bordered">
+              <thead>
+                <tr md-colors="{background: 'primary-50'}">
+                  <th>From</th>
+                  <th>To</th>
+                  <th>Rate</th>
+                  <th>Effective Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>CAD</td>
+                  <td>USD</td>
+                  <td>0.80</td>
+                  <td>2017/10/01</td>
+                </tr>
+                <tr>
+                  <td>CAD</td>
+                  <td>USD</td>
+                  <td>0.78</td>
+                  <td>2017/09/01</td>
+                </tr>
+              </tbody>
+            </table>
+          </md-expansion-panel-content>
+        </md-expansion-panel-expanded>
+      </md-expansion-panel>
+    </md-expansion-panel-group>
+  </md-content>
+</div>
+<!-- </div> -->

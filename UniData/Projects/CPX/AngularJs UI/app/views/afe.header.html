@@ -1,0 +1,200 @@
+<form name="cAfeHeader.form">
+
+  <md-content style="height:658px; margin: 12px; padding:8px; border-color: darkgray; border-radius: 8px; border-width: 1px; border-style: solid; background-color: white" layout="column" md-whiteframe="3" ng-style="cAfeHeader.contentStyle">
+    <div style="height:80px; margin-bottom: 8px;" layout="row">
+      <div flex="25" layout='column' style="margin-right: 24px;">
+        <md-input-container md-no-float>
+          <label>AFE#</label>
+          <input id="0" type="text" ng-model="cAfeHeader.afe.afeNumber" ix-sec="{{secmsk}}">
+        </md-input-container>
+      </div>
+      <div flex="75" layout='column'>
+        <md-input-container md-no-float>
+          <label>Description</label>
+          <input name="description" id="1" type="text" ng-model="cAfeHeader.afe.title" ix-sec="{{secmsk}}" required>
+          <div ng-messages="cAfeHeader.form.description.$error" role="alert">
+            <div ng-message="required" class="my-message">Please provide a description.</div>
+          </div>
+        </md-input-container>
+      </div>
+
+      <div layout='column'>
+        <div style="width:100px; margin-top:15px;" layout="column">
+          <div layout="row">
+            <div flex></div>
+            <md-button id="2" aria-label="HideProject" class="md-icon-button" ix-sec="{{secmsk}}" ng-show="false">
+              <span style="color:darkgray;" class="glyphicon glyphicon-eye-close"></span>
+              <md-tooltip md-direction="top">Click to hide this AFE</md-tooltip>
+            </md-button>
+
+            <md-button id="3"  aria-label="CloseProject" class="md-icon-button" ix-sec="{{secmsk}}" ng-show="false">
+              <span style="font-size: 18px;" md-colors="{color:'warn-hue-2'}" class="glyphicon glyphicon-ban-circle"></span>
+              <md-tooltip md-direction="top">This AFE is closed</md-tooltip>
+            </md-button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:440px;" layout="row">
+      <div style="margin-right:4px;" layout="column" flex="50">
+
+        <div layout='row' style="height:83px;">
+          <div flex="70">
+            <md-input-container>
+              <label>Project (Temp# )</label>
+              <input id="5" type="text" ng-model="cAfeHeader.project.projectNumber" ng-readonly="true" ix-sec="{{secmsk}}">
+            </md-input-container>
+          </div>
+          <div flex="70">
+            <md-input-container>
+              <label>Status</label>
+              <input type="text" ng-model="cAfeHeader.afe.statusName" ng-value="cAfeHeader.afe.statusName===null?'none':cAfeHeader.afe.statusName" ng-disabled="true">
+            </md-input-container>
+          </div>
+        </div>
+
+        <div layout="row">
+          <!--<div flex="70">
+            <md-input-container>
+              <label>Owner</label>
+              <input id="4" type="text" ng-model="cAfeHeader.afe.owner" ix-sec="{{secmsk}}">
+            </md-input-container>
+          </div>-->
+
+          <div flex="70">
+            <ix-ad-lookup
+              id="4"
+              label="Owner *"
+              ng-Readonly="false"
+              form="cAfeHeader.form"
+              selected-Item="cAfeHeader.owner"
+              ng-required="true"
+              flex>
+            </ix-ad-lookup>
+          </div>
+
+          <div flex="70">
+            <ix-ad-lookup
+              id="8"
+              label="Delegates"
+              ng-Readonly="false"
+              form="cAfeHeader.form"
+              selected-Item="cAfeHeader.delegate"
+              flex>
+            </ix-ad-lookup>
+          </div>
+        </div>
+
+        <md-input-container>
+          <label>Company</label>
+          <md-select name="company" id="10" ng-model="cAfeHeader.afe.companyId" ix-sec="{{secmsk}}" required>
+            <md-option ng-repeat="x in cAfeHeader.companies" ng-value="x.id">
+              {{x.description}}
+            </md-option>
+          </md-select>
+          <div ng-messages="cAfeHeader.form.company.$error" role="alert">
+            <div ng-message="required" class="my-message">Please select a company</div>
+          </div>
+        </md-input-container>
+
+        <md-input-container>
+          <label>Location</label>
+          <md-select name="location" id="12" ng-model="cAfeHeader.afe.locationId" ix-sec="{{secmsk}}" required>
+            <md-option ng-repeat="x in cAfeHeader.locations" ng-value="x.id">
+              {{x.locationDescription}}
+            </md-option>
+          </md-select>
+          <div ng-messages="cAfeHeader.form.location.$error" role="alert">
+            <div ng-message="required" class="my-message">Please select a location</div>
+          </div>
+        </md-input-container>
+
+        <md-input-container>
+          <label>Department</label>
+          <md-select name="department" id="15" ng-model="cAfeHeader.afe.departmentId" ix-sec="{{secmsk}}" required>
+            <md-option ng-repeat="x in cAfeHeader.depts" ng-value="x.id">
+              {{x.description}}
+            </md-option>
+          </md-select>
+          <div ng-messages="cAfeHeader.form.department.$error" role="alert">
+            <div ng-message="required" class="my-message">Please select a department</div>
+          </div>
+        </md-input-container>
+      </div>
+      <div style="margin-left:4px" flex="50" layout="column">
+
+        <div layout='row'>
+          <div flex='50'>
+            <md-input-container>
+              <label style='width:150px'>Est. Completion Date</label>
+              <md-datepicker id="6"  ng-model="cAfeHeader.estComplDate" ng-disabled="cAfeHeader.estComplDateDisabled" md-placeholder="Enter date"></md-datepicker>
+            </md-input-container>
+          </div>
+
+          <div flex='50'>
+            <md-input-container>
+              <label>Amount($)</label>
+              <md-tooltip>Enter amount requested for approval.  If more than 10% difference with budget, provide explanation in the executive summary.</md-tooltip>
+              <input id="7" type="text" ng-model="cAfeHeader.afe.afeAmount" value="cAfeHeader.afe.afeAmount | currency" ix-sec="{{secmsk}}">
+            </md-input-container>
+          </div>
+        </div>
+
+        <md-input-container>
+          <label>Aliaxis Type</label>
+          <md-tooltip>If AFE covers more than one, use the one that has the biggest weight for the justification of the project.</md-tooltip>
+          <md-select id="9" ng-model="cAfeHeader.afe.aliaxisTypeId" ix-sec="{{secmsk}}">
+            <md-option ng-repeat="x in cAfeHeader.aliaxisType" ng-value="x.id">
+              {{x.description}}
+            </md-option>
+          </md-select>
+        </md-input-container>
+
+        <md-input-container>
+          <label>Aliaxis Category</label>
+          <md-select id="11" ng-model="cAfeHeader.afe.aliaxisCategoryId" ix-sec="{{secmsk}}">
+            <md-option ng-repeat="x in cAfeHeader.aliaxisCategory" ng-value="x.id">
+              {{x.description}}
+            </md-option>
+          </md-select>
+        </md-input-container>
+
+        <div layout="row" style="height:70px">
+          <div flex="30" style="margin: auto;">
+            <md-checkbox id="13" class="md-accent" ng-model="cAfeHeader.afe.stageGate" aria-label="stageGate" ix-sec="{{secmsk}}">
+              Stage Gate
+            </md-checkbox>
+          </div>
+          <div flex="70">
+            <md-input-container ng-show="cAfeHeader.afe.stageGate">
+              <label>Stage Gate Project#</label>
+              <input id="14" type="text" ng-model="cAfeHeader.afe.sgProject_number" ix-sec="{{secmsk}}">
+            </md-input-container>
+          </div>
+        </div>
+        <md-input-container>
+          <label>CPM Aliaxis Code</label>
+          <input id="16" type="text" ng-model="cAfeHeader.afe.aliaxisCode" ix-sec="{{secmsk}}">
+        </md-input-container>
+      </div>
+    </div>
+
+    <div layout="row">
+      <div flex></div>
+      <div style="margin-right:5px;">
+        <md-button class="md-raised md-accent" ng-click="SaveData()" ng-disabled="!cAfeHeader.form.$dirty || !cAfeHeader.form.$valid">
+          <md-tooltip md-direction="top">Save the forecast</md-tooltip>
+          Save
+        </md-button>
+
+        <md-button class="md-raised md-accent" ng-click="cancelEdit()" ng-disabled="!cAfeHeader.form.$dirty">
+          <md-tooltip md-direction="top">Cancel the changes to the forecast</md-tooltip>
+          Cancel
+        </md-button>
+      </div>
+    </div>
+
+
+  </md-content>
+</form>

@@ -1,0 +1,46 @@
+<div layout="column">
+  <div layout="row" style="margin:25px 0px 0px 20px;">
+    <!--Section Header-->
+    <h5>AFE's POs</h5>
+    <span flex></span>
+    <div style="margin-top:8px;">
+      Currency:
+    </div>
+    <div style="margin:-20px 35px 0px 8px;">
+      <md-input-container>
+        <!--<label>Currency</label>-->
+        <md-select ng-model="selectedCurr">
+          <md-option ng-repeat="curr in currency" ng-value="curr.id">
+            {{curr.label}}
+          </md-option>
+        </md-select>
+      </md-input-container>
+    </div>
+  </div>
+
+  <div ng-show="poListLoading" style="margin:0px 35px 12px 20px;">
+    <md-progress-linear class="md-primary" md-mode="indeterminate" ng-disabled="false"></md-progress-linear>
+  </div>
+
+  <md-content ng-show="!poListLoading" style="height:300px;margin:0px 35px 12px 20px; border: 1px solid lightgray;" >
+    <table class="table table-condensed" style="font-size: 12px; border: 1px solid lightgray;" >
+      <tr md-colors="{background: 'primary-50'}" style="text-align:left;" >
+        <th style="width:20%">PO Number <span style="margin:0px 0px 2px 5px;font-size: 10px;"><i>[{{poList.length}}]</i></span></th>
+        <th style="width:16%">Status</th>
+        <th style="width:16%"><span>Amount</span><span style="margin:0px 0px 2px 5px;font-size: 10px;"><i>[<ix-currency-display ng-value={{accumulators.amount}} rate={{currency[selectedCurr].to[0]}}></ix-currency-display>]</i></span></th>
+        <th style="width:16%"><span>Committed</span><span style="margin:0px 0px 2px 5px;font-size: 10px;"><i>[<ix-currency-display ng-value={{accumulators.committed}} rate={{currency[selectedCurr].to[0]}}></ix-currency-display>]</i></span></th>
+        <th style="width:16%"><span>Received</span><span style="margin:0px 0px 2px 5px;font-size: 10px;"><i>[<ix-currency-display ng-value={{accumulators.received}} rate={{currency[selectedCurr].to[0]}}></ix-currency-display>]</i></span></th>
+        <th style="width:16%"><span>Invoices</span><span style="margin:0px 0px 2px 5px;font-size: 10px;"><i>[<ix-currency-display ng-value={{accumulators.payments}} rate={{currency[selectedCurr].to[0]}}></ix-currency-display>]</i></span></th>
+      </tr>
+
+      <tr style="text-align:left;" ng-repeat="po in poList">
+        <td style="width:20%; font-size: 12px; color:#3987CC;"><span style="margin-left:5px;" ng-click="jumpToPo(po.number)">{{po.number}}</span></td>
+        <td style="width:16%">{{po.status}}</td>
+        <td style="width:16%"><ix-currency-display ng-value={{po.amount}} rate={{currency[selectedCurr].to[0]}}></ix-currency-display></td>
+        <td style="width:16%"><ix-currency-display ng-value={{po.committed}} rate={{currency[selectedCurr].to[0]}}></ix-currency-display></td>
+        <td style="width:16%"><ix-currency-display ng-value={{po.received}} rate={{currency[selectedCurr].to[0]}}></ix-currency-display></td>
+        <td style="width:16%"><ix-currency-display ng-value={{po.payments}} rate={{currency[selectedCurr].to[0]}}></ix-currency-display></td>
+      </tr>
+    </table>
+  </md-content>
+</div>

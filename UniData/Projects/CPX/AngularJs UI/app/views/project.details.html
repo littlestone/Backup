@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Project Details</title>
+    <style>
+      body {
+        background-color: lightgray;
+      }
+    </style>
+  </head>
+  <body>
+    <form name="cProjectDetails.form">
+      <md-content style="margin: 12px; border-color: darkgray; border-radius: 5px; border-width: 1px; border-style: solid; background-color: white" layout="column" md-whiteframe="3" ng-style="cProjectDetails.contentStyle">
+        <div ng-show={{inProgress}}>
+          <md-progress-linear class="md-raised md-accent" md-mode="indeterminate" ng-disabled="false"></md-progress-linear>
+        </div>
+        <div style="margin: 8px;" layout="row">
+          <div flex="25" layout='column' style="margin-right: 24px;">
+            <md-input-container ng-show="cProjectDetails.currProject.status <= 0">
+              <label>Temp# (project)</label>
+              <input type="text" ng-model="cProjectDetails.newProjectNumber" ng-readonly='true'>
+            </md-input-container>
+
+            <md-input-container ng-show="cProjectDetails.currProject.status > 0">
+              <label>Temp# (project)</label>
+              <input id="0" type="text" ng-model="cProjectDetails.project.projectNumber" ix-sec="{{secmsk}}">
+            </md-input-container>
+          </div>
+          <div flex="60" layout='column'>
+            <md-input-container>
+              <label>Description</label>
+              <input id="1" name="description" type="text" ng-model="cProjectDetails.project.description" ix-sec="{{secmsk}}" required>
+              <div ng-messages="cProjectDetails.form.description.$error" role="alert">
+                <div ng-message="required" class="my-message">Please provide a description.</div>
+              </div>
+            </md-input-container>
+          </div>
+          <div flex="15" layout='column'>
+            <div style="width:120px; margin:15px 0px 0px 0px;" layout="column">
+              <div layout="row">
+                <div flex></div>
+                <md-button id="2" aria-label="HideProject" class="md-icon-button" ng-click="toggleHide()" ng-show="cProjectDetails.currProject.status > 0" ix-sec="{{secmsk}}">
+                  <span style="font-size: 18px;" md-colors="cProjectDetails.hidden ? {color:'accent-hue-3'}: {color:'grey'}" class="glyphicon glyphicon-eye-close"></span>
+                  <md-tooltip md-direction="top">{{cProjectDetails.hidden ? 'This project is hidden' : 'Click to hide this project'}}</md-tooltip>
+                </md-button>
+
+                <md-button id="3" aria-label="CloseProject" class="md-icon-button" ng-click="toggleClosed()" ng-show="cProjectDetails.currProject.status > 0" ix-sec="{{secmsk}}">
+                  <span style="font-size: 18px;" md-colors="cProjectDetails.closed ? {color:'warn-hue-2'}: {color:'grey'}" class="glyphicon glyphicon-ban-circle"></span>
+                  <md-tooltip md-direction="top">{{cProjectDetails.closed? 'This project is closed': 'Click to close this project' }}</md-tooltip>
+                </md-button>
+
+                <md-button id="4" aria-label="AttachmentUtility" class="md-icon-button" ng-click="showAttachmentUtility()" ng-show="cProjectDetails.currProject.id !== 0" ix-sec="{{secmsk}}">
+                  <span style="font-size: 18px;" class="glyphicon glyphicon-paperclip"></span>
+                  <md-tooltip md-direction="top">Click to show attachment utility for this project</md-tooltip>
+                </md-button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div layout="row">
+          <div style="margin-left: 12px; margin-right: 12px;" flex="50" layout="column">
+            <div layout="row">
+
+              <md-input-container flex="50">
+                <label>Owner</label>
+                <md-select id="5" ng-model="cProjectDetails.project.owner" ix-sec="{{secmsk}}" required>
+                  <md-option ng-repeat="x in cProjectDetails.budgetOwners" ng-value="x.userName">
+                    {{x.displayName}}
+                  </md-option>
+                  <div ng-messages="cProjectDetails.form.$error" role="alert">
+                    <div ng-message="required" class="my-message">Please select an owner.</div>
+                  </div>
+                </md-select>
+              </md-input-container>
+
+              <div style="width: 25px;"></div>
+
+              <div layout='row' flex='50'>
+                <ix-ad-lookup
+                  label="Delegate"
+                  ng-Readonly="false"
+                  form="cProjectDetails.form"
+                  selected-Item="cProjectDetails.delegate"
+                  flex>
+                </ix-ad-lookup>
+              </div>
+            </div>
+
+            <md-input-container>
+              <label>Company</label>
+              <md-select id="9" name="company" ng-model="cProjectDetails.project.companyId" placeholder="Select a company" ix-sec="{{secmsk}}" required>
+                <md-option ng-repeat="x in cProjectDetails.companies" ng-value="x.id">
+                  {{x.description}}
+                </md-option>
+              </md-select>
+              <div ng-messages="cProjectDetails.form.company.$error" role="alert">
+                <div ng-message="required" class="my-message">Please select a company.</div>
+              </div>
+            </md-input-container>
+
+            <md-input-container>
+              <label>Location</label>
+              <md-select id="10" name="location" ng-model="cProjectDetails.project.locationId" placeholder="Select a location" ix-sec="{{secmsk}}" required>
+                <md-option ng-repeat="x in cProjectDetails.locations" ng-value="x.id">
+                  {{x.locationDescription}}
+                </md-option>
+              </md-select>
+              <div ng-messages="cProjectDetails.form.location.$error" role="alert">
+                <div ng-message="required" class="my-message">Please select a location.</div>
+              </div>
+            </md-input-container>
+
+            <md-input-container>
+              <label>Department</label>
+              <md-select id="12" name="department" ng-model="cProjectDetails.project.departmentId" placeholder="Select a department" ix-sec="{{secmsk}}" required>
+                <md-option ng-repeat="x in cProjectDetails.depts" ng-value="x.id">
+                  {{x.description}}
+                </md-option>
+              </md-select>
+              <div ng-messages="cProjectDetails.form.department.$error" role="alert">
+                <div ng-message="required" class="my-message">Please select a department.</div>
+              </div>
+            </md-input-container>
+
+            <md-input-container>
+              <label>Category</label>
+              <md-select id="14" name="category" ng-model="cProjectDetails.project.categoryId" placeholder="Select a category" ix-sec="{{secmsk}}" required>
+                <md-option ng-repeat="x in cProjectDetails.categories" ng-value="x.id">
+                  {{x.categoryCode}} - {{x.description| capitalize}}
+                </md-option>
+              </md-select>
+              <div ng-messages="cProjectDetails.form.category.$error" role="alert">
+                <div ng-message="required" class="my-message">Please select a category.</div>
+              </div>
+            </md-input-container>
+
+            <md-content style="margin: 8px; height:127px;" layout='column'>
+              <md-input-container>
+                <label>Comments</label>
+                <textarea id="16" ng-model="cProjectDetails.project.comments" md-maxlength="500" rows="2" md-select-on-focus ix-sec="{{secmsk}}"></textarea>
+              </md-input-container>
+            </md-content>
+          </div>
+
+          <div layout='column' style="margin-left: 12px; margin-right: 12px;" flex="50">
+            <div layout='row'>
+              <div flex='33'>
+                <md-input-container>
+                  <label style='width:250px'>Est. Completion Date</label>
+                  <md-datepicker
+                      id="7"
+                      name="completionDate"
+                      ng-model="cProjectDetails.estComplDate"
+                      md-placeholder="Enter date"
+                      md-min-date="cProjectDetails.minDate"
+                      required>
+                  </md-datepicker>
+                  <div ng-messages="cProjectDetails.form.completionDate.$error" role="alert">
+                    <div ng-message="required" class="my-message">Enter a valid date.</div>
+                  </div>
+                </md-input-container>
+              </div>
+              <div flex='33'>
+                <md-input-container>
+                  <label>Amount($)</label>
+                  <input id="8" type="number" ng-model="cProjectDetails.project.amount" ix-sec="{{secmsk}}">
+                </md-input-container>
+              </div>
+              <div ng-if="cProjectDetails.totalTransactions != 0" flex='33'>
+                <md-input-container>
+                  <label>Revised Amount($)</label>
+                  <input type="text" ng-value="cProjectDetails.project.amount + cProjectDetails.totalTransactions | currency" ng-readonly='true'>
+                  <md-tooltip>With a Transfered Amount of <b>{{cProjectDetails.totalTransactions| currency}}</b></md-tooltip>
+                </md-input-container>
+              </div>
+            </div>
+
+            <div style="margin-bottom:15px;">
+              <md-chips>
+                <md-chip>{{cProjectDetails.status}}</md-chip>
+                <md-chip ng-show="cProjectDetails.key">Key project</md-chip>
+              </md-chips>
+            </div>
+
+            <md-input-container style="margin-bottom:-5px;">
+              <label>Aliaxis #</label>
+              <input id="11" type="text" ng-model="cProjectDetails.project.aliaxisCode" ix-sec="{{secmsk}}">
+            </md-input-container>
+
+            <md-input-container>
+              <label>Aliaxis Type</label>
+              <md-select id="13" name="aType" ng-model="cProjectDetails.project.aliaxisTypeId" placeholder="Select an Aliaxis type" ix-sec="{{secmsk}}" required>
+                <md-option ng-repeat="x in cProjectDetails.aliaxisType" ng-value="x.id">
+                  {{x.description}}
+                </md-option>
+              </md-select>
+              <div ng-messages="cProjectDetails.form.aType.$error" role="alert">
+                <div ng-message="required" class="my-message">Please select an Aliaxis type.</div>
+              </div>
+            </md-input-container>
+
+            <md-input-container>
+              <label>Aliaxis Category</label>
+              <md-select id="15" name="aCategory" ng-model="cProjectDetails.project.aliaxisCategoryId" placeholder="Select an Aliaxis category" ix-sec="{{secmsk}}" required>
+                <md-option ng-repeat="x in cProjectDetails.aliaxisCategory" ng-value="x.id">
+                  {{x.description}}
+                </md-option>
+              </md-select>
+              <div ng-messages="cProjectDetails.form.aCategory.$error" role="alert">
+                <div ng-message="required" class="my-message">Please select an Aliaxis category.</div>
+              </div>
+            </md-input-container>
+
+            <md-input-container>
+              <label>Priority</label>
+              <md-select id="17" name="priority" ng-model="cProjectDetails.project.priorityLevelId" placeholder="Select a priority" ix-sec="{{secmsk}}" required>
+                <md-option ng-repeat="x in cProjectDetails.capexPriorities" ng-value="x.id">
+                  {{x.description}}
+                </md-option>
+              </md-select>
+              <div ng-messages="cProjectDetails.form.priority.$error" role="alert">
+                <div ng-message="required" class="my-message">Please select a priority.</div>
+              </div>
+            </md-input-container>
+            
+            <div layout="row">
+              <div flex></div>
+              <div style="margin-right:5px;">
+                <md-button class="md-raised md-accent" ng-click="SaveData()" ng-disabled="cProjectDetails.disableOk()">
+                  <md-tooltip md-direction="top">Save the project details</md-tooltip>
+                  Save
+                </md-button>
+                <md-button class="md-raised md-accent" ng-click="cancelEdit()" ng-disabled="!cProjectDetails.form.$dirty">
+                  <md-tooltip md-direction="top">Cancel the changes</md-tooltip>
+                  Cancel
+                </md-button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </md-content>
+    </form>
+  </body>
+</html>

@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Project List</title>
+    <style>
+      body {
+        background-color: lightgray;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Project List Filter Section Starts Here -->
+    <div style="height:200px; border-color: darkgray; border-style: solid; border-width: 1px; border-radius: 5px; background-color: white; margin: 12px 12px 0px 12px;" md-whiteframe="2">
+      <div style="height:50px; background-color:#cccccc;" layout="column">
+        <div layout="row">
+          <h5 style="margin-top:8px; padding-top:8px;margin-left:4px;"flex>Filter</h5>
+        </div>
+      </div>
+      <div layout="column">
+        <!-- Project List Filter Criteria -->
+        <div style="margin:8px; height:64px;" layout="row">
+          <md-input-container style="margin-right: 12px;" flex="15">
+            <label>Owner</label>
+            <md-select ng-model="owner" md-on-close="cPrjList.applyFilter()">
+              <md-option value=-1>All</md-option>
+              <md-option ng-repeat="x in cPrjList.budgetOwners" ng-value="x.userName">
+                {{x.displayName}}
+              </md-option>
+            </md-select>
+          </md-input-container>
+
+          <md-input-container style="margin-right: 12px;" flex="15">
+            <label>Location</label>
+            <md-select ng-model="locationId" md-on-close="cPrjList.applyFilter()">
+              <md-option value=-1>All</md-option>
+              <md-option ng-repeat="x in locations" ng-value="x.id">
+                {{x.locationDescription}}
+              </md-option>
+            </md-select>
+          </md-input-container>
+
+          <md-input-container style="margin-right: 20px;" flex="15">
+            <label>Department</label>
+            <md-select ng-model="departmentId" md-on-close="cPrjList.applyFilter()">
+              <md-option value=-1>All</md-option>
+              <md-option ng-repeat="x in depts" ng-value="x.id">
+                {{x.description}}
+              </md-option>
+            </md-select>
+          </md-input-container>
+
+          <md-input-container style="margin-right: 20px;" flex="10">
+            <label>Status</label>
+            <md-select ng-model="projectStatusId" md-on-close="cPrjList.applyFilter()">
+              <md-option value=-1>All</md-option>
+              <md-option ng-repeat="x in projectStatus" ng-value="x.id">
+                {{x.description}}
+              </md-option>
+            </md-select>
+          </md-input-container>
+
+          <md-input-container style="margin-right: 12px;" flex="16">
+            <label>Project number equals</label>
+            <input ng-model="filterPrjNumber" placeholder="Project Number" ng-blur="cPrjList.applyFilter()">
+          </md-input-container>
+
+          <md-input-container style="margin-right: 12px;" flex="16">
+            <label>Project has this AFE</label>
+            <input ng-model="filterAFE" placeholder="AFE Number" ng-blur="cPrjList.filterByAFE()">
+          </md-input-container>
+
+          <md-checkbox ng-change="cPrjList.applyFilter()" ng-model="showWithAFE" aria-label="Show Project with AFE" flex="15" style="margin:auto;">
+            <md-tooltip>Show only projects with at least one AFE</md-tooltip>
+            Show Project with AFEs
+          </md-checkbox>
+        </div>
+
+        <!-- Project List Data Summary -->
+        <div style="font-size: 10px; height:64px; margin:0px 8px 8px 8px;" layout="row">
+          <div class="dispValue" flex="10" layout="column">
+            <md-tooltip>Original Total Project Cost</md-tooltip>
+            <h6><b>Original Tot. Proj. Cost</b></h6>
+            <ix-currency-display ng-value={{cPrjList.accumulators.originalProjectCost}} rate={{currentRate()}}></ix-currency-display>
+          </div>
+          <div class="dispValue" flex="10" layout="column">
+            <md-tooltip>Transactions</md-tooltip>
+            <h6><b>Transactions</b></h6>
+            <ix-currency-display ng-value={{cPrjList.accumulators.transaction}} rate={{currentRate()}}></ix-currency-display>
+          </div>
+          <div class="dispValue" flex="10" layout="column">
+            <md-tooltip>Revised Original Total Project Cost</md-tooltip>
+            <h6><b>Revised Tot. Proj. Cost</b></h6>
+            <ix-currency-display ng-value={{cPrjList.accumulators.revisedCost}} rate={{currentRate()}}></ix-currency-display>
+          </div>
+          <div class="dispValue" flex="10" layout="column">
+            <md-tooltip>Previous Year</md-tooltip>
+            <h6><b>Prev. Years</b></h6>
+            <ix-currency-display ng-value={{cPrjList.accumulators.prevYear}} rate={{currentRate()}}></ix-currency-display>
+          </div>
+          <div class="dispValue" flex="10" layout="column">
+            <md-tooltip>Next Year Budget</md-tooltip>
+            <h6><b>Next Year Budget</b></h6>
+            <ix-currency-display ng-value={{cPrjList.accumulators.nextYear}} rate={{currentRate()}}></ix-currency-display>
+          </div>
+          <div class="dispValue" flex="10" layout="column">
+            <md-tooltip>Current Year Budget</md-tooltip>
+            <h6><b>Current Year Budget</b></h6>
+            <ix-currency-display ng-value={{cPrjList.accumulators.currentYBudget}} rate={{currentRate()}}></ix-currency-display>
+          </div>
+          <div class="dispValue" flex="10" layout="column">
+            <md-tooltip>Committed</md-tooltip>
+            <h6><b>Committed</b></h6>
+            <ix-currency-display ng-value={{cPrjList.accumulators.commited}} rate={{currentRate()}}></ix-currency-display>
+          </div>
+          <div class="dispValue" flex="10" layout="column">
+            <md-tooltip>P.O. Receipt</md-tooltip>
+            <h6><b>P.O. Receipt</b></h6>
+            <ix-currency-display ng-value={{cPrjList.accumulators.poReceipt}} rate={{currentRate()}}></ix-currency-display>
+          </div>
+          <div class="dispValue" flex="10" layout="column">
+            <md-tooltip>Actuals YTD</md-tooltip>
+            <h6><b>Actuals YTD</b></h6>
+            <ix-currency-display ng-value={{cPrjList.accumulators.actualYTD}} rate={{currentRate()}}></ix-currency-display>
+          </div>
+          <div class="dispValue" flex="10" layout="column">
+            <md-tooltip>Current Year Forecast</md-tooltip>
+            <h6><b>Current Year Forecast</b></h6>
+            <ix-currency-display ng-value={{cPrjList.accumulators.forecast}} rate={{currentRate()}}></ix-currency-display>
+          </div>
+          <div class="dispValue" flex="10" layout="column">
+            <md-tooltip>Available to Forecast</md-tooltip>
+            <h6><b>Avail. to Forecast</b></h6>
+<!--            <h6 ng-style="{color: cPrjList.accumulators.available < 0 ? 'red' : 'black'}" >{{cPrjList.accumulators.available| currency}}</h6>-->
+                <ix-currency-display ng-value={{cPrjList.accumulators.available}} rate={{currentRate()}}></ix-currency-display>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Project List Filter Section Ends Here -->
+
+    <!-- Project List Section Starts Here -->
+    <div ng-style="windowStyle" style="border-color: darkgray; border-style: solid; border-width: 1px; border-radius: 5px; background-color: white; margin: 16px 12px 0px 12px" md-whiteframe="3">
+
+      <!-- Project List Header Section Starts Here -->
+      <div style="height:50px; background-color:#cccccc;" layout="column">
+        <div layout="row">
+          <h5 style="margin-top:8px; padding-top:8px;margin-left:4px;" >Projects</h5><h6 style="margin-top:10px; padding-top:8px;margin-left:4px;"><i>({{cPrjList.accumulators.count}})</i></h6>
+          <h6 ng-show="cPrjList.IsFiltered()" style="margin-top:10px; padding-top:8px;margin-left:8px;"><i>filtered - <span md-colors="{color: 'primary-hue-1'}" ng-click="cPrjList.clearFilter()"><u>clear filter</u></span></i></h6><div flex></div>
+          <div ng-show="cPrjList.accumulators.count > 0">
+            <h6 style="margin-top:8px; padding-top:8px;margin-right:35px;"><b>Page: <span ng-show="cPrjList.accumulators.count > cPrjList.pageSize" style="margin-right:4px;" ng-click="cPrjList.prevPage()" class="glyphicon glyphicon-triangle-left"></span> {{cPrjList.currentPage}} / {{cPrjList.pageMax}}</b><span ng-show="cPrjList.accumulators.count > cPrjList.pageSize" style="margin-left:4px;" ng-click="cPrjList.nextPage()" class="glyphicon glyphicon-triangle-right"></span></h6>
+          </div>
+          <div>
+            <md-menu>
+              <md-button aria-label="ProjectListMenu" class="md-icon-button" ng-click="$mdOpenMenu()">
+                <span class="glyphicon glyphicon-option-vertical"></span>
+                <md-tooltip md-direction="top">Menu</md-tooltip>
+              </md-button>
+              <md-menu-content width="4">
+                <md-menu-item>
+                  <md-button ng-click="newProject()"> <span md-menu-align-target>Add a Project...</span></md-button>
+                </md-menu-item>
+                <md-menu-item>
+                  <md-button ng-click="null"><span class="glyphicon glyphicon-refresh"></span> <span md-menu-align-target>Refresh</span></md-button>
+                </md-menu-item>
+              </md-menu-content>
+            </md-menu>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin:0px 76px 0px 24px; height:60px;" ng-hide="panelExpanded">
+        <table class="table table-condensed" style="font-size: 12px;">
+          <tr>
+            <th style="width:18%">Project</th>
+            <th style="width:7%">Original Tot Project Cost</th>
+            <th style="width:7%">Transactions</th>
+            <th style="width:7%">Revised Original Total Project Cost</th>
+            <th style="width:7%">Prev. Years</th>
+            <th style="width:7%">Next Year Budget</th>
+            <th style="width:7%">Current Year Budget</th>
+            <th style="width:7%">P.O. Committed</th>
+            <th style="width:7%">P.O. Receipt</th>
+            <th style="width:7%">P.O. Payments</th>
+            <th style="width:7%">Current Year Forecast</th>
+            <th style="width:7%">Actuals YTD</th>
+            <th style="width:7%">Avail. to Forecast</th>
+          </tr>
+        </table>
+      </div>
+      <!-- Project List Header Section Ends Here -->
+
+      <!-- Project List Detail Section Starts here -->
+      <md-content ng-style="contentStyle">
+        <!-- Project List Progressing Bar -->
+        <div ng-show="dataLoading" style="margin:6px 76px 0px 24px;">
+          <md-progress-linear class="md-primary" md-mode="indeterminate" ng-disabled="false"></md-progress-linear>
+        </div>
+
+        <!-- Project List Content -->
+        <div ng-show="!prjListLoading">
+          <md-expansion-panel-group md-component-id="projectListPanelGrp">
+            <md-expansion-panel ng-repeat="prj in cPrjList.displayList" md-component-id="{{prj.id}}">
+              <md-expansion-panel-collapsed ng-click="cPrjList.expandAfePanel($panel, prj.id, cPrjList.year)">
+                <div class="md-summary" style="font-size: 10px;">
+                  <div class="table-responsive">
+                    <table class="table table-condensed">
+                      <tr>
+                        <td style="width:18%">
+                          <div layout="row">
+                            <div ng-click="cPrjList.jumpToPrj(prj.id)"><span style="font-size: 12px; color:#3987CC;">{{prj.projectNumber}}</span></div><br>
+                            <div ng-if="prj.qtyAFE === 1">
+                              <span md-colors="{color: 'accent-hue-2'}" style="margin-left:8px;" class="glyphicon glyphicon-tag"></span>
+                              <md-tooltip md-direction="top">with AFE</md-tooltip>
+                            </div>
+                            <div ng-if="prj.qtyAFE > 1">
+                              <span md-colors="{color: 'accent-hue-2'}" style="margin-left:8px;" class="glyphicon glyphicon-tags"></span>
+                              <md-tooltip md-direction="top">with multiple AFE</md-tooltip>
+                            </div>
+                          </div>
+                          <b>({{prj.description.substr(0, 33)}}{{prj.description.lengh > 33 ? '...' : ''}})</b>
+                        </td>
+                        <td style="width:7%">{{prj.Original| currency}}</td>
+                        <td style="width:7%">{{prj.Transactions| currency}}</td>
+                        <td style="width:7%">{{prj.Revised| currency}}</td>
+                        <td style="width:7%">{{prj.prevYear| currency}}</td>
+                        <td style="width:7%">{{prj.nextYear| currency}}</td>
+                        <td style="width:7%">{{prj.currentYBudget| currency}}</td>
+                        <td style="width:7%">{{prj.commited| currency}}</td>
+                        <td style="width:7%">{{prj.poReceipt| currency}}</td>
+                        <td style="width:7%">{{prj.Actuals| currency}}</td>
+                        <td style="width:7%">{{prj.Forecast| currency}}</td>
+                        <td style="width:7%">{{prj.actualsYTD| currency}}</td>
+                        <td ng-style="{color: prj.available < 0 ? 'red' : 'black' }" style="width:7%">{{prj.available| currency}}</td>
+                      </tr>
+                    </table>
+                  </div>
+                </div>
+                <md-button class="md-icon-button md-primary">
+                  <md-tooltip md-direction="left">click to expand</md-tooltip>
+                  <div><span class="glyphicon glyphicon-chevron-down"></span></div>
+                </md-button>
+              </md-expansion-panel-collapsed>
+
+              <md-expansion-panel-expanded>
+                <md-expansion-panel-header md-no-sticky>
+                  <div class="md-summary" style="font-size: 10px;">
+                    <h5 flex>Project Details</h5>
+                    <div class="table-responsive">
+                      <table class="table table-condensed table-bordered">
+                        <thead>
+                          <tr md-colors="{background: 'primary-50'}">
+                            <th><div ng-click="cPrjList.jumpToPrj(prj.id)"><span style="font-size: 12px; color:#3987CC;">{{prj.projectNumber}}</span></div><br></th>
+                            <th>Original Tot Project Cost</th>
+                            <th>Transactions</th>
+                            <th>Revised Ori Tot Prj Cost</th>
+                            <th>Prev. Years</th>
+                            <th>Next Year Budget</th>
+                            <th>Current Year Budget</th>
+                            <th>Committed</th>
+                            <th>P.O. Receipt</th>
+                            <th>Actuals</th>
+                            <th>Current Year Forecast</th>
+                            <th>Actuals YTD</th>
+                            <th>Available to Forecast</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td>{{prj.description}}</td>
+                            <td>{{prj.Original| currency}}</td>
+                            <td>{{prj.Transactions| currency}}</td>
+                            <td>{{prj.Revised| currency}}</td>
+                            <td>{{prj.prevYear| currency}}</td>
+                            <td>{{prj.nextYear| currency}}</td>
+                            <td>{{prj.currentYBudget| currency}}</td>
+                            <td>{{prj.commited| currency}}</td>
+                            <td>{{prj.poReceipt| currency}}</td>
+                            <td>{{prj.Actuals| currency}}</td>
+                            <td>{{prj.Forecast| currency}}</td>
+                            <td>{{prj.actualsYTD| currency}}</td>
+                            <td ng-style="{color: prj.available < 0 ? 'red' : 'black'}">{{prj.available| currency}}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div class="table-responsive">
+                      <table class="table table-condensed table-bordered">
+                        <thead>
+                          <tr md-colors="{background: 'primary-50'}">
+                            <th>Jan</th>
+                            <th>Feb</th>
+                            <th>Mar</th>
+                            <th>Apr</th>
+                            <th>May</th>
+                            <th>Jun</th>
+                            <th>Jul</th>
+                            <th>Aug</th>
+                            <th>Sep</th>
+                            <th>Oct</th>
+                            <th>Nov</th>
+                            <th>Dec</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td ng-style="{color: colorActual}">
+                              <md-tooltip>Actual value</md-tooltip>
+                              {{prj.january| currency}}
+                            </td>
+                            <td ng-style="{color: colorActual}">
+                              <md-tooltip>Actual value</md-tooltip>
+                              {{prj.february| currency}}
+                            </td>
+                            <td ng-style="{color: colorActual}">
+                              <md-tooltip>Actual value</md-tooltip>
+                              {{prj.march| currency}}
+                            </td>
+                            <td ng-style="{color: prj.aprActual ? colorActual : 'black'}">
+                              <md-tooltip ng-if="prj.aprActual">Actual value</md-tooltip>
+                              <md-tooltip ng-if="!prj.aprActual">Forecasted value</md-tooltip>
+                              {{prj.april| currency}}
+                            </td>
+                            <td ng-style="{color: prj.mayActual ? colorActual : 'black'}">
+                              <md-tooltip ng-if="prj.mayActual">Actual value</md-tooltip>
+                              <md-tooltip ng-if="!prj.mayActual">Forecasted value</md-tooltip>
+                              {{prj.may| currency}}
+                            </td>
+                            <td ng-style="{color: prj.junActual ? colorActual : 'black'}">
+                              <md-tooltip ng-if="prj.junActual">Actual value</md-tooltip>
+                              <md-tooltip ng-if="!prj.junActual">Forecasted value</md-tooltip>
+                              {{prj.june| currency}}
+                            </td>
+                            <td ng-style="{color: prj.julActual ? colorActual : 'black'}">
+                              <md-tooltip ng-if="prj.julActual">Actual value</md-tooltip>
+                              <md-tooltip ng-if="!prj.julActual">Forecasted value</md-tooltip>
+                              {{prj.july| currency}}
+                            </td>
+                            <td ng-style="{color: prj.augActual ? colorActual : 'black'}">
+                              <md-tooltip ng-if="prj.augActual">Actual value</md-tooltip>
+                              <md-tooltip ng-if="!prj.augActual">Forecasted value</md-tooltip>
+                              {{prj.august| currency}}
+                            </td>
+                            <td ng-style="{color: prj.sepActual ? colorActual : 'black'}">
+                              <md-tooltip ng-if="prj.sepActual">Actual value</md-tooltip>
+                              <md-tooltip ng-if="!prj.sepActual">Forecasted value</md-tooltip>
+                              {{prj.september| currency}}
+                            </td>
+                            <td ng-style="{color: prj.octActual ? colorActual : 'black'}">
+                              <md-tooltip ng-if="prj.octActual">Actual value</md-tooltip>
+                              <md-tooltip ng-if="!prj.octActual">Forecasted value</md-tooltip>
+                              {{prj.october| currency}}
+                            </td>
+                            <td ng-style="{color: prj.novActual ? colorActual : 'black'}">
+                              <md-tooltip ng-if="prj.novActual">Actual value</md-tooltip>
+                              <md-tooltip ng-if="!prj.novActual">Forecasted value</md-tooltip>
+                              {{prj.november| currency}}
+                            </td>
+                            <td ng-style="{color: prj.decActual ? colorActual : 'black'}">
+                              <md-tooltip ng-if="prj.decActual">Actual value</md-tooltip>
+                              <md-tooltip ng-if="!prj.decActual">Forecasted value</md-tooltip>
+                              {{prj.december| currency}}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  <md-button class="md-icon-button md-primary" ng-click="cPrjList.collapseAfePanel($panel)">
+                    <md-tooltip md-direction="left">click to collapse</md-tooltip>
+                    <div><span class="glyphicon glyphicon-chevron-up"></span></div>
+                  </md-button>
+                </md-expansion-panel-header>
+
+                <!-- Project AFE Content Section Starts Here -->
+                <md-expansion-panel-content>
+                  <div style="margin-bottom:12px;" flex>
+                    <h5>Project's AFE</h5>
+                  </div>
+                  <div md-colors="{background: 'primary-50'}" ng-show="!afeListLoading && (cPrjList.afeList.length > 0)" style="border-style:solid; border-color:lightgray; border-width:1px;">
+                    <div style="margin:0px 76px 8px 24px; height:50px;" >
+                      <table class="table table-condensed" style="font-size: 12px;">
+                        <tr>
+                          <th style="width:15%">AFE</th>
+                          <th style="width:5%">Original Budget</th>
+                          <th style="width:5%">Commited</th>
+                          <th style="width:5%">PO Receipt</th>
+                          <th style="width:5%">Actuals + Forecast</th>
+                          <th style="width:5%">Remaining</th>
+                          <th style="width:5%">Jan</th>
+                          <th style="width:5%">Feb</th>
+                          <th style="width:5%">Mar</th>
+                          <th style="width:5%">Apr</th>
+                          <th style="width:5%">May</th>
+                          <th style="width:5%">Jun</th>
+                          <th style="width:5%">Jul</th>
+                          <th style="width:5%">Aug</th>
+                          <th style="width:5%">Sep</th>
+                          <th style="width:5%">Oct</th>
+                          <th style="width:5%">Nov</th>
+                          <th style="width:5%">Dec</th>
+                        </tr>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div ng-show="afeListLoading" style="margin:6px 24px 0px 24px;">
+                    <md-progress-linear class="md-primary" md-mode="indeterminate" ng-disabled="false"></md-progress-linear>
+                  </div>
+
+                  <div ng-show="!afeListLoading && (cPrjList.afeList.length > 0)">
+                    <md-expansion-panel-group md-component-id="afeListPanelGrp">
+                      <md-expansion-panel ng-repeat="afe in cPrjList.afeList" md-component-id="afe{{afe.id}}">
+                        <md-expansion-panel-collapsed ng-click="cPrjList.expandPoPanel($panel, afe.id)">
+                          <div class="md-summary" style="font-size: 10px;">
+                            <div class="table-responsive">
+                              <table class="table table-condensed">
+                                <tr>
+                                  <td style="width:15%"><div ng-click="cPrjList.jumpToAfe(afe.projectId, afe.id)"><span style="font-size: 12px; color:#3987CC;">{{afe.afeNumber}}</span></div><br><b>({{afe.title}})</b></td>
+                                  <td style="width:5%">{{afe.budgetAmount| currency}}</td>
+                                  <td style="width:5%">{{afe.commited| currency}}</td>
+                                  <td style="width:5%">{{afe.poReceipt| currency}}</td>
+                                  <td style="width:5%">{{afe.january +
+                                    afe.february +
+                                    afe.march +
+                                    afe.april +
+                                    afe.may +
+                                    afe.june +
+                                    afe.july +
+                                    afe.august +
+                                    afe.september +
+                                    afe.october +
+                                    afe.novembre +
+                                    afe.december
+                                    | currency}}</td>
+                                  <td style="width:5%">{{afe.afeAmount| currency}}</td>
+                                  <td style="width:5%">{{afe.january| currency}}</td>
+                                  <td style="width:5%">{{afe.february| currency}}</td>
+                                  <td style="width:5%">{{afe.march| currency}}</td>
+                                  <td style="width:5%">{{afe.april| currency}}</td>
+                                  <td style="width:5%">{{afe.may| currency}}</td>
+                                  <td style="width:5%">{{afe.june| currency}}</td>
+                                  <td style="width:5%">{{afe.july| currency}}</td>
+                                  <td style="width:5%">{{afe.august| currency}}</td>
+                                  <td style="width:5%">{{afe.september| currency}}</td>
+                                  <td style="width:5%">{{afe.october| currency}}</td>
+                                  <td style="width:5%">{{afe.november| currency}}</td>
+                                  <td style="width:5%">{{afe.december| currency}}</td>
+                                </tr>
+                              </table>
+                            </div>
+                          </div>
+                          <md-button class="md-icon-button md-primary" ng-click="$panel.expand()">
+                            <div><span class="glyphicon glyphicon-chevron-down"></span></div>
+                          </md-button>
+                        </md-expansion-panel-collapsed>
+
+                        <md-expansion-panel-expanded>
+                          <md-expansion-panel-header md-no-sticky>
+                            <div class="md-summary" style="font-size: 10px;">
+                              <div class="table-responsive">
+                                <table class="table table-condensed table-bordered">
+                                  <thead>
+                                    <tr md-colors="{background: 'primary-50'}">
+                                      <th><div ng-click="cPrjList.jumpToAfe(afe.projectId, afe.id)"><span style="font-size: 12px; color:#3987CC;">{{afe.afeNumber}}</span></div></th>
+                                      <th>Original Budget</th>
+                                      <th>Committed</th>
+                                      <th>P.O. Receipt</th>
+                                      <th>Actuals + Forecast</th>
+                                      <th>Remaining</th>
+                                      <th>Jan</th>
+                                      <th>Feb</th>
+                                      <th>Mar</th>
+                                      <th>Apr</th>
+                                      <th>May</th>
+                                      <th>Jun</th>
+                                      <th>Jul</th>
+                                      <th>Aug</th>
+                                      <th>Sept</th>
+                                      <th>Oct</th>
+                                      <th>Nov</th>
+                                      <th>Dec</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    <tr>
+                                      <td>{{afe.title}}</td>
+                                      <td>{{afe.budgetAmount| currency}}</td>
+                                      <td>{{afe.commited| currency}}</td>
+                                      <td>{{afe.poReceipt| currency}}</td>
+                                      <td>{{afe.january +
+                                        afe.february +
+                                        afe.march +
+                                        afe.april +
+                                        afe.may +
+                                        afe.june +
+                                        afe.july +
+                                        afe.august +
+                                        afe.september +
+                                        afe.october +
+                                        afe.november +
+                                        afe.december
+                                        | currency}}</td>
+                                      <td>{{afe.afeAmount| currency}}</td>
+                                      <td ng-style="{color: afe.janActual ? colorActual : 'black' }">
+                                        <md-tooltip ng-show="afe.janActual">Actual value</md-tooltip>
+                                        <md-tooltip ng-show="!afe.janActual">Forecasted value</md-tooltip>
+                                        {{afe.january| currency}}
+                                      </td>
+                                      <td ng-style="{color: afe.febActual ? colorActual : 'black' }">
+                                        <md-tooltip ng-show="afe.febActual">Actual value</md-tooltip>
+                                        <md-tooltip ng-show="!afe.febActual">Forecasted value</md-tooltip>
+                                        {{afe.february| currency}}
+                                      </td>
+                                      <td ng-style="{color: afe.marActual ? colorActual : 'black' }">
+                                        <md-tooltip ng-show="afe.marActual">Actual value</md-tooltip>
+                                        <md-tooltip ng-show="!afe.marActual">Forecasted value</md-tooltip>
+                                        {{afe.march| currency}}
+                                      </td>
+                                      <td ng-style="{color: afe.aprActual ? colorActual : 'black' }">
+                                        <md-tooltip ng-show="afe.aprActual">Actual value</md-tooltip>
+                                        <md-tooltip ng-show="!afe.aprActual">Forecasted value</md-tooltip>
+                                        {{afe.april| currency}}
+                                      </td>
+                                      <td ng-style="{color: afe.mayActual ? colorActual : 'black' }">
+                                        <md-tooltip ng-show="afe.mayActual">Actual value</md-tooltip>
+                                        <md-tooltip ng-show="!afe.mayActual">Forecasted value</md-tooltip>
+                                        {{afe.may| currency}}
+                                      </td>
+                                      <td ng-style="{color: afe.junActual ? colorActual : 'black' }">
+                                        <md-tooltip ng-show="afe.junActual">Actual value</md-tooltip>
+                                        <md-tooltip ng-show="!afe.junActual">Forecasted value</md-tooltip>
+                                        {{afe.june| currency}}
+                                      </td>
+
+                                      <td ng-style="{color: afe.julActual ? colorActual : 'black' }">
+                                        <md-tooltip ng-show="afe.julActual">Actual value</md-tooltip>
+                                        <md-tooltip ng-show="!afe.julActual">Forecasted value</md-tooltip>
+                                        {{afe.july| currency}}
+                                      </td>
+                                      <td ng-style="{color: afe.augActual ? colorActual : 'black' }">
+                                        <md-tooltip ng-show="afe.augActual">Actual value</md-tooltip>
+                                        <md-tooltip ng-show="!afe.augActual">Forecasted value</md-tooltip>
+                                        {{afe.august| currency}}
+                                      </td>
+                                      <td ng-style="{color: afe.sepActual ? colorActual : 'black' }">
+                                        <md-tooltip ng-show="afe.sepActual">Actual value</md-tooltip>
+                                        <md-tooltip ng-show="!afe.sepActual">Forecasted value</md-tooltip>
+                                        {{afe.september| currency}}
+                                      </td>
+                                      <td ng-style="{color: afe.octActual ? colorActual : 'black' }">
+                                        <md-tooltip ng-show="afe.octActual">Actual value</md-tooltip>
+                                        <md-tooltip ng-show="!afe.octActual">Forecasted value</md-tooltip>
+                                        {{afe.october| currency}}
+                                      </td>
+                                      <td ng-style="{color: afe.novActual ? colorActual : 'black' }">
+                                        <md-tooltip ng-show="afe.novActual">Actual value</md-tooltip>
+                                        <md-tooltip ng-show="!afe.novActual">Forecasted value</md-tooltip>
+                                        {{afe.november| currency}}
+                                      </td>
+                                      <td ng-style="{color: afe.decActual ? colorActual : 'black' }">
+                                        <md-tooltip ng-show="afe.decActual">Actual value</md-tooltip>
+                                        <md-tooltip ng-show="!afe.decActual">Forecasted value</md-tooltip>
+                                        {{afe.december| currency}}
+                                      </td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                            <md-button class="md-icon-button md-primary" ng-click="$panel.collapse()">
+                              <div><span class="glyphicon glyphicon-chevron-up"></span></div>
+                            </md-button>
+                          </md-expansion-panel-header>
+
+                          <!-- PO List Section Starts Here -->
+
+                          <ix-po-list afeid="{{afe.id}}"></ix-po-list>
+
+                          <!-- PO List Section Ends Here -->
+                        </md-expansion-panel-expanded>
+                    </md-expansion-panel-group>
+                  </div>
+                  <div ng-show="!afeListLoading">
+                    <md-button class="md-warn" ng-click="cPrjList.jumpToAfe(prj.id, 0)">
+                      Create a new AFE
+                    </md-button>
+                  </div>
+                </md-expansion-panel-content>
+                <!-- Project AFE Content Section Ends Here -->
+              </md-expansion-panel-expanded>
+              </md-expansion-panel>
+          </md-expansion-panel-group>
+        </div>
+      </md-content>
+      <!-- Project List Detail Section Ends here -->
+    </div>
+    <!-- Project List Section Ends Here -->
+  </body>
+</html>

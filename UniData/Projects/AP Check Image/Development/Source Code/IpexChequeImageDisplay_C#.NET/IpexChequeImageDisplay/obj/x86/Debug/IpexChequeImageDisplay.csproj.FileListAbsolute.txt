@@ -15,3 +15,6 @@ c:\users\juntan\documents\visual studio 2010\Projects\IpexChequeImageDisplay\Ipe
 C:\Users\juntan\My Workbench\My Project\Projects\IpexChequeImageDisplay\IpexChequeImageDisplay\bin\Debug\IpexChequeImageDisplay.exe.config
 C:\Users\juntan\My Workbench\My Project\Projects\IpexChequeImageDisplay\IpexChequeImageDisplay\obj\x86\Debug\IpexChequeImageDisplay.exe
 C:\Users\juntan\My Workbench\My Project\Projects\IpexChequeImageDisplay\IpexChequeImageDisplay\obj\x86\Debug\IpexChequeImageDisplay.pdb
+C:\Old Laptop\Backup\UniData\Projects\AP Check Image\Development\Source Code\IpexChequeImageDisplay_C#.NET\IpexChequeImageDisplay\bin\Debug\IpexChequeImageDisplay.exe.config
+C:\Old Laptop\Backup\UniData\Projects\AP Check Image\Development\Source Code\IpexChequeImageDisplay_C#.NET\IpexChequeImageDisplay\obj\x86\Debug\IpexChequeImageDisplay.exe
+C:\Old Laptop\Backup\UniData\Projects\AP Check Image\Development\Source Code\IpexChequeImageDisplay_C#.NET\IpexChequeImageDisplay\obj\x86\Debug\IpexChequeImageDisplay.pdb

@@ -1,0 +1,81 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+This file is used by the publish/package process of your Web project. You can customize the behavior of this process
+by editing this MSBuild file. In order to learn more about this please visit http://go.microsoft.com/fwlink/?LinkID=208121. 
+-->
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <_PublishTargetUrl>\\fps1ids\idsmis\juntan\Deploy\PIMWebAPI</_PublishTargetUrl>
+  </PropertyGroup>
+  <ItemGroup>
+    <File Include="bin/App_global.asax.compiled">
+      <publishTime>02/02/2018 13:07:47</publishTime>
+    </File>
+    <File Include="bin/App_global.asax.dll">
+      <publishTime>02/02/2018 13:07:47</publishTime>
+    </File>
+    <File Include="bin/ClearScript.dll">
+      <publishTime>06/26/2017 14:50:48</publishTime>
+    </File>
+    <File Include="bin/EntityFramework.dll">
+      <publishTime>06/26/2017 14:50:56</publishTime>
+    </File>
+    <File Include="bin/EntityFramework.SqlServer.dll">
+      <publishTime>06/26/2017 14:50:49</publishTime>
+    </File>
+    <File Include="bin/HttpMultipartParser.dll">
+      <publishTime>10/12/2016 06:54:23</publishTime>
+    </File>
+    <File Include="bin/log4net.dll">
+      <publishTime>06/26/2017 14:50:54</publishTime>
+    </File>
+    <File Include="bin/Newtonsoft.Json.dll">
+      <publishTime>06/26/2017 14:50:57</publishTime>
+    </File>
+    <File Include="bin/PIMWebAPI.dll">
+      <publishTime>04/16/2018 16:01:29</publishTime>
+    </File>
+    <File Include="bin/PIMWebAPI.pdb">
+      <publishTime>04/16/2018 16:01:29</publishTime>
+    </File>
+    <File Include="bin/System.Net.Http.Formatting.dll">
+      <publishTime>06/26/2017 14:50:54</publishTime>
+    </File>
+    <File Include="bin/System.Web.Http.dll">
+      <publishTime>06/26/2017 14:50:55</publishTime>
+    </File>
+    <File Include="bin/System.Web.Http.WebHost.dll">
+      <publishTime>06/26/2017 14:50:55</publishTime>
+    </File>
+    <File Include="bin/U2.Data.Client.dll">
+      <publishTime>04/22/2015 09:52:48</publishTime>
+    </File>
+    <File Include="bin/U2.Data.Client.Entity.dll">
+      <publishTime>04/22/2015 09:52:48</publishTime>
+    </File>
+    <File Include="bin/U2.Data.Client.U2Json.dll">
+      <publishTime>04/22/2015 09:52:50</publishTime>
+    </File>
+    <File Include="Exports/CallbackManager.h">
+      <publishTime>06/26/2017 14:50:58</publishTime>
+    </File>
+    <File Include="Exports/VersionSymbols.h">
+      <publishTime>06/26/2017 14:50:58</publishTime>
+    </File>
+    <File Include="Global.asax">
+      <publishTime>06/26/2017 14:50:57</publishTime>
+    </File>
+    <File Include="Models/PIM.edmx.diagram">
+      <publishTime>06/26/2017 14:50:58</publishTime>
+    </File>
+    <File Include="packages.config">
+      <publishTime>06/26/2017 14:50:57</publishTime>
+    </File>
+    <File Include="PrecompiledApp.config">
+      <publishTime>02/02/2018 13:07:44</publishTime>
+    </File>
+    <File Include="Web.config">
+      <publishTime>04/16/2018 16:02:27</publishTime>
+    </File>
+  </ItemGroup>
+</Project>

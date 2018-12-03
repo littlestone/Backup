@@ -1,0 +1,15 @@
+
+<div style="border-width: 1px; border-color: black; border-style: solid; padding: 8px" layout="column">
+
+  <div style="margin:4px 0px 4px 0px;" ng-click="cBCAfeMenu.showNotAvailableAlert()">Request a Supplemental...</div>
+
+  <md-divider style="margin-top:5px; margin-bottom:5px;"></md-divider>
+
+  <md-content style="height:150px; background-color:white;" layout="column">
+    <a ng-repeat="x in cBCAfeMenu.afeList" ui-sref="afeEdit({afeId: {{x.id}}})">{{x.afeNumber}}
+      <md-tooltip md-direction="top">
+        {{x.title}}
+      </md-tooltip>
+    </a>
+  </md-content>
+</div>

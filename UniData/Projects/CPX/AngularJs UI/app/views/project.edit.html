@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Edit Project</title>
+    <style>
+      body {
+        background-color: lightgray;
+      }
+    </style>
+  </head>
+  <body>
+    <div layout="row">
+      <div flex>
+        <md-tabs md-dynamic-height md-border-bottom  class="md-primary md-hue-1">
+          <md-tab>
+            <md-tab-label>
+              Header
+            </md-tab-label>
+            <md-tab-body>
+              <div ui-view="projectDetails"></div>
+            </md-tab-body>
+          </md-tab>
+          <md-tab ng-disabled="cProjectEdit.currentProject.id <= 0">
+            <md-tab-label>
+              Phasing
+            </md-tab-label>
+            <md-tab-body>
+              <div ng-if="cProjectEdit.currentProject.id > 0" ui-view="budgetForecast"></div>
+            </md-tab-body>
+          </md-tab>
+          <md-tab ng-disabled="cProjectEdit.currentProject.id <= 0">
+            <md-tab-label>
+              Transfers
+            </md-tab-label>
+            <md-tab-body>
+              <div ng-if="cProjectEdit.currentProject.id > 0" ui-view="projectTransactions"></div>
+            </md-tab-body>
+          </md-tab>
+          <md-tab ng-disabled="cProjectEdit.currentProject.id <= 0">
+            <md-tab-label>
+              AFE
+            </md-tab-label>
+            <md-tab-body>
+              <div ng-if="cProjectEdit.currentProject.id > 0" ui-view="projectAfeList"></div>
+            </md-tab-body>
+          </md-tab>
+        </md-tabs>
+      </div>
+
+      <!--Right Panel-->
+      <div ng-if="cProjectEdit.currentProject.id > 0" style="border-width: 1px; border-color: darkgrey; background-color:white " class="prjOverview" layout="column" ng-style="prjOverviewStyle" md-whiteframe="3">
+        <div  style="height:49px;" md-colors="{background:'primary-hue-1'}">
+          <md-button ng-click="toggleOverview()" class="md-fab md-mini md-primary md-hue-3">
+            <md-tooltip md-direction="bottom">
+              Overview
+            </md-tooltip>
+            <span style="color:white;" class="glyphicon glyphicon-usd"></span>
+          </md-button>
+          <span ng-show="isOverviewOpen" style="margin-left:12px; color:white;">Overview</span>
+        </div>
+        <div ng-style="formStyle" ng-show="isOverviewOpen">
+          <md-tabs md-dynamic-height class="md-primary md-hue-3">
+            <md-tab>
+              <md-tab-label>
+                <b>Project</b>
+                <md-tooltip md-direction="bottom">Current projects</md-tooltip>
+              </md-tab-label>
+              <md-tab-body>
+                <md-content ng-style="contentStyle">
+                  <div ui-view="prjoverview"></div>
+                </md-content>
+              </md-tab-body>
+            </md-tab>
+            
+<!--        Removed until bugs are fixed    
+            <md-tab>
+              <md-tab-label>
+                <b>Envelope</b>
+                <md-tooltip md-direction="bottom">All my projects</md-tooltip>
+              </md-tab-label>
+              <md-tab-body>
+                <md-content ng-style="contentStyle">
+                  <div ui-view="prjoverviewall"></div>
+                </md-content>
+              </md-tab-body>
+            </md-tab>-->
+
+          </md-tabs>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

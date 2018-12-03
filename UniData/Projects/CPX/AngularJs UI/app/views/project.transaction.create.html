@@ -1,0 +1,88 @@
+<md-dialog aria-label="New transaction dialog" style="width:700px;">
+  <form name="newTransactionForm" novalidate ng-cloak>
+    <md-toolbar>
+      <div class="md-toolbar-tools">
+        <h5>New Transaction Creation Form</h5>
+        <span flex></span>
+        <md-checkbox style="font-size: 11px" ng-model="financeUser" aria-label="FinanceUser?">
+          Finance User?
+        </md-checkbox>
+      </div>
+    </md-toolbar>
+    <md-dialog-content style="margin: 12px 12px 0px 12px; background-color: white;">
+      <div style="margin: 0px 8px 0px 8px;" layout="row">
+        <div flex layout="column">
+          <md-autocomplete required
+            md-floating-label="Target project number"
+            md-input-name="targetProject"
+            md-no-cache="true"
+            md-selected-item="selectedProject"
+            md-selected-item-change="selectedProjectChange(prj)"
+            md-search-text-change="searchTextChange(searchText)"
+            md-search-text="searchText"
+            md-items="prj in querySearch(searchText)"
+            md-item-text ="prj.projectNumber"
+            md-clear-button="true"
+            md-require-match
+            md-min-length="1"
+            md-autofocus
+            placeholder="Search projects...">
+            <md-item-template>
+              <span md-highlight-text="searchText" md-highlight-flags="i">{{prj.projectNumber}} - {{prj.description}}</span>
+            </md-item-template>
+            <md-not-found>
+              No project(s) matching "{{searchText}}" were found.
+            </md-not-found>
+            <div ng-messages="newTransactionForm.targetProject.$error" ng-if="newTransactionForm.targetProject.$touched">
+              <p ng-message="required">Providing a target project number is mandatory.</p>
+            </div>
+          </md-autocomplete>
+        </div>
+      </div>
+      <div style="margin: 0px 8px 0px 8px;" layout="row">
+        <div flex layout="column">
+          <md-input-container md-autofocus>
+            <label>Project description</label>
+            <input type="text" value="{{selectedProject.description}}" ng-readonly="true">
+          </md-input-container>
+        </div>
+      </div>
+      <div style="margin: 0px 8px 0px 8px;" layout="row">
+        <div flex="80" layout="column" style="margin-right: 8px;">
+          <md-input-container md-autofocus>
+            <label>Amount($)</label>
+            <input type="number" name="amount" ng-value="" ng-pattern="/^[0-9]+(\.[0-9]{1,2})?$/" min="0.01" max="{{balanceAmount}}" step="0.01" value="" placeholder="{{remainingAmount | currency}} is the maximum amount available to transfer for current project." ng-model="newTransactionData.amount" ng-required="true" ng-disabled="isFieldDisabled">
+            <div ng-messages="newTransactionForm.amount.$error">
+              <p ng-message="required">Providing an amount is mandatory.</p>
+              <p ng-message="min">Transfer amount must be greater than $0.</p>
+              <p ng-message="max">{{remainingAmount | currency}} is the maximum amount available to transfer, cannot exceed.</p>
+            </div>
+          </md-input-container>
+        </div>
+        <div flex="20" layout="column">
+          <md-input-container>
+            <label>Currency</label>
+            <input type="text" value="{{curProject.companyCurrencyCode}}" ng-readonly="true">
+          </md-input-container>
+        </div>
+      </div>
+      <div style="margin: 0px 8px 0px 8px;" layout="row">
+        <div flex layout="column">
+          <md-input-container md-autofocus>
+            <label>Comments</label>
+            <textarea ng-model="newTransactionData.comments"rows="4" md-maxlength="1000" md-select-on-focus ng-disabled="isFieldDisabled"></textarea>
+          </md-input-container>
+        </div>
+      </div>
+    </md-dialog-content>
+  </form>
+  <md-dialog-actions layout="row">
+    <span flex></span>
+    <md-button ng-click="save()" class="md-raised" ng-disabled="newTransactionForm.$invalid" style="margin: 0px 8px 0px 8px;">
+      Save
+    </md-button>
+    <md-button ng-click="cancel()" class="md-raised" style="margin: 0px 8px 0px 0px;">
+      Cancel
+    </md-button>
+  </md-dialog-actions>
+</md-dialog>

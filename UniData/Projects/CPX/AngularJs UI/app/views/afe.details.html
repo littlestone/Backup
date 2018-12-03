@@ -1,0 +1,272 @@
+
+<md-content style="margin: 12px; border-color: darkgray; border-radius: 5px; border-width: 1px; border-style: solid; background-color: white" md-whiteframe="3" ng-style="cAfeDetails.contentStyle">
+  <md-tabs md-border-bottom  class="md-accent md-hue-2">
+    <md-tab id="0">
+      <md-tab-label>
+        Executive
+      </md-tab-label>
+      <md-tab-body>
+        <md-content style="margin:0px 8px 0px 8px; height:545px;background-color:whitesmoke;border-style: solid;border-width: 1px; border-color: darkgray;" layout='column'>
+          <div style="height:50px; background-color: lightgray;" layout="column">
+            <div layout="row">
+              <h5 style="margin-top:8px; padding-top:8px;margin-left:4px;" flex>Executive Summary</h5>
+              <span flex></span>
+              <md-button class="md-icon-button" aria-label="Attachment" ng-click="showAttachmentUtility(4)">
+                <md-tooltip>Attachment Utility</md-tooltip>
+                <md-icon md-svg-src="../images/icons/ic_attach_file_black_24px.svg"></md-icon>
+              </md-button>
+            </div>
+          </div>
+          <md-input-container>
+<!--            <md-tooltip md-direction="top">Short description: Project, Rationale, Benefits, Justification</md-tooltip>-->
+            <textarea id="0" ng-model="cAfeDetails.afe.executiveSummary" aria-label="afeExecutiveSummary" md-maxlength="2000" rows="14" ix-sec="{{secmsk}}"></textarea>
+          </md-input-container>
+        </md-content>
+      </md-tab-body>
+    </md-tab>
+
+    <md-tab id="1">
+      <md-tab-label>
+        Proposal
+      </md-tab-label>
+      <md-tab-body>
+        <md-content style="margin:0px 8px 0px 8px; height:545px;background-color:whitesmoke;border-style: solid;border-width: 1px; border-color: darkgray;" layout='column'>
+          <div style="height:50px; background-color: lightgray;" layout="column">
+            <div layout="row">
+              <h5 style="margin-top:8px; padding-top:8px;margin-left:4px;" flex>Proposal</h5>
+              <span flex></span>
+              <md-button class="md-icon-button" aria-label="Attachment" ng-click="showAttachmentUtility(5)">
+                <md-tooltip>Attachment Utility</md-tooltip>
+                <md-icon md-svg-src="../images/icons/ic_attach_file_black_24px.svg"></md-icon>
+              </md-button>
+            </div>
+          </div>
+          <md-input-container>
+            <!--<md-tooltip md-direction="top">Detailed description of the proposal.</md-tooltip>-->
+            <textarea id="1" ng-model="cAfeDetails.afe.proposal" aria-label="afeProposal" md-maxlength="2000" rows="14" ix-sec="{{secmsk}}"></textarea>
+          </md-input-container>
+        </md-content>
+      </md-tab-body>
+    </md-tab>
+
+    <md-tab id="2">
+      <md-tab-label>
+        Background
+      </md-tab-label>
+      <md-tab-body>
+        <md-content style="margin:0px 8px 0px 8px; height:545px;background-color:whitesmoke;border-style: solid;border-width: 1px; border-color: darkgray;" layout='column'>
+          <div style="height:50px; background-color: lightgray;" layout="column">
+            <div layout="row">
+              <h5 style="margin-top:8px; padding-top:8px;margin-left:4px;" flex>Background</h5>
+              <span flex></span>
+              <md-button class="md-icon-button" aria-label="Attachment" ng-click="showAttachmentUtility(6)">
+                <md-tooltip>Attachment Utility</md-tooltip>
+                <md-icon md-svg-src="../images/icons/ic_attach_file_black_24px.svg"></md-icon>
+              </md-button>
+            </div>
+          </div>
+          <md-input-container>
+            <!--<md-tooltip md-direction="top">Describe past and present situations, issues and opportunities that lead to the presentation of the AFE</md-tooltip>-->
+            <textarea id="2" ng-model="cAfeDetails.afe.background" aria-label="afeBackground" md-maxlength="2000" rows="14" ix-sec="{{secmsk}}"></textarea>
+          </md-input-container>
+        </md-content>
+      </md-tab-body>
+    </md-tab>
+
+    <md-tab id="3">
+      <md-tab-label>
+        Assumptions
+      </md-tab-label>
+      <md-tab-body>
+        <md-content style="margin:0px 8px 0px 8px; height:545px;background-color:whitesmoke;border-style: solid;border-width: 1px; border-color: darkgray;" layout='column'>
+          <div style="height:50px; background-color: lightgray;" layout="column">
+            <div layout="row">
+              <h5 style="margin-top:8px; padding-top:8px;margin-left:4px;" flex>Assumptions</h5>
+              <span flex></span>
+              <md-button class="md-icon-button" aria-label="Attachment" ng-click="showAttachmentUtility(7)">
+                <md-tooltip>Attachment Utility</md-tooltip>
+                <md-icon md-svg-src="../images/icons/ic_attach_file_black_24px.svg"></md-icon>
+              </md-button>
+            </div>
+          </div>
+          <md-input-container>
+<!--            <md-tooltip md-direction="top">Assumptions used in justification of the case
+              Financial analysis should be confirmed by Finance, contact your cost analyst
+              Sales increases should be confirmed by Sales
+              Capacity issues & constraint should be confirmed by Supply Chain
+            </md-tooltip>-->
+            <textarea id="3" ng-model="cAfeDetails.afe.assumption" aria-label="afeAssumption" md-maxlength="2000" rows="14" ix-sec="{{secmsk}}"></textarea>
+          </md-input-container>
+        </md-content>
+      </md-tab-body>
+    </md-tab>
+
+    <md-tab id="4">
+      <md-tab-label>
+        Benefits
+      </md-tab-label>
+      <md-tab-body>
+        <md-content style="margin:0px 8px 0px 8px; height:545px;background-color:whitesmoke;border-style: solid;border-width: 1px; border-color: darkgray;" layout='column'>
+          <div style="height:50px; background-color: lightgray;" layout="column">
+            <div layout="row">
+              <h5 style="margin-top:8px; padding-top:8px;margin-left:4px;" flex>Benefits</h5>
+              <span flex></span>
+              <md-button class="md-icon-button" aria-label="Attachment" ng-click="showAttachmentUtility(8)">
+                <md-tooltip>Attachment Utility</md-tooltip>
+                <md-icon md-svg-src="../images/icons/ic_attach_file_black_24px.svg"></md-icon>
+              </md-button>
+            </div>
+          </div>
+          <md-input-container>
+            <!--<md-tooltip md-direction="top">Cost savings must, if any, be explained and calculation provided in Annex. Cost savings must be confirm by Finance, contact your cost analyst. List and explain all other benefits </md-tooltip>-->
+            <textarea id="4" ng-model="cAfeDetails.afe.benefits" aria-label="afeBenifits" md-maxlength="2000" rows="15" ix-sec="{{secmsk}}"></textarea>
+          </md-input-container>
+        </md-content>
+      </md-tab-body>
+    </md-tab>
+
+    <md-tab id="5">
+      <md-tab-label>
+        Alternatives
+      </md-tab-label>
+      <md-tab-body>
+        <md-content style="margin:0px 8px 0px 8px; height:545px;background-color:whitesmoke;border-style: solid;border-width: 1px; border-color: darkgray;" layout='column'>
+          <div style="height:50px; background-color: lightgray;" layout="column">
+            <div layout="row">
+              <h5 style="margin-top:8px; padding-top:8px;margin-left:4px;" flex>Alternatives</h5>
+              <span flex></span>
+              <md-button class="md-icon-button" aria-label="Attachment" ng-click="showAttachmentUtility(9)">
+                <md-tooltip>Attachment Utility</md-tooltip>
+                <md-icon md-svg-src="../images/icons/ic_attach_file_black_24px.svg"></md-icon>
+              </md-button>
+            </div>
+          </div>
+          <md-input-container>
+            <!--<md-tooltip md-direction="top">There should be at least two alternatives presented with some details. Pros, Cons and reason of rejection</md-tooltip>-->
+            <textarea id="5" ng-model="cAfeDetails.afe.alternative" aria-label="afeAlternative" md-maxlength="2000" rows="14" ix-sec="{{secmsk}}"></textarea>
+          </md-input-container>
+        </md-content>
+      </md-tab-body>
+    </md-tab>
+
+    <md-tab id="6">
+      <md-tab-label>
+        Payback
+      </md-tab-label>
+      <md-tab-body>
+        <md-content style="margin:0px 8px 0px 8px; height:545px;background-color:whitesmoke;border-style: solid;border-width: 1px; border-color: darkgray;" layout='column'>
+          <div style="height:50px; background-color: lightgray;" layout="column">
+            <div layout="row">
+              <h5 style="margin-top:8px; padding-top:8px;margin-left:4px;" flex>Payback</h5>
+              <span flex></span>
+              <md-button class="md-icon-button" aria-label="Attachment" ng-click="showAttachmentUtility(10)">
+                <md-tooltip>Attachment Utility</md-tooltip>
+                <md-icon md-svg-src="../images/icons/ic_attach_file_black_24px.svg"></md-icon>
+              </md-button>
+            </div>
+          </div>
+          <md-input-container>
+<!--            <md-tooltip md-direction="top">Required for Productivity improvement or Capacity Addition, obtain Finance department’s input and confirmation prior to circulation for approval.
+              Any applicable savings need to be supported by a financial analysis
+            </md-tooltip>-->
+            <textarea id="6" ng-model="cAfeDetails.afe.payback" aria-label="afePayback" md-maxlength="2000" rows="15" ix-sec="{{secmsk}}"></textarea>
+          </md-input-container>
+        </md-content>
+      </md-tab-body>
+    </md-tab>
+
+    <md-tab id="7">
+      <md-tab-label>
+        Justification
+      </md-tab-label>
+      <md-tab-body>
+        <md-content style="margin:0px 8px 0px 8px; height:545px;background-color:whitesmoke;border-style: solid;border-width: 1px; border-color: darkgray;" layout='column'>
+          <div style="height:50px; background-color: lightgray;" layout="column">
+            <div layout="row">
+              <h5 style="margin-top:8px; padding-top:8px;margin-left:4px;" flex>Justifications</h5>
+              <span flex></span>
+              <md-button class="md-icon-button" aria-label="Attachment" ng-click="showAttachmentUtility(11)">
+                <md-tooltip>Attachment Utility</md-tooltip>
+                <md-icon md-svg-src="../images/icons/ic_attach_file_black_24px.svg"></md-icon>
+              </md-button>
+            </div>
+          </div>
+          <md-input-container>
+            <!--<md-tooltip md-direction="top">Short summary of arguments for the project and final recommendation</md-tooltip>-->
+            <textarea id="7" ng-model="cAfeDetails.afe.justification" aria-label="afeJustification" md-maxlength="2000" rows="14" ix-sec="{{secmsk}}"></textarea>
+          </md-input-container>
+        </md-content>
+      </md-tab-body>
+    </md-tab>
+
+    <md-tab id="8">
+      <md-tab-label>
+        Costs
+      </md-tab-label>
+      <md-tab-body>
+        <md-content style="margin:0px 8px 0px 8px; height:545px;background-color:whitesmoke;border-style: solid;border-width: 1px; border-color: darkgray;" layout='column'>
+          <div style="height:50px; background-color: lightgray;" layout="column">
+            <div layout="row">
+              <h5 style="margin-top:8px; padding-top:8px;margin-left:4px;" flex>Costs</h5>
+              <span flex></span>
+              <md-button class="md-icon-button" aria-label="Attachment" ng-click="showAttachmentUtility(12)">
+                <md-tooltip>Attachment Utility</md-tooltip>
+                <md-icon md-svg-src="../images/icons/ic_attach_file_black_24px.svg"></md-icon>
+              </md-button>
+            </div>
+          </div>
+          <md-input-container>
+<!--            <md-tooltip md-direction="top">List all major cost items
+              Indicate which costs are estimated and those from quotations
+              Contingency not to exceed 5%
+              AFE should be done in local currency and the exchange rate stipulated if required.
+              The contingency amount should be associated to the project’s main asset GL category
+              Quotations should be attached in annex
+            </md-tooltip>-->
+            <textarea id="8" ng-model="cAfeDetails.afe.costSummary" aria-label="afeCostSummary" md-maxlength="2000" rows="14" ix-sec="{{secmsk}}"></textarea>
+          </md-input-container>
+        </md-content>
+      </md-tab-body>
+    </md-tab>
+
+    <md-tab id="9">
+      <md-tab-label>
+        Notes
+      </md-tab-label>
+      <md-tab-body>
+        <md-content style="margin:0px 8px 0px 8px; height:545px;background-color:whitesmoke;border-style: solid;border-width: 1px; border-color: darkgray;" layout='column'>
+          <div style="height:50px; background-color: lightgray;" layout="column">
+            <div layout="row">
+              <h5 style="margin-top:8px; padding-top:8px;margin-left:4px;" flex>Notes & Updates</h5>
+              <span flex></span>
+              <md-button class="md-icon-button" aria-label="Attachment" ng-click="showAttachmentUtility(13)">
+                <md-tooltip>Attachment Utility</md-tooltip>
+                <md-icon md-svg-src="../images/icons/ic_attach_file_black_24px.svg"></md-icon>
+              </md-button>
+            </div>
+          </div>
+          <md-input-container>
+            <textarea id="9" ng-model="cAfeDetails.afe.notes" aria-label="afeNotes" md-maxlength="2000" rows="14" ix-sec="{{secmsk}}"></textarea>
+          </md-input-container>
+        </md-content>
+      </md-tab-body>
+    </md-tab>
+  </md-tabs>
+  
+  
+  
+  <div layout="row">
+    <div flex></div>
+    <div style="margin:15px 5px 0px 0px;">
+        <md-button class="md-raised md-accent" ng-click="cAfeDetails.saveData()" ng-disabled="false">
+          <md-tooltip md-direction="top">Save details</md-tooltip>
+          Save
+        </md-button>
+
+        <md-button class="md-raised md-accent" ng-click="" ng-disabled="false">
+          <md-tooltip md-direction="top">Cancel the changes made to the details</md-tooltip>
+          Cancel
+        </md-button>
+      </div>
+  </div>
+</md-content>

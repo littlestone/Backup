@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "es2017",
+    "allowSyntheticDefaultImports": true,
+    "noEmit": true,
+    "checkJs": true,
+    "lib": [
+      "dom",
+      "es2017",
+      "browser"
+    ]
+  },
+  "include": [
+    "./src/"
+  ],
+  "exclude": [
+    "node_modules",
+    "bower_components",
+    "jspm_packages",
+    "tmp",
+    "temp",
+    "dist"
+  ]
+}

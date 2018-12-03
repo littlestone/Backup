@@ -1,0 +1,194 @@
+<div  style="height:658px; background-color: white; border-color: darkgray; border-style: solid; border-width: 1px; border-radius: 5px; margin:12px 12px 0px 12px" md-whiteframe="3" ng-style="contentStyle">
+  <div style="height:50px; background-color: #cccccc; border-radius: 5px 5px 0px 0px;" layout="column">
+    <div layout="row">
+      <h5 style="margin-top:8px; padding-top:8px;margin-left:4px; color:white"flex>AFE</h5>
+      <div>
+        <md-menu>
+          <md-button aria-label="AFEListMenu" class="md-icon-button" ng-click="$mdOpenMenu()">
+            <span class="glyphicon glyphicon-option-vertical"></span>
+            <md-tooltip md-direction="top">Menu</md-tooltip>
+          </md-button>
+          <md-menu-content width="4">
+            <md-menu-item>
+              <md-button ng-click="showNotAvailableAlert()"> <span md-menu-align-target>Add...</span></md-button>
+            </md-menu-item>
+            <md-menu-item>
+              <md-button ng-click="showNotAvailableAlert()"> <span md-menu-align-target>Remove</span></md-button>
+            </md-menu-item>
+            <md-menu-item>
+              <md-button ng-click="null"><span class="glyphicon glyphicon-refresh"></span> <span md-menu-align-target>Refresh</span></md-button>
+            </md-menu-item>
+          </md-menu-content>
+        </md-menu>
+      </div>
+    </div>
+  </div>
+
+  <div ng-show="!afeLoading && (cPrjAfeList.afeList.length > 0)" style="border-style:solid; border-color:lightgray; border-width:1px;">
+    <div style="margin:0px 76px 8px 24px; height:50px;" >
+      <table class="table table-condensed" style="font-size: 12px;">
+        <tr>
+          <th style="width:18%">AFE</th>
+          <th style="width:5%">Original Budget</th>
+          <th style="width:5%">Commited</th>
+          <th style="width:5%">PO Receipt</th>
+          <th style="width:5%">Actuals + Forecast</th>
+          <th style="width:5%">Remaining</th>
+          <th style="width:5%">Jan</th>
+          <th style="width:5%">Feb</th>
+          <th style="width:5%">Mar</th>
+          <th style="width:5%">Apr</th>
+          <th style="width:5%">May</th>
+          <th style="width:5%">Jun</th>
+          <th style="width:5%">Jul</th>
+          <th style="width:5%">Aug</th>
+          <th style="width:5%">Sep</th>
+          <th style="width:5%">Oct</th>
+          <th style="width:5%">Nov</th>
+          <th style="width:5%">Dec</th>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div ng-show="afeLoading" style="margin:6px 24px 0px 24px;">
+    <md-progress-linear class="md-primary" md-mode="indeterminate" ng-disabled="false"></md-progress-linear>
+  </div>
+  <div ng-show="!afeLoading && (cPrjAfeList.afeList.length > 0)">
+    <md-expansion-panel-group md-component-id="afeListPanelGrp">
+      <md-expansion-panel ng-repeat="afe in cPrjAfeList.afeList" md-component-id="afe{{afe.id}}">
+        <md-expansion-panel-collapsed>
+          <div class="md-summary" style="font-size: 10px;">
+            <div class="table-responsive">
+              <table class="table table-condensed">
+                <tr>
+<!--                  <td style="width:18%"><a ui-sref="afeEdit({prjId: {{afe.projectId}}, afeId: {{afe.id}}})"><span style="font-size: 12px">{{afe.afeNumber}}</span></a><br><b>({{afe.title}})</b></td>-->
+
+                  <td style="width:18%"><div ng-click="cPrjAfeList.jumpTo(afe.projectId, afe.id)"><span style="font-size: 12px; color:#3987CC;">{{afe.afeNumber}}</span></div><br><b>({{afe.title}})</b></td>
+
+
+
+                  <td style="width:5%">{{afe.budgetAmount| currency}}</td>
+                  <td style="width:5%">{{afe.commited| currency}}</td>
+                  <td style="width:5%">{{afe.poReceipt| currency}}</td>
+                  <td style="width:5%">{{afe.january +
+                    afe.february +
+                    afe.march +
+                    afe.april +
+                    afe.may +
+                    afe.june +
+                    afe.july +
+                    afe.august +
+                    afe.september +
+                    afe.october +
+                    afe.november +
+                    afe.december
+                    | currency}}</td>
+                  <td style="width:5%">{{afe.afeAmount| currency}}</td>
+                  <td style="width:5%">{{afe.january| currency}}</td>
+                  <td style="width:5%">{{afe.february| currency}}</td>
+                  <td style="width:5%">{{afe.march| currency}}</td>
+                  <td style="width:5%">{{afe.april| currency}}</td>
+                  <td style="width:5%">{{afe.may| currency}}</td>
+                  <td style="width:5%">{{afe.june| currency}}</td>
+                  <td style="width:5%">{{afe.july| currency}}</td>
+                  <td style="width:5%">{{afe.august| currency}}</td>
+                  <td style="width:5%">{{afe.september| currency}}</td>
+                  <td style="width:5%">{{afe.october| currency}}</td>
+                  <td style="width:5%">{{afe.november| currency}}</td>
+                  <td style="width:5%">{{afe.december| currency}}</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+          <md-button class="md-icon-button md-primary" ng-click="$panel.expand()">
+            <div><span class="glyphicon glyphicon-chevron-down"></span></div>
+          </md-button>
+        </md-expansion-panel-collapsed>
+
+        <md-expansion-panel-expanded>
+          <md-expansion-panel-header>
+            <div class="md-summary" style="font-size: 10px;">
+              <div class="table-responsive">
+                <table class="table table-condensed table-bordered">
+                  <thead>
+                    <tr md-colors="{background: 'primary-50'}">
+                      <th><div ng-click="cPrjAfeList.jumpTo(afe.projectId, afe.id)"><span style="font-size: 12px; color:#3987CC;">{{afe.afeNumber}}</span></div><br><b>({{afe.title}})</b></th>
+                      <th>Original Budget</th>
+                      <th>Committed</th>
+                      <th>P.O. Receipt</th>
+                      <th>Actuals + Forecast</th>
+                      <th>Remaining</th>
+                      <th>Jan</th>
+                      <th>Feb</th>
+                      <th>Mar</th>
+                      <th>Apr</th>
+                      <th>May</th>
+                      <th>Jun</th>
+                      <th>Jul</th>
+                      <th>Aug</th>
+                      <th>Sept</th>
+                      <th>Oct</th>
+                      <th>Nov</th>
+                      <th>Dec</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>{{afe.title}}</td>
+                      <td>{{afe.budgetAmount| currency}}</td>
+                      <td>{{afe.commited| currency}}</td>
+                      <td>{{afe.poReceipt| currency}}</td>
+                      <td>{{afe.january +
+                        afe.february +
+                        afe.march +
+                        afe.april +
+                        afe.may +
+                        afe.june +
+                        afe.july +
+                        afe.august +
+                        afe.september +
+                        afe.october +
+                        afe.november +
+                        afe.december
+                        | currency}}</td>
+                      <td>{{afe.afeAmount| currency}}</td>
+                      <td>{{afe.january| currency}}</td>
+                      <td>{{afe.february| currency}}</td>
+                      <td>{{afe.march| currency}}</td>
+                      <td>{{afe.april| currency}}</td>
+                      <td>{{afe.may| currency}}</td>
+                      <td>{{afe.june| currency}}</td>
+                      <td>{{afe.july| currency}}</td>
+                      <td>{{afe.august| currency}}</td>
+                      <td>{{afe.september| currency}}</td>
+                      <td>{{afe.october| currency}}</td>
+                      <td>{{afe.november| currency}}</td>
+                      <td>{{afe.december| currency}}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <md-button class="md-icon-button md-primary" ng-click="$panel.collapse()">
+              <div><span class="glyphicon glyphicon-chevron-up"></span></div>
+            </md-button>
+          </md-expansion-panel-header>
+          <md-expansion-panel-content>
+            <div layout="row" style="height:35px;">
+              <div flex><p>POs</p></div>
+            </div>
+            <div class="md-summary">
+              <h5 style="margin:24px"  md-colors="{color: 'warn'}">This function will be available soon. Please try again later.</h5>
+            </div>
+          </md-expansion-panel-content>
+        </md-expansion-panel-expanded>
+      </md-expansion-panel>
+    </md-expansion-panel-group>
+  </div>
+  <div ng-show="!afeLoading">
+    <md-button class="md-warn" ng-click="createNewAfe()">
+      Create a new AFE
+    </md-button>
+  </div>
+</div>

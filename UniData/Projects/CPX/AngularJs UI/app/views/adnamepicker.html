@@ -1,0 +1,44 @@
+
+<div layout='column'>
+  <div style='width:450px; background-color: lightgrey;'>
+    <h5 style='margin-left: 8px;'>Search Active Directory</h5>
+  </div>
+  <div>
+    <div layout='row'>
+      <md-input-container flex>
+        <label>Search</label>
+        <input type="text" ng-model="searchString">
+        <md-tooltip>Minimum 3 chars.</md-tooltip>
+      </md-input-container>
+      <md-button aria-label="search" class="md-icon-button" style='margin-top: 18px' ng-click='adLookup(searchString)' ng-disabled='searchString.length < 3'>
+        <span class="glyphicon glyphicon-search"></span>
+        <md-tooltip md-direction="top">Search</md-tooltip>
+      </md-button>
+    </div>
+  </div>
+  <div>
+    <md-content style='border: 1px solid darkgray; border-radius: 5px;; height:180px; margin:0px 8px 15px 8px;'>
+      <md-list class="md-dense">
+        <md-list-item class="md-1-line" ng-repeat="result in queryResult" ng-click="listClick(result.UserName, result.DisplayName);" ng-dblClick="listClick(result.UserName, result.DisplayName); answer(selectedADUser);">
+          <div class="md-list-item-text">
+            <h6>{{result.DisplayName}}</h6>
+          </div>
+        </md-list-item>
+      </md-list>
+    </md-content>
+  </div>
+  <div style='padding:8px 0px 8px 0px'>
+    <div layout="row">
+      <div flex></div>
+      <div style="margin-right:5px;">
+        <md-button class="md-raised md-accent"  ng-click="answer(selectedADUser)" ng-disabled="selectedADUser.userName.length === 0">
+          Ok
+        </md-button>
+
+        <md-button class="md-raised md-accent"  ng-click="answer('')">
+          Cancel
+        </md-button>
+      </div>
+    </div>
+  </div>
+</div>

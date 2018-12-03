@@ -1,0 +1,59 @@
+<md-dialog aria-label="searchSimple">
+    <form  name="searchSimple.form" ng-cloak>
+        <md-toolbar>
+            <div class="md-toolbar-tools" style="width:450px;">
+                <h5>{{title}}</h5>
+            </div>
+        </md-toolbar>
+      
+        <md-dialog-content>
+            <div style="margin:12px; width:400px; height:120px; background-color: white;" layout-padding flex>
+                <div layout='row'>
+                    <md-input-container>
+                        <label>Domain</label>
+                        <md-select name="category" ng-model="selectedDomain" placeholder="Select an item">
+                            <md-option ng-value="0" ng-if="visibleDomain.project">
+                                Projects
+                            </md-option>
+                            <md-option ng-value="1"  ng-disabled='true' ng-if="visibleDomain.afe">
+                                AFE
+                            </md-option>
+                            <md-option ng-value="2" ng-disabled='false' ng-if="visibleDomain.po">
+                                Purchase Orders
+                            </md-option> 
+                        </md-select>
+                    </md-input-container>
+                    
+                    <div ng-show="selectedDomain===0" style='margin-left:8px; width:300px;'>
+                      <!--Search Projects-->
+                      <ix-project-lookup
+                        label="Projects"
+                        ng-Readonly="false"
+                        form="searchSimple.form"
+                        selected-Item="selectedProject"
+                        flex>
+                      </ix-project-lookup>
+                    </div>
+                  
+                    <div ng-show="selectedDomain===2" style='margin-left:8px; width:300px;'>
+                      <!--Search PO-->
+                      <md-input-container>
+                        <label>PO#</label>
+                        <input type="text" ng-model="poNumber">
+                      </md-input-container>
+                    </div>
+                </div>
+            </div>
+        </md-dialog-content>
+        <md-dialog-actions layout="row" style="padding:0px 10px 4px 0px;">
+            <span flex></span>
+            <md-button class="md-raised md-accent" ng-click="searchPo()" ng-disabled="!enableOk()">
+                Open
+            </md-button>
+            
+            <md-button class="md-raised md-accent" ng-click="answer({id: -1, domain:-1})">
+                Cancel
+            </md-button>
+        </md-dialog-actions>
+    </form>
+</md-dialog>

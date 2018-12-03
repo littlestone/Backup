@@ -1,0 +1,17 @@
+<md-input-container >
+  <label class="xlcLabel">{{label}}</label>
+
+  <md-tooltip md-direction="top">{{tooltip}}</md-tooltip>
+  <input class="phCurrencyInput"
+    name="currencyInput"
+    type="text"
+    ng-model="inputAmount"
+    ng-readonly="ngReadonly"
+    ng-change="updateModel()"
+    ng-pattern="/^(?!-0(\.0+)?$)-?(0|[1-9]\d*)(\.\d+)?$/">
+
+  <div ng-messages="form.$error" role="alert">
+    <div ng-message="required" class="my-message">Please enter a value.</div>
+    <div ng-message="pattern">Please enter a NUMERICAL value.</div>
+  </div>
+</md-input-container>

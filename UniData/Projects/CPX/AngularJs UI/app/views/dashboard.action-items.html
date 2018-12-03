@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Action Item List</title>
+    <style>
+      body {
+        background-color: lightgray;
+      }
+    </style>
+  </head>
+  <body>
+    <md-content style=" height:340px; width:605px; background-color:whitesmoke">
+      <md-list class="md-dense" flex>
+        <md-list-item class="md-3-line" ng-repeat="task in actionItemsCtrl.toDo" ng-click="null">
+          <md-checkbox></md-checkbox>
+          <div class="md-list-item-text" layout="column">
+            <h3><b>{{task.subject}}</b></h3>
+            <h4>{{task.originator}}</h4>
+            <h4><b>Due Date:</b> {{task.dueDate}}</h4>
+          </div>
+          <md-button ng-click="doSecondaryAction($event)">
+            <md-tooltip md-direction="top">
+              See Detail
+            </md-tooltip>
+            <span class="glyphicon glyphicon-eye-open"></span>
+          </md-button>
+        </md-list-item>
+      </md-list>
+      <md-progress-linear class="md-primary" md-mode="indeterminate" ng-disabled="!actionItemsCtrl.dataLoading"></md-progress-linear>
+    </md-content>
+  </body>
+</html>

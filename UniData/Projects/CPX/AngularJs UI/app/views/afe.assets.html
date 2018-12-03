@@ -1,0 +1,276 @@
+<form name="cAfeAssets.form">
+  <md-content style="height:658px; margin: 12px; border-color: darkgray; border-radius: 5px; border-width: 1px; border-style: solid; background-color: white" layout="column" md-whiteframe="3" ng-style="contentStyle">
+    <div layout="row">
+      <div style="height:600px; margin:12px 0px 0px 12px; border-color: darkgray; border-style: solid; border-width: 1px; border-radius: 5px;" flex="30">
+        <div style="height:50px; background-color: lightgray;" layout="column">
+          <div layout="row">
+            <h5 style="margin-top:8px; padding-top:8px;margin-left:12px;" flex>
+              Assets ({{cAfeAssets.totalCost | currency}})
+            </h5>
+            <md-menu>
+              <md-button aria-label="Menu" class="md-icon-button" ng-click="$mdOpenMenu()" ng-disabled="false">
+                <span class="glyphicon glyphicon-option-vertical"></span>
+                <md-tooltip md-direction="top">Menu</md-tooltip>
+              </md-button>
+              <md-menu-content width="4">
+                <md-menu-item>
+                  <md-button ng-click="cAfeAssets.newAsset()" ng-disabled="cAfeAssets.addingAsset"  ><span md-menu-align-target>Add an Asset</span></md-button>
+                </md-menu-item>
+              </md-menu-content>
+            </md-menu>
+          </div>
+        </div>
+
+        <md-progress-linear md-mode="indeterminate" class="md-hue-1" ng-show="cAfeAssets.loadingAssets"></md-progress-linear>
+
+        <md-content style="height:540px;">
+          <md-list class="md-dense" ng-disabled="false">
+            <md-list-item ng-repeat="asset in cAfeAssets.assets" class="md-2-line" ng-click="cAfeAssets.getAsset(asset.id);" ng-disabled="cAfeAssets.addingAsset">
+              <div layout="column">
+                <div style="font-size: 14px; margin-top:5px;"><b><i>{{asset.workOrderNumber.length>0?asset.assetNumber:'New'}}</i> - {{asset.assetName | capitalize }}</b></div>
+                <div style="font-size: 12px; margin-top:5px;" ><span style="color:gray">Cost: </span>{{asset.assetCost | currency}}  <span style="color:gray">Purchase Date: </span>{{asset.purchaseDate}}</div>
+                <md-divider ng-if="!$last"></md-divider>
+              </div>
+            </md-list-item>
+          </md-list>
+        </md-content>
+      </div>
+
+      <div style="margin:12px 12px 0px 12px; border-color: darkgray; border-style: solid; border-width: 1px; border-radius: 5px;" layout="column" flex>
+        <md-tabs class="md-primary md-hue-1">
+          <md-tab>
+            <md-tab-label>
+              Details
+            </md-tab-label>
+            <md-tab-body>
+              <md-content style="height:545px; padding:8px;" layout="column">
+                <div layout="row">
+                  <div flex="10" style="margin-right:8px;">
+                    <md-input-container ng-if="cAfeAssets.asset.workOrderNumber.length>0">
+                      <label>Number</label>
+                      <input type="text" ng-model="cAfeAssets.asset.assetNumber" ng-disabled="true">
+                    </md-input-container>
+                    <md-input-container ng-if="cAfeAssets.asset.workOrderNumber.length<=0">
+                      <label>Number</label>
+                      <input type="text" ng-model="cAfeAssets.newAssetNumber" ng-disabled="true">
+                    </md-input-container>
+                  </div>
+                  <div flex></div>
+                  <div flex="85" layout="column">
+                    <md-input-container>
+                      <label>Description</label>
+                      <textarea name="description" ng-model="cAfeAssets.asset.assetName" ng-disabled="false" required></textarea>
+                      <div ng-messages="cAfeAssets.form.description.$error" role="alert">
+                        <div ng-message="required" class="my-message">Please provide a description.</div>
+                      </div>
+                    </md-input-container>
+                  </div>
+                </div>
+                <div layout="row">
+                  <div flex="40">
+                    <md-input-container>
+                      <label>Category</label>
+                      <md-select  name="category" ng-model="cAfeAssets.asset.categoryId" ng-disabled="!cAfeAssets.addingAsset" required ng-change="cAfeAssets.filterSubCategory(cAfeAssets.asset.categoryId)">
+                        <md-option ng-repeat="cat in cAfeAssets.categories" ng-value="cat.id">
+                          {{cat.categoryCode}} - {{cat.description}}
+                        </md-option>
+                      </md-select>
+                      <div ng-messages="cAfeAssets.form.category.$error" role="alert">
+                        <div ng-message="required" class="my-message">Please select a category.</div>
+                      </div>
+                    </md-input-container>
+                  </div>
+                  <div flex></div>
+                  <div flex="55" layout="row">
+                    <md-input-container style="margin-right:8px;">
+                      <label>Cost</label>
+                      <input class="cst" name="Cost *" type="text" ng-model="cAfeAssets.asset.assetCost" ng-required="true" ng-disabled="false">
+                    </md-input-container>
+
+                    <md-input-container>
+                      <label>Replacement<br>Value</label>
+                      <input name="replacement" type="text" ng-model="cAfeAssets.asset.replacementValue" ng-disabled="false">
+                    </md-input-container>
+                  </div>
+                </div>
+
+                <div layout="row">
+                  <div flex="40">
+                    <md-input-container>
+                      <label>Sub Category</label>
+                      <md-select name="subCategory" ng-model="cAfeAssets.asset.subCategoryId" ng-disabled="cAfeAssets.isSubCatetoryDisabled">
+                        <md-option ng-repeat="subCat in cAfeAssets.subCategoriesFiltered" ng-value="subCat.id">
+                          {{subCat.subCategoryCode}} - {{subCat.description}}
+                        </md-option>
+                      </md-select>
+                      <div ng-messages="cAfeAssets.form.subCategory.$error" role="alert">
+                        <div ng-message="required" class="my-message">Please select a category.</div>
+                      </div>
+                    </md-input-container>
+                  </div>
+                  <div flex></div>
+                  <div layout="row" flex="55">
+
+                    <md-input-container>
+                      <label style='width:250px'>Purchase Date</label>
+                      <md-datepicker
+                          id="7"
+                          name="purDate"
+                          ng-model="cAfeAssets.asset.purchaseDate"
+                          md-placeholder="Enter date"
+                          required>
+                      </md-datepicker>
+                      <div ng-messages="cAfeAssets.form.purDate.$error" role="alert">
+                        <div ng-message="required" class="my-message">Enter a valid date.</div>
+                      </div>
+                    </md-input-container>
+
+                    <md-input-container>
+                      <label style='width:250px'>Depreciation <br> Start Date</label>
+                      <md-datepicker
+                          id="8"
+                          name="depreciationDate"
+                          ng-model="cAfeAssets.asset.depreciationStartDate"
+                          md-placeholder="Enter date"
+                          required>
+                      </md-datepicker>
+                      <div ng-messages="cAfeAssets.form.depreciationDate.$error" role="alert">
+                        <div ng-message="required" class="my-message">Enter a valid date.</div>
+                      </div>
+                    </md-input-container>
+                  </div>
+                </div>
+               
+                <div layout="row" style="margin-top:-18px;">
+                  <div  flex="40">
+                    <md-input-container>
+                      <label>Location</label>
+                      <md-select required name="location" ng-model="cAfeAssets.asset.locationId" ng-disabled="!cAfeAssets.addingAsset">
+                        <md-option ng-repeat="loc in cAfeAssets.locations" ng-value="loc.id">
+                          {{loc.locationDescription}}
+                        </md-option>
+                      </md-select>
+                    </md-input-container>
+                  </div>
+                  <div flex></div>
+                  <div layout="row" flex="55">
+                    <md-input-container style="margin-right:8px;">
+                      <label>Work Order</label>
+                      <input type="text" ng-model="cAfeAssets.asset.workOrderNumber" ng-disabled="true">
+                    </md-input-container>
+
+                    <md-input-container>
+                      <label>CER</label>
+                      <input type="text" ng-model="cAfeAssets.asset.cerNumber" ng-disabled="true">
+                    </md-input-container>
+                  </div>
+                </div>
+
+                 <div layout="row" style="margin-top:-18px;">
+                  <div flex="40">
+                    <md-input-container>
+                      <label>Analysis</label>
+                      <md-select name="analysis" ng-model="cAfeAssets.asset.analysisId" ng-disabled="!cAfeAssets.addingAsset">
+                        <md-option ng-repeat="anal in cAfeAssets.analysis" ng-value="anal.id">
+                          {{anal.code}} - {{anal.description}}
+                        </md-option>
+                      </md-select>
+                    </md-input-container>
+                  </div>
+                  <div flex></div>
+                  <div flex="55">
+                    <div style="margin: 24px 0px 0px 8px">
+                      <md-checkbox name="used" ng-model="cAfeAssets.asset.newUsed" ng-disabled="!cAfeAssets.addingAsset">
+                        Used
+                      </md-checkbox>
+                    </div>
+                  </div>
+                </div>
+
+                <div layout="row" style="margin-top:-12px">
+                  <div flex="40">
+                    <md-input-container style="margin-right:8px;">
+                      <label>Serial #</label>
+                      <input name="serial" type="text" ng-model="cAfeAssets.asset.serialNumber" ng-disabled="!cAfeAssets.addingAsset">
+                    </md-input-container>
+                  </div>
+                  <div flex></div>
+                  <div flex="55">
+                    <md-input-container style="margin-right:8px;">
+                      <label>Manufacturer</label>
+                      <input name="manufacturer" type="text" ng-model="cAfeAssets.asset.manufacturer" ng-disabled="!cAfeAssets.addingAsset">
+                    </md-input-container>
+                  </div>
+                </div>
+
+                <div layout="row" style="margin-top:-18px;">
+                  <div flex="40">
+                    <md-input-container style="margin-right:8px;">
+                      <label>Model #</label>
+                      <input name="model" type="text" ng-model="cAfeAssets.asset.modelNumber" ng-disabled="!cAfeAssets.addingAsset">
+                    </md-input-container>
+                  </div>
+                  <div flex></div>
+                  <div flex="55">
+                    <md-input-container style="margin-right:8px;">
+                      <label>Model Name</label>
+                      <input name="modelName" type="text" ng-model="cAfeAssets.asset.modelName" ng-disabled="!cAfeAssets.addingAsset">
+                    </md-input-container>
+                  </div>
+                </div>
+              </md-content>
+            </md-tab-body>
+          </md-tab>
+
+          <md-tab ng-if="!cAfeAssets.addingAsset">
+            <md-tab-label>
+              Purchase Orders
+            </md-tab-label>
+            <md-tab-body>
+              <div ng-show="cAfeAssets.loadingPO" style="margin:0px 12px 0px 12px;">
+                <md-progress-linear class="md-primary" md-mode="indeterminate" ng-disabled="false"></md-progress-linear>
+              </div>
+
+              <div style="height:545px;">
+                <md-content ng-show="!cAfeAssets.loadingPO" style="height:515px; border: 1px solid lightgray;" >
+                  <table class="table table-condensed" style="font-size: 12px; border: 1px solid lightgray;" >
+                    <tr md-colors="{background: 'primary-50'}" style="text-align:left;" >
+                      <th style="width:20%">PO Number <br><span style="font-size: 10px;"><i>[{{cAfeAssets.po.length}}]</i></span></th>
+                      <th style="width:16%">Status</th>
+                      <th style="width:16%"><span>Amount</span><br><span style="font-size: 10px;"><i>[<ix-currency-display ng-value={{cAfeAssets.accumulators.amount}} rate="1"></ix-currency-display>]</i></span></th>
+                      <th style="width:16%"><span>Committed</span><br><span style="font-size: 10px;"><i>[<ix-currency-display ng-value={{cAfeAssets.accumulators.committed}} rate="1"></ix-currency-display>]</i></span></th>
+                      <th style="width:16%"><span>Received</span><br><span style="font-size: 10px;"><i>[<ix-currency-display ng-value={{cAfeAssets.accumulators.received}} rate="1"></ix-currency-display>]</i></span></th>
+                      <th style="width:16%"><span>Invoices</span><br><span style="font-size: 10px;"><i>[<ix-currency-display ng-value={{cAfeAssets.accumulators.payments}} rate="1"></ix-currency-display>]</i></span></th>
+                    </tr>
+
+                    <tr style="text-align:left;" ng-repeat="po in cAfeAssets.po">
+                      <td style="width:20%; font-size: 12px; color:#3987CC;"><span style="margin-left:5px;" ng-click="cAfeAssets.jumpToPo(po.number)">{{po.number}}</span></td>
+                      <td style="width:16%">{{po.status}}</td>
+                      <td style="width:16%"><ix-currency-display ng-value={{po.amount}} rate="1"></ix-currency-display></td>
+                      <td style="width:16%"><ix-currency-display ng-value={{po.committed}} rate="1"></ix-currency-display></td>
+                      <td style="width:16%"><ix-currency-display ng-value={{po.received}} rate="1"></ix-currency-display></td>
+                      <td style="width:16%"><ix-currency-display ng-value={{po.payments}} rate="1"></ix-currency-display></td>
+                    </tr>
+                  </table>
+                </md-content>
+              </div>
+            </md-tab-body>
+          </md-tab>
+        </md-tabs>
+      </div>
+    </div>
+    
+    <div layout="row">
+      <div flex></div>
+      <div style="margin-right:5px;">
+        <md-button class="md-raised md-accent" ng-click="cAfeAssets.saveAsset()" ng-disabled="!cAfeAssets.form.$dirty || !cAfeAssets.form.$valid">
+          Save
+        </md-button>
+
+        <md-button class="md-raised md-accent" ng-click="cAfeAssets.cancelSave()" ng-disabled="cAfeAssets.cancelDisabled()">
+          Cancel
+        </md-button>
+      </div>
+    </div>
+  </md-content>
+</form>

@@ -1,0 +1,223 @@
+<md-dialog aria-label="Show PO" style="width:950px; border-style: solid; border-width: 2px; border-color: gray;">
+  <div style="height:300px;" layout="row">
+    <div style="padding:12px;" layout="column" flex="50">
+
+      <div layout="row">
+        <div flex="30">
+          <md-input-container>
+            <label>PO#</label>
+            <input type="text" ng-model="po.number" ng-readonly="true">
+          </md-input-container>
+        </div>
+
+        <div layout="row" flex>
+          <div style="padding-left: 8px;" flex="50">
+            <md-input-container>
+              <label>PO Date</label>
+              <input type="text" ng-model="po.purchaseOrderDate" ng-readonly="true">
+            </md-input-container>
+          </div>
+          <div flex></div>
+          <h5 style="margin:30px 30px 0px 8px;" ng-style="getStatusColor()"><b>{{poStatus}}</b></h5>
+        </div>
+      </div>
+
+      <md-input-container style="margin-top:-4px;">
+        <label>Company</label>
+        <md-select ng-model="po.companyId" ng-disabled="true">
+          <md-option ng-repeat="x in companies" ng-value="x.id">
+            {{x.description}}
+          </md-option>
+        </md-select>
+      </md-input-container>
+
+      <md-input-container>
+        <label>Location</label>
+        <md-select ng-model="po.locationId" ng-disabled="true">
+          <md-option ng-repeat="x in locations" ng-value="x.id">
+            {{x.locationDescription}}
+          </md-option>
+        </md-select>
+      </md-input-container>
+
+      
+      <div layout="row">
+        <div flex="45">
+          <md-input-container>
+            <label>Currency (rate)</label>
+            <input type="text" ng-model="po.currency + ' (' + po.rate.toString() + ')'" ng-readonly="true">
+          </md-input-container>
+        </div>
+        <div flex></div>
+        <div flex="45">
+          <md-input-container>
+            <label>PO Amount</label>
+            <input type="text" ng-model="poTotalAmount" ng-readonly="true">
+          </md-input-container>
+        </div>
+      </div>
+      
+    </div>
+    
+    <div style="padding:12px;" layout="column" flex="50">
+      <div style="height:185px; border-style:solid; border-width:1px; border-color:lightgray; padding:8px; margin-top:20px;">
+        <div>
+          <div style="margin:5px 0px 12px 0px;">{{po.supplierName}} ({{po.supplierCode}})</div>
+          <div>{{po.addressLine1}}</div>
+          <div ng-if="po.addressLine2.length > 0">{{po.addressLine2}}</div>
+          <div ng-if="po.addressLine3.length > 0">{{po.addressLine3}}</div>
+          <div>{{po.cityCode}}, {{po.stateProvinceCode}}</div>
+          <div>{{po.countryCode}},<span style="margin-left:12px;">{{po.zipPostalCode}}</span></div>
+        </div>
+      </div>
+
+      <div layout="row" style="padding-top:18px;">
+        <div flex="30">
+          <md-input-container>
+            <label>Invoices</label>
+            <input type="text" ng-model=" poPaymentTotalAmount" ng-readonly="true">
+          </md-input-container>
+        </div>
+        <div flex="30" style="margin-left:5px;">
+          <md-input-container>
+            <label>Received</label>
+            <input type="text" ng-model="poReceiptsTotalAmount" ng-readonly="true">
+          </md-input-container>
+        </div>
+        <div flex="30" style="margin-left:5px;">
+          <md-input-container>
+            <label>Committed</label>
+            <input type="text" ng-model="poCommitted" ng-readonly="true">
+          </md-input-container>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div ng-show="false" style="height:17px;">
+    <md-progress-linear class="md-accent" md-mode="indeterminate"></md-progress-linear>
+  </div>
+  <div style="margin-top:-12px;">
+    <md-tabs md-dynamic-height md-border-bottom  class="md-primary md-hue-1">
+      <md-tab>
+        <md-tab-label>
+          Lines
+        </md-tab-label>
+        <md-tab-body>
+            <div ng-show="poListLoading" style="height:250px;">
+              <md-progress-linear class="md-accent" md-mode="indeterminate" ng-disabled="false"></md-progress-linear>
+            </div>
+
+            <md-content ng-show="!poListLoading" style="height:250px; border: 1px solid lightgray;" >
+              <table class="table table-condensed" style="font-size: 12px; border-width:1px; border-style:solid;" ng-style="getTableColor()" >
+                <tr style="text-align:left;">
+                  <th style="width:4%;">Line #</th>
+                  <th style="width:3%;">Status</th>
+                  <th style="width:9%;">Part #</th>
+                  <th style="width:20%;">Description</th>
+                  <th style="width:5%;">Asset</th>
+                  <th style="width:5%;">WO</th>
+                  <th style="width:5%;">CER</th>
+                  <th style="width:5%;">Qty</th>
+                  <th style="width:5%;">Qty Received</th>
+                  <th style="width:5%;">Balance Qty</th>
+                  <th style="width:7%;">Unit Cost</th>
+                  <th style="width:7%;">Amount</th>
+                </tr>
+
+                <tr style="text-align:left;" ng-repeat="line in poLines">
+                  <td style="width:4%;">{{line.lineItemNumber}}</td>
+                  <td style="width:4%">{{line.lineItemStatusCode}}</td>
+                  <td style="width:9%">{{line.supplierpartNumber}}</td>
+                  <td style="width:20%">{{line.partDescription}}</td>
+                  <td style="width:5%">{{line.assetNumber}}</td>
+                  <td style="width:5%">{{line.workOrderNumber}}</td>
+                  <td style="width:5%">{{line.cerNumber}}</td>
+                  <td style="width:5%">{{line.companyScheduledQuantity}}</td>
+                  <td style="width:5%">{{line.companyReceiveQuantity}}</td>
+                  <td style="width:5%">{{line.companyBalanceQuantity}}</td>
+<!--              <td style="width:12%"><ix-currency-display ng-model="line.companyUnitCost" rate="po.rate"></ix-currency-display></td>
+                  <td style="width:12%"><ix-currency-display ng-model="line.purchaseOrderAmount" rate="po.rate"></ix-currency-display></td>-->
+                  <td style="width:7%">{{line.companyUnitCost | currency}}</td>
+                  <td style="width:7%">{{line.purchaseOrderAmount | currency}}</td>
+<!--                  <td style="width:9%">{{line.purchaseOrderAmount | currency:(po.currency==='EUR'?'€':'$')}}</td>-->
+                </tr>
+              </table>
+            </md-content>
+        </md-tab-body>
+      </md-tab>
+      <md-tab>
+        <md-tab-label>
+          Invoices
+        </md-tab-label>
+        <md-tab-body>
+          <div ng-show="poPayLoading" style="height:250px;">
+            <md-progress-linear class="md-accent" md-mode="indeterminate" ng-disabled="false"></md-progress-linear>
+          </div>
+          
+          <md-content ng-show="!poPayLoading" style="height:250px; border: 1px solid lightgray;" >
+            <table class="table table-condensed" style="font-size: 12px; border-width:1px; border-style:solid;" ng-style="getTableColor()" >
+              <tr style="text-align:left;">
+                <th style="width:20%">Invoice</th>
+                <th style="width:20%">Invoice Date</th>
+                <th style="width:20%">Payment Date</th>
+                <th style="width:20%">Check #</th>
+                <th style="width:20%">Amount</th>
+              </tr>
+
+              <tr style="text-align:left;" ng-repeat="pay in poPayments">
+                <td style="width:20%;">{{pay.invoiceNumber}}</td>
+                <td style="width:20%">{{pay.invoiceDate}}</td>
+                <td style="width:20%">{{pay.paymentDate}}</td>
+                <td style="width:20%">{{pay.checkNumber}}</td>
+                <!--<td style="width:20%"><ix-currency-display ng-model="pay.paymentAmount" rate="po.rate"></ix-currency-display></td>-->
+                <td style="width:20%">{{pay.paymentAmount | currency}}</td>
+              </tr>
+            </table>
+          </md-content>
+        </md-tab-body>
+      </md-tab>
+      <md-tab>
+        <md-tab-label>
+          Receipts
+        </md-tab-label>
+        <md-tab-body>
+          <div ng-show="poRecLoading" style="height:250px;">
+            <md-progress-linear class="md-accent" md-mode="indeterminate" ng-disabled="false"></md-progress-linear>
+          </div>
+          
+          <md-content ng-show="!poRecLoading" style="height:250px; border: 1px solid lightgray;" >
+            <table class="table table-condensed" style="font-size: 12px; border-width:1px; border-style:solid;" ng-style="getTableColor()" >
+              <tr style="text-align:left;">
+                <th style="width:10%">Line #</th>
+                <th style="width:10%">Asset</th>
+                <th style="width:10%">WO</th>
+                <th style="width:10%">CER</th>
+                <th style="width:10%">Receiver</th>
+                <th style="width:10%">Date</th>
+                <th style="width:10%">Accepted Qty</th>
+                <th style="width:10%">Rejected Qty</th>
+                <th style="width:10%">Unit Cost</th>
+                <th style="width:10%">Amount</th>
+              </tr>
+
+              <tr style="text-align:left;" ng-repeat="rec in poReceipt">
+                <td style="width:10%;">{{rec.lineItemNumber}}</td>
+                <td style="width:10%;">{{rec.assetNumber}}</td>
+                <td style="width:10%;">{{rec.workOrderNumber}}</td>
+                <td style="width:10%;">{{rec.cerNumber}}</td>
+                <td style="width:10%">{{rec.receiverNumber}}</td>
+                <td style="width:10%">{{rec.receiveDate}}</td>
+                <td style="width:10%">{{rec.acceptedQuantity}}</td>
+                <td style="width:10%">{{rec.rejectedQuantity}}</td>
+<!--                <td style="width:14%"><ix-currency-display ng-model="rec.receiverUnitCostAmount" rate="po.rate"></ix-currency-display></td>
+                <td style="width:16%"><ix-currency-display ng-model="rec.receiptAmount" rate="po.rate"></ix-currency-display></td>-->
+                <td style="width:10%">{{rec.receiverUnitCostAmount | currency}}</td>
+                <td style="width:10%">{{rec.receiptAmount | currency}}</td>
+              </tr>
+            </table>
+          </md-content>
+        </md-tab-body>
+      </md-tab>
+    </md-tabs>
+  </div>
+</md-dialog>

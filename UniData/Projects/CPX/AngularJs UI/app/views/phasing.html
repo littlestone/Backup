@@ -1,0 +1,523 @@
+<style>
+  .monthlyValue{
+    margin: 8px;
+  }
+
+  input.ng-invalid {
+    background-color: #f6efee;
+  }
+</style>
+
+<form name="cPhasing.form">
+  <div  style="margin: 12px; border-color: darkgray; border-radius: 5px; border-width: 1px; border-style: solid; background-color: white" layout="column" md-whiteframe="3" ng-style="contentStyle">
+    <md-content>
+      <div style="margin: 12px; height: 328px; border-style: solid; border-color: darkgray; border-width: 1px;">
+        <fusioncharts
+          width="100%"
+          height="100%"
+          type="msstackedcolumn2dlinedy"
+          datasource="{{chartConfig}}"
+          id= "phasing-chart">
+        </fusioncharts>
+      </div>
+
+      <div style=" margin: 12px; height: 250px;  border-style: solid; border-color: darkgray; border-width: 1px;" layout="column">
+        <div style=" height: 60px">
+          <div layout="row">
+            <div style="margin-right:12px;margin-left:12px;margin-top:6px;" ng-show="displayTypeValue === 0 && showCategory">
+              <!--Forecast-->
+              <md-input-container>
+                <label>Category</label>
+                <md-select ng-model="categoryId" ng-change="reset()">
+                  <md-option ng-repeat="x in displayedForecast" ng-value="x.id">
+                    {{x.categoryDesc | capitalize}}
+                  </md-option>
+                  <md-divider></md-divider>
+                  <md-option ng-value="-1" ng-disabled="cPhasing.selectedYearId < cPhasing.currentYrIndex">
+                    <i>New Category</i>
+                  </md-option>
+                </md-select>
+              </md-input-container>
+            </div>
+
+            <div style="margin-left:12px;margin-top:6px;" ng-show="showDisplay" >
+              <md-input-container>
+                <label>Display</label>
+                <md-select ng-model="displayTypeValue" ng-change="getSelectedBudgetTypeId()">
+                  <md-option ng-repeat="x in displayType" ng-value="x.id">
+                    {{x.display}}
+                  </md-option>
+                </md-select>
+              </md-input-container>
+            </div>
+
+            <div style="margin-left:12px;margin-right:12px;margin-top:6px;">
+              <md-input-container>
+                <label>Year</label>
+                <md-select ng-model="cPhasing.selectedYearId" ng-change="toggleForecastDisplay()">
+                  <md-option ng-repeat="x in cPhasing.forecastDataset" ng-value="{{x.id}}" ng-style="x.current ? {'font-style': 'normal'}: {'font-style': 'italic'}">
+                    {{x.label}} <span ng-if="x.current" ng-style="{'font-style': 'italic'}" > (current)</span>
+                  </md-option>
+                </md-select>
+              </md-input-container>
+            </div>
+
+            <div style="margin-left:12px;margin-right:12px;margin-top:6px;">
+              <md-input-container>
+                <label>Currency</label>
+                <md-select ng-model="selectedCurrencyId" ng-change="toggleForecastDisplay()">
+                  <md-option ng-repeat="x in currencies" ng-value="{{x.id}}" ng-style="x.current ? {'font-style': 'normal'}: {'font-style': 'italic'}">
+                    {{x.code}}
+                  </md-option>
+                </md-select>
+              </md-input-container>
+            </div>
+
+            <div flex></div>
+            <div style="margin-right:12px;margin-top:6px;" ng-show="false">
+              <md-input-container>
+                <label>Depreciation</label>
+                <md-datepicker ng-model="cPhasing.currentForecast[0].depreciationDate" md-placeholder="Enter a date" md-open-on-focus></md-datepicker>
+              </md-input-container>
+            </div>
+          </div>
+        </div>
+
+        <!--Forecast-->
+        <div layout="row" ng-show="displayTypeValue == 0">
+          <div class="monthlyValue" flex="13">
+            <ix-phasing-amount
+              label="January"
+              actual={{displayedForecast[categoryId-1].janActual}}
+              year={{selectedYear}}
+              month="1"
+              budget-type-id={{budgetTypeId}}
+              base-currency-id={{baseCurrencyId}}
+              target-currency-id={{selectedCurrencyId}}
+              category-id={{categoryId-1}}
+              project-id={{currentProjectId}}
+              afe-id={{currentAfeId}}
+              ng-model="displayedForecast[categoryId-1].january"
+              ng-readonly="displayedForecast[categoryId-1].janActual || displayedForecast[categoryId-1].forecastId < 0 || !isAuthorized()"
+              ng-change="refreshUI(0, displayedForecast[categoryId-1].january)"
+              form="cPhasing.form">
+            </ix-phasing-amount>
+
+            <ix-phasing-amount
+              label="July"
+              actual={{displayedForecast[categoryId-1].julActual}}
+              year={{selectedYear}}
+              month="7"
+              budget-type-id={{budgetTypeId}}
+              base-currency-id={{baseCurrencyId}}
+              target-currency-id={{selectedCurrencyId}}
+              category-id={{categoryId-1}}
+              project-id={{currentProjectId}}
+              afe-id={{currentAfeId}}
+              ng-model="displayedForecast[categoryId-1].july"
+              ng-readonly="displayedForecast[categoryId-1].julActual || displayedForecast[categoryId-1].forecastId < 0 || !isAuthorized()"
+              ng-change="refreshUI(6, displayedForecast[categoryId-1].july);"
+              form="cPhasing.form">
+            </ix-phasing-amount>
+          </div>
+
+          <div class="monthlyValue" flex="13">
+            <ix-phasing-amount
+              label="February"
+              actual={{displayedForecast[categoryId-1].febActual}}
+              year={{selectedYear}}
+              month="2"
+              budget-type-id={{budgetTypeId}}
+              base-currency-id={{baseCurrencyId}}
+              target-currency-id={{selectedCurrencyId}}
+              category-id={{categoryId-1}}
+              project-id={{currentProjectId}}
+              afe-id={{currentAfeId}}
+              ng-readonly="displayedForecast[categoryId-1].febActual || displayedForecast[categoryId-1].forecastId < 0 || !isAuthorized()"
+              ng-model="displayedForecast[categoryId-1].february"
+              ng-change="refreshUI(1, displayedForecast[categoryId-1].february);"
+              form="cPhasing.form">
+            </ix-phasing-amount>
+
+            <ix-phasing-amount
+              label="August"
+              actual={{displayedForecast[categoryId-1].augActual}}
+              year={{selectedYear}}
+              month="8"
+              budget-type-id={{budgetTypeId}}
+              base-currency-id={{baseCurrencyId}}
+              target-currency-id={{selectedCurrencyId}}
+              category-id={{categoryId-1}}
+              project-id={{currentProjectId}}
+              afe-id={{currentAfeId}}
+              ng-model="displayedForecast[categoryId-1].august"
+              ng-readonly = "displayedForecast[categoryId-1].augActual || displayedForecast[categoryId-1].forecastId < 0 || !isAuthorized()"
+              ng-change="refreshUI(7, displayedForecast[categoryId-1].august);"
+              form="cPhasing.form">
+            </ix-phasing-amount>
+          </div>
+
+          <div class="monthlyValue" flex="13">
+            <ix-phasing-amount
+              label="March"
+              actual={{displayedForecast[categoryId-1].marActual}}
+              year={{selectedYear}}
+              month="3"
+              budget-type-id={{budgetTypeId}}
+              base-currency-id={{baseCurrencyId}}
+              target-currency-id={{selectedCurrencyId}}
+              category-id={{categoryId-1}}
+              project-id={{currentProjectId}}
+              afe-id={{currentAfeId}}
+              ng-model="displayedForecast[categoryId-1].march"
+              ng-readonly="displayedForecast[categoryId-1].marActual || displayedForecast[categoryId-1].forecastId < 0 || !isAuthorized()"
+              ng-change="refreshUI(2, displayedForecast[categoryId-1].march);"
+              form="cPhasing.form">
+            </ix-phasing-amount>
+
+            <ix-phasing-amount
+              label="September"
+              actual={{displayedForecast[categoryId-1].sepActual}}
+              year={{selectedYear}}
+              month="9"
+              budget-type-id={{budgetTypeId}}
+              base-currency-id={{baseCurrencyId}}
+              target-currency-id={{selectedCurrencyId}}
+              category-id={{categoryId-1}}
+              project-id={{currentProjectId}}
+              afe-id={{currentAfeId}}
+              ng-model="displayedForecast[categoryId-1].september"
+              ng-readonly="displayedForecast[categoryId-1].sepActual || displayedForecast[categoryId-1].forecastId < 0 || !isAuthorized()"
+              ng-change="refreshUI(8, displayedForecast[categoryId-1].september);"
+              form="cPhasing.form">
+            </ix-phasing-amount>
+          </div>
+
+          <div class="monthlyValue" flex="13">
+            <ix-phasing-amount
+              label="April"
+              actual={{displayedForecast[categoryId-1].aprActual}}
+              year={{selectedYear}}
+              month="4"
+              budget-type-id={{budgetTypeId}}
+              base-currency-id={{baseCurrencyId}}
+              target-currency-id={{selectedCurrencyId}}
+              category-id={{categoryId-1}}
+              project-id={{currentProjectId}}
+              afe-id={{currentAfeId}}
+              ng-model="displayedForecast[categoryId-1].april"
+              ng-readonly="displayedForecast[categoryId-1].aprActual || displayedForecast[categoryId-1].forecastId < 0 || !isAuthorized()"
+              ng-change="refreshUI(3, displayedForecast[categoryId-1].april);"
+              form="cPhasing.form">
+            </ix-phasing-amount>
+
+            <ix-phasing-amount
+              label="October"
+              actual={{displayedForecast[categoryId-1].octActual}}
+              year={{selectedYear}}
+              month="10"
+              budget-type-id={{budgetTypeId}}
+              base-currency-id={{baseCurrencyId}}
+              target-currency-id={{selectedCurrencyId}}
+              category-id={{categoryId-1}}
+              project-id={{currentProjectId}}
+              afe-id={{currentAfeId}}
+              ng-model="displayedForecast[categoryId-1].october"
+              ng-readonly="displayedForecast[categoryId-1].octActual || displayedForecast[categoryId-1].forecastId < 0 || !isAuthorized()"
+              ng-change="refreshUI(9, displayedForecast[categoryId-1].october);"
+              form="cPhasing.form">
+            </ix-phasing-amount>
+          </div>
+
+          <div class="monthlyValue" flex="13">
+            <ix-phasing-amount
+              label="May"
+              actual={{displayedForecast[categoryId-1].mayActual}}
+              year={{selectedYear}}
+              month="5"
+              budget-type-id={{budgetTypeId}}
+              base-currency-id={{baseCurrencyId}}
+              target-currency-id={{selectedCurrencyId}}
+              category-id={{categoryId-1}}
+              project-id={{currentProjectId}}
+              afe-id={{currentAfeId}}
+              ng-model="displayedForecast[categoryId-1].may"
+              ng-readonly="displayedForecast[categoryId-1].mayActual || displayedForecast[categoryId-1].forecastId < 0 || !isAuthorized()"
+              ng-change="refreshUI(4, displayedForecast[categoryId-1].may);"
+              form="cPhasing.form">
+            </ix-phasing-amount>
+
+            <ix-phasing-amount
+              label="November"
+              actual={{displayedForecast[categoryId-1].novActual}}
+              year={{selectedYear}}
+              month="11"
+              budget-type-id={{budgetTypeId}}
+              base-currency-id={{baseCurrencyId}}
+              target-currency-id={{selectedCurrencyId}}
+              category-id={{categoryId-1}}
+              project-id={{currentProjectId}}
+              afe-id={{currentAfeId}}
+              ng-model="displayedForecast[categoryId-1].november"
+              ng-readonly="displayedForecast[categoryId-1].novActual || displayedForecast[categoryId-1].forecastId < 0 || !isAuthorized()"
+              ng-change="refreshUI(10, displayedForecast[categoryId-1].november);"
+              form="cPhasing.form">
+            </ix-phasing-amount>
+          </div>
+
+          <div class="monthlyValue" flex="13">
+            <ix-phasing-amount
+              label="June"
+              actual={{displayedForecast[categoryId-1].junActual}}
+              year={{selectedYear}}
+              month="6"
+              budget-type-id={{budgetTypeId}}
+              base-currency-id={{baseCurrencyId}}
+              target-currency-id={{selectedCurrencyId}}
+              category-id={{categoryId-1}}
+              project-id={{currentProjectId}}
+              afe-id={{currentAfeId}}
+              ng-model="displayedForecast[categoryId-1].june"
+              ng-readonly="displayedForecast[categoryId-1].junActual || displayedForecast[categoryId-1].forecastId < 0 || !isAuthorized()"
+              ng-change="refreshUI(5, displayedForecast[categoryId-1].june);"
+              form="cPhasing.form">
+            </ix-phasing-amount>
+
+            <ix-phasing-amount
+              label="December"
+              actual={{displayedForecast[categoryId-1].decActual}}
+              year={{selectedYear}}
+              month="12"
+              budget-type-id={{budgetTypeId}}
+              base-currency-id={{baseCurrencyId}}
+              target-currency-id={{selectedCurrencyId}}
+              category-id={{categoryId-1}}
+              project-id={{currentProjectId}}
+              afe-id={{currentAfeId}}
+              ng-model="displayedForecast[categoryId-1].december"
+              ng-readonly="displayedForecast[categoryId-1].decActual || displayedForecast[categoryId-1].forecastId < 0 || !isAuthorized()"
+              ng-change="refreshUI(11, displayedForecast[categoryId-1].december);"
+              form="cPhasing.form">
+            </ix-phasing-amount>
+          </div>
+        </div>
+
+        <!--Budget-->
+        <div layout="row" ng-show="displayTypeValue == 1">
+          <div class="monthlyValue" flex="13">
+            <ix-budgetamount
+              label="January"
+              year={{selectedYear}}
+              month="1"
+              budget-type-id={{budgetTypeId}}
+              base-currency-id={{baseCurrencyId}}
+              target-currency-id={{selectedCurrencyId}}
+              category-id={{categoryId-1}}
+              project-id={{currentProjectId}}
+              ng-readonly="true"
+              ng-model="displayedBudget[displayBudgetId].january"
+              form="cPhasing.form">
+            </ix-budgetamount>
+
+            <ix-budgetamount
+              label="July"
+              year={{selectedYear}}
+              month="7"
+              budget-type-id={{budgetTypeId}}
+              base-currency-id={{baseCurrencyId}}
+              target-currency-id={{selectedCurrencyId}}
+              category-id={{categoryId-1}}
+              project-id={{currentProjectId}}
+              ng-readonly="true"
+              ng-model="displayedBudget[displayBudgetId].july"
+              form="cPhasing.form">
+            </ix-budgetamount>
+          </div>
+
+          <div class="monthlyValue" flex="13">
+            <ix-budgetamount
+              label="February"
+              year={{selectedYear}}
+              month="2"
+              budget-type-id={{budgetTypeId}}
+              base-currency-id={{baseCurrencyId}}
+              target-currency-id={{selectedCurrencyId}}
+              category-id={{categoryId-1}}
+              project-id={{currentProjectId}}
+              ng-readonly="true"
+              ng-model="displayedBudget[displayBudgetId].february"
+              form="cPhasing.form">
+            </ix-budgetamount>
+
+            <ix-budgetamount
+              label="August"
+              year={{selectedYear}}
+              month="8"
+              budget-type-id={{budgetTypeId}}
+              base-currency-id={{baseCurrencyId}}
+              target-currency-id={{selectedCurrencyId}}
+              category-id={{categoryId-1}}
+              project-id={{currentProjectId}}
+              ng-readonly="true"
+              ng-model="displayedBudget[displayBudgetId].august"
+              form="cPhasing.form">
+            </ix-budgetamount>
+          </div>
+
+          <div class="monthlyValue"  flex="13">
+            <ix-budgetamount
+              label="March"
+              year={{selectedYear}}
+              month="3"
+              budget-type-id={{budgetTypeId}}
+              base-currency-id={{baseCurrencyId}}
+              target-currency-id={{selectedCurrencyId}}
+              category-id={{categoryId-1}}
+              project-id={{currentProjectId}}
+              ng-readonly="true"
+              ng-model="displayedBudget[displayBudgetId].march"
+              form="cPhasing.form">
+            </ix-budgetamount>
+
+            <ix-budgetamount
+              label="September"
+              year={{selectedYear}}
+              month="9"
+              budget-type-id={{budgetTypeId}}
+              base-currency-id={{baseCurrencyId}}
+              target-currency-id={{selectedCurrencyId}}
+              category-id={{categoryId-1}}
+              project-id={{currentProjectId}}
+              ng-readonly="true"
+              ng-model="displayedBudget[displayBudgetId].september"
+              form="cPhasing.form">
+            </ix-budgetamount>
+          </div>
+
+          <div class="monthlyValue" flex="13">
+            <ix-budgetamount
+              label="April"
+              year={{selectedYear}}
+              month="4"
+              budget-type-id={{budgetTypeId}}
+              base-currency-id={{baseCurrencyId}}
+              target-currency-id={{selectedCurrencyId}}
+              category-id={{categoryId-1}}
+              project-id={{currentProjectId}}
+              ng-readonly="true"
+              ng-model="displayedBudget[displayBudgetId].april"
+              form="cPhasing.form">
+            </ix-budgetamount>
+
+            <ix-budgetamount
+              label="October"
+              year={{selectedYear}}
+              month="10"
+              budget-type-id={{budgetTypeId}}
+              base-currency-id={{baseCurrencyId}}
+              target-currency-id={{selectedCurrencyId}}
+              category-id={{categoryId-1}}
+              project-id={{currentProjectId}}
+              ng-readonly="true"
+              ng-model="displayedBudget[displayBudgetId].october"
+              form="cPhasing.form">
+            </ix-budgetamount>
+          </div>
+
+          <div class="monthlyValue" flex="13">
+            <ix-budgetamount
+              label="May"
+              year={{selectedYear}}
+              month="5"
+              budget-type-id={{budgetTypeId}}
+              base-currency-id={{baseCurrencyId}}
+              target-currency-id={{selectedCurrencyId}}
+              category-id={{categoryId-1}}
+              project-id={{currentProjectId}}
+              ng-readonly="true"
+              ng-model="displayedBudget[displayBudgetId].may"
+              form="cPhasing.form">
+            </ix-budgetamount>
+
+            <ix-budgetamount
+              label="November"
+              year={{selectedYear}}
+              month="11"
+              budget-type-id={{budgetTypeId}}
+              base-currency-id={{baseCurrencyId}}
+              target-currency-id={{selectedCurrencyId}}
+              category-id={{categoryId-1}}
+              project-id={{currentProjectId}}
+              ng-readonly="true"
+              ng-model="displayedBudget[displayBudgetId].november"
+              form="cPhasing.form">
+            </ix-budgetamount>
+          </div>
+
+          <div class="monthlyValue" flex="13">
+            <ix-budgetamount
+              label="June"
+              year={{selectedYear}}
+              month="6"
+              budget-type-id={{budgetTypeId}}
+              base-currency-id={{baseCurrencyId}}
+              target-currency-id={{selectedCurrencyId}}
+              category-id={{categoryId-1}}
+              project-id={{currentProjectId}}
+              ng-readonly="true"
+              ng-model="displayedBudget[displayBudgetId].june"
+              form="cPhasing.form">
+            </ix-budgetamount>
+
+            <ix-budgetamount
+              label="December"
+              year={{selectedYear}}
+              month="12"
+              budget-type-id={{budgetTypeId}}
+              base-currency-id={{baseCurrencyId}}
+              target-currency-id={{selectedCurrencyId}}
+              category-id={{categoryId-1}}
+              project-id={{currentProjectId}}
+              ng-readonly="true"
+              ng-model="displayedBudget[displayBudgetId].december"
+              form="cPhasing.form">
+            </ix-budgetamount>
+          </div>
+
+          <div class="monthlyValue" flex="13">
+            <ix-budgetamount
+              label="Next Year"
+              year={{selectedYear}}
+              month="nextYear"
+              afe-id={{currentAfeId}}
+              budget-type-id={{budgetTypeId}}
+              base-currency-id={{baseCurrencyId}}
+              target-currency-id={{selectedCurrencyId}}
+              category-id={{categoryId-1}}
+              project-id={{currentProjectId}}
+              ng-readonly = "true"
+              ng-model="displayedBudget[displayBudgetId].nextYear"
+              form= "cPhasing.form">
+            </ix-budgetamount>
+          </div>
+        </div>
+        <md-progress-linear class="md-hue-1" md-mode="indeterminate" ng-show="loadingForecast"></md-progress-linear>
+      </div>
+
+      <div layout="row">
+        <div flex><span ng-show="amountTooHigh()" style="color:red; float: right; margin: 12px 12px 0px 0px;"><b>Warning:</b> The forecasted amount is higher than the <i>Available to Forecast</i> amount</span></div>
+        <div style="margin-right:5px;">
+          <md-button class="md-raised md-accent" ng-click="SaveData()" ng-disabled="(phasingReadOnly() || amountTooHigh() || !isAuthorized())">
+            <!--                <md-button class="md-raised md-accent" ng-click="SaveData()">-->
+            <md-tooltip md-direction="top">Save the forecast</md-tooltip>
+            Save
+          </md-button>
+
+          <md-button class="md-raised md-accent" ng-click="cancelEdit()" ng-disabled="!cPhasing.form.$dirty">
+            <md-tooltip md-direction="top">Cancel the changes to the forecast</md-tooltip>
+            Cancel
+          </md-button>
+        </div>
+      </div>
+  </div>
+</form>

@@ -1,0 +1,127 @@
+<md-content style="height:658px; margin: 12px; border-color: darkgray; border-radius: 5px; border-width: 1px; border-style: solid; background-color: white" layout="column" md-whiteframe="3" ng-style="contentStyle">
+
+  <div layout="row">
+    <div style="height:578px; margin:12px 0px 0px 12px; border-color: darkgray; border-style: solid; border-width: 1px; border-radius: 5px;" flex="40">
+      <div style="height:50px; background-color: lightgray;" layout="column">
+        <div layout="row">
+          <h5 style="margin-top:8px; padding-top:8px;margin-left:4px;" flex>
+            Users with roles
+          </h5>
+          <md-menu>
+            <md-button aria-label="Menu" class="md-icon-button" ng-click="$mdOpenMenu()" ng-disabled="cUserAdmin.editMode">
+              <span class="glyphicon glyphicon-option-vertical"></span>
+              <md-tooltip md-direction="top">Menu</md-tooltip>
+            </md-button>
+            <md-menu-content width="4">
+              <md-menu-item>
+                <md-button ng-click="cUserAdmin.findUser()"><span md-menu-align-target>Add a user</span></md-button>
+              </md-menu-item>
+<!--              <md-divider></md-divider>
+              <md-menu-item>
+                <md-button ng-click="null"><span class="glyphicon glyphicon-refresh"></span> <span md-menu-align-target>Refresh</span></md-button>
+              </md-menu-item>-->
+            </md-menu-content>
+          </md-menu>
+        </div>
+      </div>
+
+      <md-progress-linear md-mode="indeterminate" class="md-hue-1" ng-show="cUserAdmin.fetching"></md-progress-linear>
+
+      <md-content style="height:520px;">
+        <md-list class="md-dense" ng-disabled="cUserAdmin.editMode">
+          <md-list-item ng-repeat="user in cUserAdmin.CPXUsers | orderBy : 'displayName'" class="md-2-line" ng-click="cUserAdmin.fetchUserData(user.userName)" ng-disabled="cUserAdmin.editMode">
+            <div layout="column">
+              <span><b>{{user.displayName}}</b></span>
+              <span style="margin-top:-10px;"><i>{{user.title.substring(0,user.title.indexOf('***'))}}</i></span>
+              <md-divider ng-if="!$last"></md-divider>
+            </div>
+          </md-list-item>
+        </md-list>
+      </md-content>
+    </div>
+
+    <div layout="column" flex="60">
+      <div style="margin:35px 12px 0px 12px; padding:12px 8px 0px 8px;" flex="40" layout="row">
+        <div layout="column" flex>
+          <ix-ad-lookup
+            label="New User"
+            ng-Readonly="false"
+            form="cUserAdmin.form"
+            selected-Item="cUserAdmin.newUserData"
+            ng-show="false"
+            flex>
+          </ix-ad-lookup>
+
+          <md-input-container style="margin-top:-5px;">
+            <label>User</label>
+            <input type="text" ng-model="cUserAdmin.selectedUser.displayName" ng-disabled="true">
+          </md-input-container>
+
+        <md-input-container style="margin-top:-5px;">
+          <label>Title</label>
+          <input type="text" ng-model="cUserAdmin.selectedUser.title.substring(0,user.title.indexOf('***'))" ng-disabled="true">
+        </md-input-container>
+          <md-input-container style="margin-top:-5px;" ng-show="cUserAdmin.selectedUser.managerDisplayName.length > 0">
+          <label>Manager</label>
+          <input type="text" ng-model="cUserAdmin.selectedUser.managerDisplayName" ng-disabled='true'>
+        </md-input-container>
+        </div>
+
+        <div style="margin:0px 6px 0px 12px;height:70px" class="md-whiteframe-4dp">
+          <img ng-src="images/icons/anonymous.png" class="md-avatar"/>
+        </div>
+
+      </div>
+
+
+
+      <div style="height:330px; margin:0px 12px 12px 12px; border-color: darkgray; border-style: solid; border-width: 1px; border-radius: 5px;" flex="60">
+        <div style="height:50px; background-color: lightgray;" layout="column">
+          <div layout="row">
+            <h5 style="margin-top:8px; padding-top:8px;margin-left:4px;" flex>Roles</h5>
+<!--            <md-menu>
+              <md-button aria-label="TransactionMenu" class="md-icon-button" ng-click="$mdOpenMenu()">
+                <span class="glyphicon glyphicon-option-vertical"></span>
+                <md-tooltip md-direction="top">Menu</md-tooltip>
+              </md-button>
+              <md-menu-content width="4">
+                <md-menu-item>
+                  <md-button ng-click="null"><span class="glyphicon glyphicon-refresh"></span> <span md-menu-align-target>Refresh</span></md-button>
+                </md-menu-item>
+              </md-menu-content>
+            </md-menu>-->
+          </div>
+        </div>
+
+        <md-content style="height:268px;">
+          <md-list class="md-dense" flex>
+            <!--Remove the roles: Project Owner(id=2) & AFE Owner(id=3) since they are not selectable-->
+            <md-list-item ng-repeat="role in cUserAdmin.roles" class="md-1-line"  ng-if="!(role.id===2 || role.id===3)">
+              <md-checkbox ng-model="role.selected" class="md-primary md-hue-2" ng-click="cUserAdmin.setEditMode()" ng-disabled="role.id===0"></md-checkbox>
+              <div>{{role.name}}</div>
+            </md-list-item>
+          </md-list>
+        </md-content>
+      </div>
+    </div>
+  </div>
+
+  <div layout="row" >
+    <div flex> </div>
+    <div style="margin-right:5px;" layout="row">
+      <div style="margin-right: 24px">
+        <md-button class="md-raised md-warn md-hue-2" ng-click="showNotAvailableAlert()" ng-show="false">
+          Remove
+        </md-button>
+        <md-tooltip md-direction="top">Remove selected user</md-tooltip>
+      </div>
+      <md-button class="md-raised md-accent" ng-click="cUserAdmin.save()" ng-disabled="!cUserAdmin.editMode">
+        Save
+      </md-button>
+      <md-button class="md-raised md-accent" ng-click="cUserAdmin.cancel()" ng-disabled="!cUserAdmin.editMode">
+        Cancel
+      </md-button>
+    </div>
+  </div>
+
+</md-content>

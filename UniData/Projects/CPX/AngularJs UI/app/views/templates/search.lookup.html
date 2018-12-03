@@ -1,0 +1,42 @@
+<style>
+  .highlight {
+    color: red;
+    background: #eee;
+    border: 1px solid red;
+    border-radius: 2px;
+    margin: -1px;
+  }
+</style>
+
+<div>
+  <md-autocomplete flex
+    md-floating-label={{foatingLabel}}
+    md-input-name="searchLookup"
+    md-no-cache="true"
+    md-selected-item="selectedItem"
+    md-search-text="searchText"
+    md-items="item in querySearch(searchText)"
+    md-item-text ="item.projectNumber"
+    md-clear-button="true"
+    md-require-match
+    md-floating-label={{label}}
+    md-min-length="1"
+    md-autofocus
+    placeholder={{placeholder}}
+    ng-required='isRequired'>
+    <md-item-template>
+      <span style="display: block; line-height: 2;" md-highlight-text="searchText" md-highlight-flags="i">{{item.projectNumber}} - {{item.description}}</span>
+    </md-item-template>
+    <md-not-found>
+      <h6>{{notFound}}</h6>
+    </md-not-found>
+    <div ng-messages="form.searchLookup.$error">
+      <div ng-message="required">{{required}}</div>
+      <div ng-message="md-require-match">{{requiredMatch}}</div>
+      <div ng-message="minlength">Your entry is not long enough.</div>
+      <div ng-message="maxlength">Your entry is too long.</div>
+    </div>
+  </md-autocomplete>
+
+  <md-tooltip md-direction="top">Start typing</md-tooltip>
+</div>

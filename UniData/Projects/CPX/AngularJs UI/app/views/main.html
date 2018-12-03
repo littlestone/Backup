@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Capex Management System</title>
+    <style>
+      body {
+        background-color: lightgray;
+      }
+      .user-header {
+        padding-left: 25px;
+        padding-top: 25px;
+        height:200px;
+      }
+    </style>
+  </head>
+  <body>
+    <div layout="row">
+      <md-sidenav class="md-sidenav-left" md-component-id="left" md-is-locked-open="$mdMedia('gt-md')" md-whiteframe="1" style="width:250px;" ng-style="windowStyle">
+        <md-toolbar class="md-theme-default user-header" layout="column" >
+          <div flex="30">
+            <div class="md-caption">{{cMain.users.displayName}}</div>
+            <div class="md-caption">{{cMain.userTitle}}</div>
+          </div>
+          <div flex="35">
+            <div class="md-caption"><i>Approvals Requests: <b>0</b></i></div>
+            <div class="md-caption"><i>Action Items: <b>0</b></i></div>
+            <div class="md-caption"><i>Messages: <b>0</b></i></div>
+          </div>
+          <div layout='row' flex='35'>
+            <span flex></span>
+            <p style="text-align: right;">
+              <span class="md-flex md-caption" style="padding-right: 10px;">
+                <md-button ng-click="cMain.find()" class="md-fab md-mini md-primary md-hue-1">
+                  <md-tooltip md-direction="top">
+                    Find
+                  </md-tooltip>
+                  <span style="color:white;" class="glyphicon glyphicon-search"></span>
+                </md-button>
+              </span>
+            </p>
+
+            <p style="text-align: right;">
+              <span class="md-flex md-caption" style="padding-right: 10px;">
+                <md-menu>
+                  <md-button class="md-fab md-mini md-primary md-hue-1" ng-click="$mdOpenMenu()">
+                    <md-tooltip md-direction="top">
+                      Settings
+                    </md-tooltip>
+                    <span style="color:white;" class="glyphicon glyphicon-cog"></span>
+                  </md-button>
+
+                  <md-menu-content width="4">
+                    <md-menu-item>
+                      <md-button ng-click="showNotAvailableAlert()"><span md-menu-align-target>Application Settings</span></md-button>
+                    </md-menu-item>
+                    <md-menu-item>
+                      <md-button ui-sref="roles"><span md-menu-align-target>Role Management</span></md-button>
+                      <!--<md-button ng-click="showNotAvailableAlert()"><span md-menu-align-target>Role Management</span></md-button>-->
+                    </md-menu-item>
+                  </md-menu-content>
+                </md-menu>
+              </span>
+            </p>
+          </div>
+        </md-toolbar>
+        <!-- <md-progress-linear class="md-accent md-hue-1" md-mode="indeterminate" ng-show="appBusy()"></md-progress-linear> -->
+        <div>
+          <div style="margin:10px 0px 10px 12px;">
+            <h5 ng-click="cMain.projectList()" style="color:#3987CC;">
+              Project List
+            </h5>
+          </div>
+
+          <md-divider/>
+
+        <div style="margin:10px 0px 10px 12px;">
+          <h5 ng-click="newProject()" style="color:#3987CC;">
+          <!--<h5 ng-click="showNotAvailableAlert()" style="color:#3987CC;">-->
+            Create a Project
+          </h5>
+        </div>
+
+          <md-divider/>
+
+          <div style="margin:10px 0px 10px 12px;">
+            <h5 ng-click="showNotAvailableAlert()" style="color:#3987CC;">
+              AFE List
+            </h5>
+          </div>
+
+          <md-divider/>
+
+          <md-menu  md-offset="115 0">
+            <div style="margin:10px 0px 10px 12px;">
+              <h5 ng-click="openTM1Menu($mdMenu, $event)" style="color:#3987CC;">
+                Downloads
+              </h5>
+            </div>
+
+            <md-menu-content width="4">
+              <md-menu-item>
+                <md-button ng-click="downloadTm1File('http://sql307/ReportServer_SQL2012/Pages/ReportViewer.aspx?%2fCPX%2fTM1BudgetExtract&rs:Command=Render&company=1&rs:Format=Excel')">
+                  TM1 Extract - Canada
+                </md-button>
+              </md-menu-item>
+
+              <md-menu-item>
+                <md-button ng-click="downloadTm1File('http://sql307/ReportServer_SQL2012/Pages/ReportViewer.aspx?%2fCPX%2fTM1BudgetExtract&rs:Command=Render&company=2&rs:Format=Excel')">
+                  TM1 Extract - USA
+                </md-button>
+              </md-menu-item>
+
+              <md-menu-item>
+                <md-button ng-click="downloadTm1File('http://sql307/ReportServer_SQL2012/Pages/ReportViewer.aspx?%2fCPX%2fTM1BudgetExtract&rs:Command=Render&company=3&rs:Format=Excel')">
+                  TM1 Extract - Canplas
+                </md-button>
+              </md-menu-item>
+
+              <md-menu-item>
+                <md-button ng-click="downloadTm1File('http://sql307/ReportServer_SQL2012/Pages/ReportViewer.aspx?%2fCPX%2fTM1BudgetExtract&rs:Command=Render&company=-1&rs:Format=Excel')">
+                  TM1 Extract - All
+                </md-button>
+              </md-menu-item>
+
+              <md-divider/>
+
+              <md-menu-item>
+                <!-- <md-button ng-click="downloadTm1File('http://sql307/ReportServer_SQL2012/Pages/ReportViewer.aspx?%2fCPX%2fTM1DimFileExtract&rs:Command=Render&rs:Format=Excel')"> -->
+                <md-button ng-click="RedirectToURL()">
+                  DIM File
+                </md-button>
+              </md-menu-item>
+            </md-menu-content>
+          </md-menu>
+
+          <md-divider/>
+
+          <div style="margin:10px 0px 10px 0px;">
+            <a ui-sref="about" style="margin:10px 0px 10px 12px; text-decoration: none;">
+              Release Notes
+            </a>
+          </div>
+          <md-divider/>
+        </div>
+
+      </md-sidenav>
+
+
+<!--      {{ghhjj}}-->
+
+
+
+      <div flex>
+        <md-toolbar class="md-theme-default">
+          <div class="md-toolbar-tools">
+
+            <div ng-hide="$mdMedia('gt-md');" style="padding-right:15px;">
+              <md-menu  md-offset="-15 60">
+                <md-button aria-label="Hamburger Menu" ng-click="openHamburgerMenu($mdMenu, $event)" class="md-fab md-mini md-accent md-hue-1">
+                  <md-tooltip md-direction="bottom">
+                    Menu
+                  </md-tooltip>
+                  <span class="glyphicon glyphicon-menu-hamburger"></span>
+                </md-button>
+
+                <md-menu-content width="4">
+                  <div style="height:118px; margin-left:15px;" layout="column">
+                    <div style="margin-bottom: 12px;">
+                      <div style="color:darkgray;">{{cMain.users.displayName}}</div>
+                      <div style="color:darkgray;">{{cMain.userTitle}}</div>
+                    </div>
+                    <div>
+                      <div style="color:darkgray;"><i>Approvals Requests: <b>0</b></i></div>
+                      <div style="color:darkgray;"><i>Action Items: <b>0</b></i></div>
+                      <div style="color:darkgray;"><i>Messages: <b>0</b></i></div>
+                    </div>
+                  </div>
+
+                  <md-menu-divider></md-menu-divider>
+
+                  <md-content style="height:150px;">
+
+                    <md-menu-item>
+                      <md-button ui-sref="project-list">
+                        Project List
+                      </md-button>
+                    </md-menu-item>
+
+                    <md-menu-item>
+                      <md-button ng-click="newProject()">
+                        Add a Project
+                      </md-button>
+                    </md-menu-item>
+
+                    <md-menu>
+                      <div style="margin:10px 0px 10px 15px;">
+                        <h5 ng-click="openTM1Menu($mdMenu, $event)">
+                          Download
+                        </h5>
+                      </div>
+
+                      <md-menu-content width="4">
+                        <md-menu-item>
+                          <md-button ng-click="downloadTm1File('http://sql307/ReportServer_SQL2012/Pages/ReportViewer.aspx?%2fCPX%2fTM1BudgetExtract&rs:Command=Render&company=1&rs:Format=Excel')">
+                            TM1 Extract - Canada
+                          </md-button>
+                        </md-menu-item>
+
+                        <md-menu-item>
+                          <md-button ng-click="downloadTm1File('http://sql307/ReportServer_SQL2012/Pages/ReportViewer.aspx?%2fCPX%2fTM1BudgetExtract&rs:Command=Render&company=2&rs:Format=Excel')">
+                            TM1 Extract - USA
+                          </md-button>
+                        </md-menu-item>
+
+                        <md-menu-item>
+                          <md-button ng-click="downloadTm1File('http://sql307/ReportServer_SQL2012/Pages/ReportViewer.aspx?%2fCPX%2fTM1BudgetExtract&rs:Command=Render&company=3&rs:Format=Excel')">
+                            TM1 Extract - Canplas
+                          </md-button>
+                        </md-menu-item>
+
+
+                        <md-menu-item>
+                          <md-button ng-click="downloadTm1File('http://sql307/ReportServer_SQL2012/Pages/ReportViewer.aspx?%2fCPX%2fTM1BudgetExtract&rs:Command=Render&company=-1&rs:Format=Excel')">
+                            TM1 Extract - All
+                          </md-button>
+                        </md-menu-item>
+
+                        <md-divider/>
+
+                        <md-menu-item>
+                          <md-button ng-click="downloadTm1File('http://sql307/ReportServer_SQL2012/Pages/ReportViewer.aspx?%2fCPX%2fTM1DimFileExtract&rs:Command=Render&rs:Format=Excel')">
+                            DIM file
+                          </md-button>
+                        </md-menu-item>
+
+                      </md-menu-content>
+                    </md-menu>
+
+                    <md-menu-item>
+                      <md-button ng-click="showNotAvailableAlert()">
+                        CPX Admin
+                      </md-button>
+                    </md-menu-item>
+
+                    <md-menu-item>
+                      <md-button ng-click="showNotAvailableAlert()">
+                        Transfers
+                      </md-button>
+                    </md-menu-item>
+
+                    <md-menu-item>
+                      <md-button ng-click="showNotAvailableAlert()">
+                        Exchange rates
+                      </md-button>
+                    </md-menu-item>
+
+                    <md-menu-item>
+                      <md-button ui-sref="about">
+                        Release Notes
+                      </md-button>
+                    </md-menu-item>
+
+                    <md-menu-divider></md-menu-divider>
+                  </md-content>
+
+                </md-menu-content>
+              </md-menu>
+            </div>
+
+            <div style="font-size: 14px; margin-right: 10px;" flex><breadcrumbs></breadcrumbs></div>
+
+            <!--/Currency dropdown-->
+<!--            <div style="width:200px; margin-right:30px; font-size: 14px; padding-top:25px;" layout="row">
+              <span flex></span>
+              <span style="margin-right: 8px">Currency:</span>
+
+              <md-input-container style="margin-top:-8px">
+                <md-select ng-model="selectedCurr" ng-change="refreshCurrency()">
+                  <md-option ng-repeat="curr in currency" ng-value="curr.id">
+                    {{curr.code}}
+                  </md-option>
+                </md-select>
+              </md-input-container>
+            </div>-->
+            
+            <h3>CPX - Capex Management System</h3> <h5 style="margin-left: 8px;">(RC1)</h5>
+          </div>
+        </md-toolbar>
+        <div ui-view></div>
+      </div>
+    </div>
+  </body>
+</html>

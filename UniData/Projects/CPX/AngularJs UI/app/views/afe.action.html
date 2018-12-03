@@ -1,0 +1,129 @@
+<md-content style="margin: 12px; border-color: darkgray; border-radius: 5px; border-width: 1px; border-style: solid; background-color: white" layout="column" md-whiteframe="3" ng-style="contentStyle">
+
+  <div layout="row">
+    <div style="height:333px; border-color: darkgray; border-style: solid; border-width: 1px; border-radius: 5px; margin:24px 12px 0px 12px;" flex>
+      <div style="height:50px; background-color: lightgray;" layout="column">
+        <div layout="row">
+          <h5 style="margin-top:8px; padding-top:8px;margin-left:4px;" flex>Approval List</h5>
+          <md-menu>
+            <md-button aria-label="AttachementMenu" class="md-icon-button" ng-click="$mdOpenMenu()">
+              <span class="glyphicon glyphicon-option-vertical"></span>
+              <md-tooltip md-direction="top">Menu</md-tooltip>
+            </md-button>
+            <md-menu-content width="4">
+              <md-menu-item>
+                <md-button ng-click="cAfeAction.refreshSla()"><span class="glyphicon glyphicon-refresh"></span> <span md-menu-align-target>Refresh</span></md-button>
+              </md-menu-item>
+            </md-menu-content>
+          </md-menu>
+        </div>
+      </div>
+
+      <!--<md-progress-linear md-mode="indeterminate" class="md-hue-1" ng-show="cAfeAction.loadingSla"></md-progress-linear>-->
+      <md-content style="height:280px;">
+        <!--<md-progress-linear md-mode="indeterminate" class="md-hue-1" ng-show="cAfeAction.loadingSla"></md-progress-linear>-->
+
+          <md-list class="md-dense" ng-disabled="false">
+            <md-list-item ng-repeat="item in cAfeAction.slaList" class="md-2-line" ng-click="" ng-disabled="false">
+              <div layout="column" flex>
+
+                <div layout="row" flex="85">
+                  <div layout="column">
+                    <div style="font-size: 14px; margin-top:5px;" flex><b><span md-colors="{color: 'primary'}" >{{item.lastName}}, {{item.firstName }}</span></b> - {{item.title.substring(0,item.title.indexOf('***'));}}</div>
+                    <div style="font-size: 12px; margin-top:5px;" >{{item.role}}</div>
+                  </div>
+                  <div flex></div>
+                  <div flex="15">
+                    <div style="font-size: 14px; margin-top:auto;" ><i>{{item.statusName}}</i></div>
+                      <!--<div style="font-size: 14px; margin:auto;" ><i>Test</i></div>-->
+                  </div>
+                </div>
+
+              <md-divider ng-if="!$last"></md-divider>
+            </div>
+          </md-list-item>
+        </md-list>
+      </md-content>
+    </div>
+
+    <div ng-if="false" style="height:333px; border-color: darkgray; border-style: solid; border-width: 1px; border-radius: 5px; margin-left: 12px; margin-right: 12px; margin-top:24px" flex="50">
+      <div style="height:50px; background-color: lightgray;" layout="column">
+        <div layout="row">
+          <h5 style="margin-top:8px; padding-top:8px;margin-left:4px;"flex>Attachments</h5>
+
+          <md-menu>
+            <md-button aria-label="AttachementMenu" class="md-icon-button" ng-click="$mdOpenMenu()">
+              <span class="glyphicon glyphicon-option-vertical"></span>
+              <md-tooltip md-direction="top">Menu</md-tooltip>
+            </md-button>
+            <md-menu-content width="4">
+              <md-menu-item>
+                <md-button ng-click="showNotAvailableAlert()"> <span md-menu-align-target>Add Attachment...</span></md-button>
+              </md-menu-item>
+            </md-menu-content>
+          </md-menu>
+        </div>
+      </div>
+      <md-content style="height:280px;">
+        <md-list class="md-dense" flex>
+          <!--Attachments-->
+        </md-list>
+      </md-content>
+    </div>
+  </div>
+
+  <md-content  style="height:150px; margin:24px 12px 12px 12px;border-color: darkgray; border-style: solid; border-width: 1px; border-radius: 5px;" layout="column">
+    <md-input-container>
+      <label>Comments</label>
+      <textarea ng-model="cAfeAction.afe.proposal" md-maxlength="500" rows="3" ng-readonly='true'></textarea>
+    </md-input-container>
+  </md-content>
+
+  <div style="height:75px; margin:12px;" layout="row">
+    <div flex></div>
+    <div style="margin:auto;">
+  
+      <div style="margin-right:12px; font-size: 14px;" ng-style="cAfeAction.warnColor()" ng-show="cAfeAction.afe.statusId === 2 || cAfeAction.afe.statusId === 4"><i>Your request was {{cAfeAction.afe.statusId === 2?'approved':'rejected'}}</i></div>
+      <div style="margin-right:12px; font-size: 14px;" ng-style="cAfeAction.warnColor()" ng-show="cAfeAction.afe.statusId === 5"><i>This AFE is closed</i></div>
+
+      <md-button ng-show="cAfeAction.afe.statusId === 6 && cAfeAction.isMyApproval" class="md-raised md-accent" ng-click="cAfeAction.approve()" ng-disabled="cAfeAction.currentSLAItem<0">
+        <md-tooltip md-direction="top">Approve the AFE</md-tooltip>
+        Approve
+      </md-button>
+
+      <md-button ng-show="cAfeAction.afe.statusId === 6 && cAfeAction.isMyApproval" class="md-raised md-accent" ng-click="cAfeAction.reject()" ng-disabled="cAfeAction.currentSLAItem<0">
+        <md-tooltip md-direction="top">Reject the AFE</md-tooltip>
+        Reject
+      </md-button>
+      <md-button ng-show="cAfeAction.afe.statusId === 6 && cAfeAction.isMyApproval" class="md-raised md-accent" ng-click="cAfeAction.rework()" ng-disabled="cAfeAction.currentSLAItem<0">
+        <md-tooltip md-direction="top">Return to Originator for Rework</md-tooltip>
+        Rework
+      </md-button>
+      <div layout="column">
+<!--        <md-checkbox ng-show="cAfeAction.afe.statusId === 1 || cAfeAction.afe.statusId === 3" class="md-accent" ng-model="cAfeAction.afe.needProofReading" aria-label="ProofReading" style="margin:4px 0px 4px 7px;">
+          <md-tooltip md-direction="top">Request a proof reading before going through the approval list</md-tooltip>
+          Request proof reading
+        </md-checkbox>-->
+
+        <md-button ng-show="cAfeAction.afe.statusId === 1 || cAfeAction.afe.statusId === 3" class="md-raised md-accent" ng-disabled="false" ng-click="showConfirm()">
+          <md-tooltip md-direction="top">Submit for approval</md-tooltip>
+          Submit
+        </md-button>
+        <div ng-show="!cAfeAction.validForSubmit()" style="margin-right:12px; font-size: 12px;" ng-style="cAfeAction.warnColor()">
+          <i>Please fill all mandatory fields before submitting</i>
+        </div>
+        <span flex></span>
+        <md-button ng-show="true" class="md-raised md-accent" ng-click="submitForInfofloIntegration()">
+          <md-tooltip md-direction="top">Post to Infoflo</md-tooltip>
+          No Error!!!
+        </md-button>
+        
+        
+<!--        {{cAfeAction.afe.statusId}}
+        -{{cAfeAction.currentSLAItem}}-
+        {{cAfeAction.slaList}}-->
+        
+      </div>
+    </div>
+  </div>
+</md-content>

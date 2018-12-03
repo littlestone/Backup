@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body {
+        background-color: lightgray;
+      }
+    </style>
+  </head>
+  <body>
+    <md-content style="background-color:whitesmoke; width:710px; height:340px">
+      <md-list class="md-dense" flex>
+        <md-list-item class="md-2-line" ng-repeat="mess in messagesCtrl.messages" ng-click="null">
+          <div style="padding-right: 10px;"><span class="glyphicon glyphicon-envelope"></span></div>
+          <div class="md-list-item-text" layout="column">
+            <h3><b>{{mess.originator}}</b></h3>
+            <h4>{{mess.subject}}</h4>
+          </div>
+          <div>
+            <md-button>
+              <md-tooltip md-direction="top">
+                Delete Message
+              </md-tooltip>
+              <span class="glyphicon glyphicon-trash"></span>
+            </md-button>
+          </div>
+          <div>
+
+            <md-button ng-click="doSecondaryActionBis($event)">
+              <md-tooltip md-direction="top">
+                See Message
+              </md-tooltip>
+              <span class="glyphicon glyphicon-eye-open"></span>
+            </md-button>
+          </div>
+
+        </md-list-item>
+      </md-list>
+      <md-progress-linear class="md-primary" md-mode="indeterminate" ng-disabled="!messagesCtrl.dataLoading"></md-progress-linear>
+    </md-content>
+  </body>
+</html>
